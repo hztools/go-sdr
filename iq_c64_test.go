@@ -80,4 +80,27 @@ func TestConvertC64ToI16(t *testing.T) {
 	assert.Equal(t, [2]int16{0, 0}, i16Samples[0])
 }
 
+func TestC64Scale(t *testing.T) {
+	c64Samples := make(sdr.SamplesC64, 31)
+	for i := range c64Samples {
+		c64Samples[i] = complex64(complex(10, 10))
+	}
+	c64Samples.Scale(0.5)
+	for _, el := range c64Samples {
+		assert.Equal(t, float32(5), real(el))
+		assert.Equal(t, float32(5), imag(el))
+	}
+}
+
+func TestC64Multiply(t *testing.T) {
+	c64Samples := make(sdr.SamplesC64, 31)
+	for i := range c64Samples {
+		c64Samples[i] = complex64(complex(10, 10))
+	}
+	c64Samples.Multiply(complex(0.5, 0.5))
+	for _, el := range c64Samples {
+		assert.Equal(t, complex64(complex(0, 10)), el)
+	}
+}
+
 // vim: foldmethod=marker

@@ -23,6 +23,8 @@ package sdr
 import (
 	"math"
 	"unsafe"
+
+	"hz.tools/sdr/internal/simd"
 )
 
 // SamplesC64 indicates that the samples are in a complex64
@@ -98,6 +100,19 @@ func (s SamplesC64) ToI16(out SamplesI16) error {
 		}
 	}
 	return nil
+}
+
+// Scale will multiply each I and Q value by the provided real value 'r'. This
+// will *not* do a complex multiplication, this is the same as if each phasor
+// had their real and imag parts multiplied by the provided real value 'r'.
+func (s SamplesC64) Scale(r float32) {
+	simd.ScaleComplex(r, s)
+}
+
+// Multiply will conduct a complex multiplication of each phasor in this buffer
+// by a provided complex number 'c'.
+func (s SamplesC64) Multiply(c complex64) {
+	simd.RotateComplex(c, s)
 }
 
 // vim: foldmethod=marker
