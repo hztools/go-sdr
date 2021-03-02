@@ -21,6 +21,6 @@
 // Package fftest contains some helper for testing fft planners. This can
 // be imported by FFT implementations to ensure that the FFT code works
 // as expected.
-package sdr
+package fftest
 
 // vim: foldmethod=marker
