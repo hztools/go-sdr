@@ -26,7 +26,6 @@ import (
 	"math/cmplx"
 	"testing"
 
-	"hz.tools/fftw"
 	"hz.tools/rf"
 	"hz.tools/sdr"
 	"hz.tools/sdr/fft"
@@ -79,7 +78,7 @@ func testForwardFFT(t *testing.T, planner fft.Planner) {
 	} {
 		generateCw(cwPhase0, tfreq.Frequency, 1.8e6, 0)
 
-		plan, err := fftw.Plan(cwPhase0, out, fft.Forward, nil)
+		plan, err := planner(cwPhase0, out, fft.Forward, nil)
 		assert.NoError(t, err)
 		assert.NoError(t, plan.Transform())
 		assert.NoError(t, plan.Close())
@@ -111,14 +110,14 @@ func testBackwardFFT(t *testing.T, planner fft.Planner) {
 
 		freq[bin] = 1 + 1i
 
-		plan, err := fftw.Plan(iq, freq, fft.Backward, nil)
+		plan, err := planner(iq, freq, fft.Backward, nil)
 		assert.NoError(t, err)
 		assert.NoError(t, plan.Transform())
 		assert.NoError(t, plan.Close())
 
 		freq[bin] = 0 + 0i
 
-		plan, err = fftw.Plan(iq, freq, fft.Forward, nil)
+		plan, err = planner(iq, freq, fft.Forward, nil)
 		assert.NoError(t, err)
 		assert.NoError(t, plan.Transform())
 		assert.NoError(t, plan.Close())
@@ -143,12 +142,12 @@ func testBackwardFFT(t *testing.T, planner fft.Planner) {
 func testMismatchDstFFT(t *testing.T, planner fft.Planner) {
 	iq := make(sdr.SamplesC64, 1024)
 	freq := make([]complex64, 128)
-	_, err := fftw.Plan(iq, freq, fft.Forward, nil)
+	_, err := planner(iq, freq, fft.Forward, nil)
 	assert.Equal(t, sdr.ErrDstTooSmall, err)
 
 	iq = make(sdr.SamplesC64, 128)
 	freq = make([]complex64, 1024)
-	_, err = fftw.Plan(iq, freq, fft.Backward, nil)
+	_, err = planner(iq, freq, fft.Backward, nil)
 	assert.Equal(t, sdr.ErrDstTooSmall, err)
 
 }
