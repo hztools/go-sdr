@@ -60,12 +60,32 @@ type multiWriter struct {
 // This has the same behavior as an io.MultiWriter, but will copy between
 // IQ streams.
 func MultiWriter(
-	samplesPerSecond uint32,
-	sampleFormat SampleFormat,
 	writers ...Writer,
-) Writer {
+) (Writer, error) {
+
+	switch len(writers) {
+	case 0:
+		return nil, errors.New("sdr.MultiWriter: No writers passed to MultiWriter")
+	case 1:
+		return writers[0], nil
+	}
+
+	var (
+		samplesPerSecond uint32       = writers[0].SampleRate()
+		sampleFormat     SampleFormat = writers[0].SampleFormat()
+	)
+
 	allWriters := make([]Writer, 0, len(writers))
 	for _, w := range writers {
+
+		if w.SampleRate() != samplesPerSecond {
+			return nil, errors.New("sdr.MultiWriter: Sample rate mismatch")
+		}
+
+		if w.SampleFormat() != sampleFormat {
+			return nil, ErrSampleFormatMismatch
+		}
+
 		if mw, ok := w.(*multiWriter); ok {
 			allWriters = append(allWriters, mw.writers...)
 		} else {
@@ -76,7 +96,7 @@ func MultiWriter(
 		sampleFormat:     sampleFormat,
 		samplesPerSecond: samplesPerSecond,
 		writers:          allWriters,
-	}
+	}, nil
 }
 
 func (mw *multiWriter) SampleRate() uint32 {

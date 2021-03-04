@@ -51,7 +51,9 @@ func TestMultiWriterU8(t *testing.T) {
 	buf[0][0] = 0xFF
 	buf[1][1] = 0xFF
 
-	mw := sdr.MultiWriter(0, sdr.SampleFormatU8, pipeWriter1, pipeWriter2)
+	mw, err := sdr.MultiWriter(pipeWriter1, pipeWriter2)
+	assert.NoError(t, err)
+
 	i, err := mw.Write(buf)
 	assert.NoError(t, err)
 	assert.Equal(t, 1024, i)
