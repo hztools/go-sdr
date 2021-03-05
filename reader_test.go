@@ -146,4 +146,36 @@ func TestMultiReaderSampleRateMismatch(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestTee(t *testing.T) {
+	samples := make(sdr.SamplesC64, 1024)
+	pipeReader1, pipeWriter1 := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
+	pipeReader2, pipeWriter2 := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter1.Write(samples)
+		assert.NoError(t, err)
+	}()
+
+	teeReader, err := sdr.TeeReader(pipeReader1, pipeWriter2)
+	assert.NoError(t, err)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s := make(sdr.SamplesC64, 1024)
+		_, err := sdr.ReadFull(pipeReader2, s)
+		assert.NoError(t, err)
+	}()
+
+	dts := make(sdr.SamplesC64, 1024)
+	_, err = sdr.ReadFull(teeReader, dts)
+	assert.NoError(t, err)
+
+	wg.Wait()
+}
+
 // vim: foldmethod=marker

@@ -177,4 +177,34 @@ func MultiReader(readers ...Reader) (Reader, error) {
 	}, nil
 }
 
+// TeeReader will write all values read from sdr.Reader `r` to the sdr.Writer
+// `w`. There is no buffering or storage, writes will block the returned Read.
+func TeeReader(r Reader, w Writer) (Reader, error) {
+	// TODO(paultag): Check the SampleRate, SampleFormat
+	return &teeReader{r: r, w: w}, nil
+}
+
+type teeReader struct {
+	r Reader
+	w Writer
+}
+
+func (dt *teeReader) Read(s Samples) (int, error) {
+	n, err := dt.r.Read(s)
+	if n > 0 {
+		if n, err := dt.w.Write(s.Slice(0, n)); err != nil {
+			return n, err
+		}
+	}
+	return n, err
+}
+
+func (dt *teeReader) SampleFormat() SampleFormat {
+	return dt.r.SampleFormat()
+}
+
+func (dt *teeReader) SampleRate() uint32 {
+	return dt.r.SampleRate()
+}
+
 // vim: foldmethod=marker
