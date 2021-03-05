@@ -23,9 +23,10 @@
 package stream_test
 
 import (
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"

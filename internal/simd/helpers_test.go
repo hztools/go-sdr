@@ -23,9 +23,10 @@
 package simd_test
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"unsafe"
+
+	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/internal/simd"

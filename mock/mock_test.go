@@ -22,9 +22,10 @@ package mock_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"hz.tools/rf"
 	"hz.tools/sdr"

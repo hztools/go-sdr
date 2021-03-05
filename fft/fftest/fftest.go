@@ -21,10 +21,11 @@
 package fftest
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math"
 	"math/cmplx"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"hz.tools/rf"
 	"hz.tools/sdr"

@@ -24,8 +24,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
 )

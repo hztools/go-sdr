@@ -23,8 +23,9 @@ package stream_test
 import (
 	"math/rand"
 
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"

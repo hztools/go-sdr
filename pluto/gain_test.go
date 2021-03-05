@@ -21,8 +21,9 @@
 package pluto
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGainRangeRx(t *testing.T) {
