@@ -62,4 +62,20 @@ func TestMultiWriterU8(t *testing.T) {
 	wg.Wait()
 }
 
+func TestMultiWriterFormatMismatch(t *testing.T) {
+	_, pipeWriter1 := sdr.Pipe(0, sdr.SampleFormatU8)
+	_, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatC64)
+
+	_, err := sdr.MultiWriter(pipeWriter1, pipeWriter2)
+	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
+}
+
+func TestMultiWriterRateMismatch(t *testing.T) {
+	_, pipeWriter1 := sdr.Pipe(0, sdr.SampleFormatU8)
+	_, pipeWriter2 := sdr.Pipe(1024, sdr.SampleFormatU8)
+
+	_, err := sdr.MultiWriter(pipeWriter1, pipeWriter2)
+	assert.Error(t, err)
+}
+
 // vim: foldmethod=marker
