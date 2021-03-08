@@ -29,6 +29,7 @@ import (
 )
 
 type shiftReader struct {
+	inc   float64
 	ts    float64
 	shift float64
 	r     sdr.Reader
@@ -50,23 +51,25 @@ func (sr *shiftReader) Read(s sdr.Samples) (int, error) {
 		return 0, sdr.ErrSampleFormatUnknown
 	}
 
-	i, err := sr.r.Read(s)
+	n, err := sr.r.Read(s)
 	if err != nil {
-		return i, err
+		return n, err
 	}
 
 	// TODO(paultag): Fix this to be safe when the above format checks
 	// grow.
 	sC64 := s.(sdr.SamplesC64)
-
 	tau := math.Pi * 2
 
-	for j := range sC64 {
-		sr.ts += (1 / float64(sr.SampleRate()))
+	for j := range sC64[:n] {
+		sr.ts += sr.inc
+		if sr.ts > tau {
+			sr.ts -= tau
+		}
 		sC64[j] = sC64[j] * complex64(cmplx.Exp(complex(0, tau*sr.shift*sr.ts)))
 	}
 
-	return i, nil
+	return n, nil
 }
 
 // ShiftReader will shift the iq samples by the target frequency. So a carrier
@@ -81,6 +84,7 @@ func ShiftReader(r sdr.Reader, shift rf.Hz) (sdr.Reader, error) {
 
 	return &shiftReader{
 		ts:    0,
+		inc:   (1 / float64(r.SampleRate())),
 		shift: float64(shift),
 		r:     r,
 	}, nil
