@@ -52,7 +52,7 @@ func (mr *multiplyReader) Read(s sdr.Samples) (int, error) {
 
 	// TODO(paultag): Fix this to be safe when the above format checks
 	// grow.
-	sC64 := s.(sdr.SamplesC64)
+	sC64 := s.(sdr.SamplesC64)[:i]
 	sC64.Multiply(mr.m)
 	// vfor j := range sC64 {
 	// v	sC64[j] = sC64[j] * mr.m
