@@ -58,10 +58,10 @@ func (sr *shiftReader) Read(s sdr.Samples) (int, error) {
 
 	// TODO(paultag): Fix this to be safe when the above format checks
 	// grow.
-	sC64 := s.(sdr.SamplesC64)
+	sC64 := s.Slice(0, n).(sdr.SamplesC64)
 	tau := math.Pi * 2
 
-	for j := range sC64[:n] {
+	for j := range sC64 {
 		sr.ts += sr.inc
 		if sr.ts > tau {
 			sr.ts -= tau
