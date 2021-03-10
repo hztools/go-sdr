@@ -63,16 +63,16 @@ func Convolve(
 	freq1 := make([]complex64, iq1.Length())
 	freq2 := make([]complex64, iq2.Length())
 
-	planForward1, err := planner(iq1.(sdr.SamplesC64), freq1, Forward, nil)
+	planForward1, err := planner(iq1.(sdr.SamplesC64), freq1, Forward)
 	if err != nil {
 		return nil, err
 	}
-	planForward2, err := planner(iq2.(sdr.SamplesC64), freq2, Forward, nil)
+	planForward2, err := planner(iq2.(sdr.SamplesC64), freq2, Forward)
 	if err != nil {
 		return nil, err
 	}
 
-	planBackward, err := planner(dst.(sdr.SamplesC64), freq1, Backward, nil)
+	planBackward, err := planner(dst.(sdr.SamplesC64), freq1, Backward)
 	if err != nil {
 		return nil, err
 	}
@@ -123,12 +123,12 @@ func ConvolveFreq(
 
 	freq1 := make([]complex64, src.Length())
 
-	planForward, err := planner(src.(sdr.SamplesC64), freq1, Forward, nil)
+	planForward, err := planner(src.(sdr.SamplesC64), freq1, Forward)
 	if err != nil {
 		return nil, err
 	}
 
-	planBackward, err := planner(dst.(sdr.SamplesC64), freq1, Backward, nil)
+	planBackward, err := planner(dst.(sdr.SamplesC64), freq1, Backward)
 	if err != nil {
 		return nil, err
 	}

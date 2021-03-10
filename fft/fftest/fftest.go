@@ -79,7 +79,7 @@ func testForwardFFT(t *testing.T, planner fft.Planner) {
 	} {
 		generateCw(cwPhase0, tfreq.Frequency, 1.8e6, 0)
 
-		plan, err := planner(cwPhase0, out, fft.Forward, nil)
+		plan, err := planner(cwPhase0, out, fft.Forward)
 		assert.NoError(t, err)
 		assert.NoError(t, plan.Transform())
 		assert.NoError(t, plan.Close())

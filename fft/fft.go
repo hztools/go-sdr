@@ -45,7 +45,6 @@ var (
 type Planner func(
 	iq sdr.SamplesC64, frequency []complex64,
 	direction Direction,
-	opts interface{},
 ) (Plan, error)
 
 // Plan is used to preform an FFT over the IQ or Time Series data, writing
@@ -67,9 +66,8 @@ func TransformOnce(
 	iq sdr.SamplesC64,
 	frequency []complex64,
 	direction Direction,
-	opts interface{},
 ) error {
-	plan, err := planner(iq, frequency, direction, opts)
+	plan, err := planner(iq, frequency, direction)
 	if err != nil {
 		return err
 	}
