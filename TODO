@@ -1,5 +1,4 @@
 
- - Remove `interface{}` from fft.Plan
  - SIMD
    - Unity Gain
    - Downsample
