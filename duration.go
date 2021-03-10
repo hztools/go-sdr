@@ -25,7 +25,7 @@ import (
 )
 
 // Duration will return the amount of time represented by a slice of Samples.
-func Duration(s Samples, sampleRate uint32) time.Duration {
+func Duration(s Samples, sampleRate uint) time.Duration {
 	seconds := float64(s.Length()) / float64(sampleRate)
 	// since a time.Duration is an int64, we need to do this cast to float64
 	// to handle sub-second conversions before we scale out to seconds.

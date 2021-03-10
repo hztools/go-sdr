@@ -78,4 +78,17 @@ func TestMultiWriterRateMismatch(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestWriterWithCloser(t *testing.T) {
+	_, pipeWriter := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
+	closeCalled := false
+
+	wc := sdr.WriterWithCloser(pipeWriter, func() error {
+		closeCalled = true
+		return pipeWriter.Close()
+	})
+	wc.Close()
+
+	assert.True(t, closeCalled)
+}
+
 // vim: foldmethod=marker

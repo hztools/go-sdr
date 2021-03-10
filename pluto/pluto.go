@@ -59,7 +59,7 @@ type Sdr struct {
 
 	txWindowSize     int
 	rxWindowSize     int
-	samplesPerSecond uint32
+	samplesPerSecond uint
 }
 
 // Open will establish a connection to a PlutoSDR, and return a handle to
@@ -182,7 +182,7 @@ func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
 }
 
 // SetSampleRate implements the sdr.Sdr interface.
-func (s *Sdr) SetSampleRate(sps uint32) error {
+func (s *Sdr) SetSampleRate(sps uint) error {
 	if sps < 2083336 {
 		// TODO(paultag): Add in decimation bits.
 		return fmt.Errorf("pluto: minimum samples per second is 2083336")
@@ -215,7 +215,7 @@ func (s *Sdr) SetSampleRate(sps uint32) error {
 }
 
 // GetSampleRate implements the sdr.Sdr interface.
-func (s *Sdr) GetSampleRate() (uint32, error) {
+func (s *Sdr) GetSampleRate() (uint, error) {
 	return 0, sdr.ErrNotSupported
 }
 

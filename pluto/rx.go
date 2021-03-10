@@ -74,7 +74,7 @@ func (rc *readCloser) Close() error {
 	return nil
 }
 
-func (rc *readCloser) SampleRate() uint32 {
+func (rc *readCloser) SampleRate() uint {
 	return rc.reader.SampleRate()
 }
 

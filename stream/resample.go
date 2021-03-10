@@ -64,7 +64,7 @@ func copyFreq(order fft.Order, outFreq, inFreq []complex64) error {
 func ResampleReader(
 	r sdr.Reader,
 	planner fft.Planner,
-	outputSampleRate uint32,
+	outputSampleRate uint,
 ) (sdr.Reader, error) {
 	switch r.SampleFormat() {
 	case sdr.SampleFormatC64:

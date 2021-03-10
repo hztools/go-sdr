@@ -97,7 +97,7 @@ func TestDecimateRateFormat(t *testing.T) {
 	decReader, err := stream.DecimateReader(pipeReader, 10)
 	assert.NoError(t, err)
 
-	assert.Equal(t, uint32(10000/10), decReader.SampleRate())
+	assert.Equal(t, uint(10000/10), decReader.SampleRate())
 	assert.Equal(t, pipeReader.SampleFormat(), decReader.SampleFormat())
 }
 

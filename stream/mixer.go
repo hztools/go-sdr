@@ -75,7 +75,7 @@ func Mix(readers ...sdr.Reader) (sdr.Reader, error) {
 
 type mixerReader struct {
 	sampleFormat sdr.SampleFormat
-	sampleRate   uint32
+	sampleRate   uint
 	readers      []sdr.Reader
 	err          error
 }
@@ -84,7 +84,7 @@ func (mr *mixerReader) SampleFormat() sdr.SampleFormat {
 	return mr.sampleFormat
 }
 
-func (mr *mixerReader) SampleRate() uint32 {
+func (mr *mixerReader) SampleRate() uint {
 	return mr.sampleRate
 }
 

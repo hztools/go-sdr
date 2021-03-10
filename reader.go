@@ -47,7 +47,7 @@ type Reader interface {
 
 	// SampleRate will get the number of samples per second that this
 	// stream is communicating at.
-	SampleRate() uint32
+	SampleRate() uint
 }
 
 // Closer is the interface that wraps the basic Close method.
@@ -110,7 +110,7 @@ type multiReader struct {
 	idx          int
 	err          error
 	sampleFormat SampleFormat
-	sampleRate   uint32
+	sampleRate   uint
 }
 
 func (mr *multiReader) Read(s Samples) (int, error) {
@@ -137,7 +137,7 @@ func (mr *multiReader) SampleFormat() SampleFormat {
 	return mr.sampleFormat
 }
 
-func (mr *multiReader) SampleRate() uint32 {
+func (mr *multiReader) SampleRate() uint {
 	return mr.sampleRate
 }
 
@@ -156,7 +156,7 @@ func MultiReader(readers ...Reader) (Reader, error) {
 
 	var (
 		sampleFormat SampleFormat = readers[0].SampleFormat()
-		sampleRate   uint32       = readers[0].SampleRate()
+		sampleRate   uint         = readers[0].SampleRate()
 	)
 
 	for _, reader := range readers[1:] {
@@ -203,7 +203,7 @@ func (dt *teeReader) SampleFormat() SampleFormat {
 	return dt.r.SampleFormat()
 }
 
-func (dt *teeReader) SampleRate() uint32 {
+func (dt *teeReader) SampleRate() uint {
 	return dt.r.SampleRate()
 }
 

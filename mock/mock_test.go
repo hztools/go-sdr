@@ -44,7 +44,7 @@ func TestSetGet(t *testing.T) {
 	assert.NoError(t, dev.SetSampleRate(1000))
 	sps, err := dev.GetSampleRate()
 	assert.NoError(t, err)
-	assert.Equal(t, uint32(1000), sps)
+	assert.Equal(t, uint(1000), sps)
 }
 
 func TestSetRead(t *testing.T) {
@@ -112,3 +112,5 @@ func TestSetWrite(t *testing.T) {
 
 	wg.Wait()
 }
+
+// vim: foldmethod=marker

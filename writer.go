@@ -39,7 +39,7 @@ type Writer interface {
 
 	// SampleRate will get the number of samples per second that this
 	// stream is communicating at.
-	SampleRate() uint32
+	SampleRate() uint
 }
 
 // WriteCloser is the interface that groups the basic Read and Close methods.
@@ -50,7 +50,7 @@ type WriteCloser interface {
 
 type multiWriter struct {
 	writers          []Writer
-	samplesPerSecond uint32
+	samplesPerSecond uint
 	sampleFormat     SampleFormat
 }
 
@@ -71,7 +71,7 @@ func MultiWriter(
 	}
 
 	var (
-		samplesPerSecond uint32       = writers[0].SampleRate()
+		samplesPerSecond uint         = writers[0].SampleRate()
 		sampleFormat     SampleFormat = writers[0].SampleFormat()
 	)
 
@@ -99,7 +99,7 @@ func MultiWriter(
 	}, nil
 }
 
-func (mw *multiWriter) SampleRate() uint32 {
+func (mw *multiWriter) SampleRate() uint {
 	return mw.samplesPerSecond
 }
 
@@ -125,6 +125,23 @@ func (mw *multiWriter) Write(buf Samples) (int, error) {
 		}
 	}
 	return buf.Length(), nil
+}
+
+type writerWithCloser struct {
+	Writer
+	closer func() error
+}
+
+func (rwc writerWithCloser) Close() error {
+	return rwc.closer()
+}
+
+// WriterWithCloser will add a closer to a writer to make an sdr.WriteCloser
+func WriterWithCloser(w Writer, c func() error) WriteCloser {
+	return writerWithCloser{
+		Writer: w,
+		closer: c,
+	}
 }
 
 // vim: foldmethod=marker

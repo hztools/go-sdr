@@ -77,7 +77,7 @@ func (wc *writeCloser) Close() error {
 	return nil
 }
 
-func (wc *writeCloser) SampleRate() uint32 {
+func (wc *writeCloser) SampleRate() uint {
 	return wc.reader.SampleRate()
 }
 

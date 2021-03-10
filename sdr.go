@@ -68,11 +68,11 @@ type Sdr interface {
 	// device should be sending back to us. A lower number usually gives us less
 	// RF bandwidth, and a higher number may result in corruption (in the case
 	// of the rtl-sdr) or dropped samples (in the case of the Pluto and friends).
-	SetSampleRate(uint32) error
+	SetSampleRate(uint) error
 
 	// GetSampleRate will get the number of samples per second that this
 	// device is configured to be sending back to us.
-	GetSampleRate() (uint32, error)
+	GetSampleRate() (uint, error)
 
 	// SampleFormat returns the type of this vector, as exported by the
 	// SampleFormat enum.

@@ -42,7 +42,7 @@ type OffsetSdr struct {
 }
 
 // NewOffset will create a new OffsetSdr.
-func NewOffset(planner fft.Planner, i1, i2, i3, i4 uint32, windowSize uint32) (*OffsetSdr, error) {
+func NewOffset(planner fft.Planner, i1, i2, i3, i4 uint, windowSize uint) (*OffsetSdr, error) {
 	sdr, err := New(i1, i2, i3, i4, windowSize)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func NewOffset(planner fft.Planner, i1, i2, i3, i4 uint32, windowSize uint32) (*
 }
 
 // SetSampleRate implements the sdr.Sdr interface.
-func (k *OffsetSdr) SetSampleRate(sps uint32) error {
+func (k *OffsetSdr) SetSampleRate(sps uint) error {
 	if int(sps)%len(k.Sdr) != 0 {
 		return fmt.Errorf("rtl/kerberos: SampleRate is not divisible by 4")
 	}
@@ -79,7 +79,7 @@ func (k *OffsetSdr) SetSampleRate(sps uint32) error {
 }
 
 // GetSampleRate implements the sdr.Sdr interface.
-func (k *OffsetSdr) GetSampleRate() (uint32, error) {
+func (k *OffsetSdr) GetSampleRate() (uint, error) {
 	sps, err := k.Sdr[0].GetSampleRate()
 	if err != nil {
 		return 0, err
@@ -94,7 +94,7 @@ func (k *OffsetSdr) GetSampleRate() (uint32, error) {
 		}
 	}
 
-	totalSps := sps * uint32(len(k.Sdr))
+	totalSps := sps * uint(len(k.Sdr))
 	log.Printf("Sample rate of %d per tuner, total of %d\n", sps, totalSps)
 	return totalSps, nil
 }

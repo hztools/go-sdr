@@ -86,7 +86,7 @@ func (cr CoherentReadCloser) Close() error {
 func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser, error) {
 	var (
 		err error
-		sps uint32
+		sps uint
 		ret = make(CoherentReadCloser, len(k))
 	)
 

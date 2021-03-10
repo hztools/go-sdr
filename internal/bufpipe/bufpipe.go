@@ -55,7 +55,7 @@ type Pipe struct {
 	err    error
 	buf    chan sdr.Samples
 
-	sampleRate   uint32
+	sampleRate   uint
 	sampleFormat sdr.SampleFormat
 
 	pipeReader sdr.PipeReader
@@ -68,7 +68,7 @@ func (p *Pipe) SampleFormat() sdr.SampleFormat {
 }
 
 // SampleRate implements the sdr.ReadWriter interface.
-func (p *Pipe) SampleRate() uint32 {
+func (p *Pipe) SampleRate() uint {
 	return p.sampleRate
 }
 
@@ -152,7 +152,7 @@ func (p *Pipe) Close() error {
 
 // New will create a new bufpipe.Pipe, which wraps a normal sdr.Pipe,
 // but writes will not block.
-func New(capacity int, sampleRate uint32, sampleFormat sdr.SampleFormat) (*Pipe, error) {
+func New(capacity int, sampleRate uint, sampleFormat sdr.SampleFormat) (*Pipe, error) {
 	return NewWithContext(context.Background(), capacity, sampleRate, sampleFormat)
 }
 
@@ -161,7 +161,7 @@ func New(capacity int, sampleRate uint32, sampleFormat sdr.SampleFormat) (*Pipe,
 //
 // This includes a parent context, which if it is expired or is cancelled
 // will trigger a close of this context as well.
-func NewWithContext(ctx context.Context, capacity int, sampleRate uint32, sampleFormat sdr.SampleFormat) (*Pipe, error) {
+func NewWithContext(ctx context.Context, capacity int, sampleRate uint, sampleFormat sdr.SampleFormat) (*Pipe, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sampleRate, sampleFormat)

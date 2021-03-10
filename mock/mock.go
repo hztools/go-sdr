@@ -38,7 +38,7 @@ type Config struct {
 	CenterFrequency rf.Hz
 
 	// SampleRate is the default initial SampleRate.
-	SampleRate uint32
+	SampleRate uint
 
 	// SampleFormat is the format that this SDR speaks, as well as both the
 	// Rx and Tx. If this is not set, or this does not match the Rx or Tx
@@ -121,18 +121,18 @@ func (m *mockSdr) SetGain(gs sdr.GainStage, gain float32) error {
 }
 
 // SetSampleRate implements the sdr.Sdr interface.
-func (m *mockSdr) SetSampleRate(sps uint32) error {
+func (m *mockSdr) SetSampleRate(sps uint) error {
 	m.config.SampleRate = sps
 	return nil
 }
 
 // GetSampleRate implements the sdr.Sdr interface.
-func (m *mockSdr) GetSampleRate() (uint32, error) {
+func (m *mockSdr) GetSampleRate() (uint, error) {
 	return m.config.SampleRate, nil
 }
 
 // GetSamplesPerWindow implements the sdr.Sdr interface.
-func (m *mockSdr) GetSamplesPerWindow() (uint32, error) {
+func (m *mockSdr) GetSamplesPerWindow() (uint, error) {
 	return m.config.SampleRate, nil
 }
 
@@ -199,34 +199,4 @@ func ThisTx(tx sdr.WriteCloser) func(sdr.Transceiver) (sdr.WriteCloser, error) {
 	}
 }
 
-type mockRx struct {
-	sdr.Reader
-	closer func() error
-}
-
-func (m mockRx) Close() error { return m.closer() }
-
-type mockTx struct {
-	sdr.Writer
-	closer func() error
-}
-
-func (m mockTx) Close() error { return m.closer() }
-
-// MakeTxCloser will shim an sdr.Writer into an sdr.WriteCloser which will
-// invoke the provided Closer when Close is called.
-func MakeTxCloser(tx sdr.Writer, closer func() error) sdr.WriteCloser {
-	return mockTx{
-		Writer: tx,
-		closer: closer,
-	}
-}
-
-// MakeRxCloser will shim an sdr.Reader into an sdr.ReadCloser which will
-// invoke the provided Closer when Close is called.
-func MakeRxCloser(rx sdr.Reader, closer func() error) sdr.ReadCloser {
-	return mockRx{
-		Reader: rx,
-		closer: closer,
-	}
-}
+// vim: foldmethod=marker

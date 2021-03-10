@@ -41,7 +41,7 @@ type Client struct {
 	dongleInfo DongleInfo
 	windowSize uint
 	reader     sdr.Reader
-	sampleRate uint32
+	sampleRate uint
 }
 
 // Close will close the underlying net.Conn.
@@ -107,7 +107,7 @@ type readerConn struct {
 	client *Client
 }
 
-func (c readerConn) SampleRate() uint32 {
+func (c readerConn) SampleRate() uint {
 	return c.client.sampleRate
 }
 
@@ -186,10 +186,10 @@ func (c *Client) SetPPM(int) error {
 }
 
 // SetSampleRate implements the sdr.Sdr interface
-func (c *Client) SetSampleRate(rate uint32) error {
+func (c *Client) SetSampleRate(rate uint) error {
 	err := c.SendCommand(Request{
 		Command:  CommandSetSampleRate,
-		Argument: rate,
+		Argument: uint32(rate),
 	})
 	if err == nil {
 		c.sampleRate = rate
@@ -198,13 +198,13 @@ func (c *Client) SetSampleRate(rate uint32) error {
 }
 
 // GetSampleRate implements the sdr.Sdr interface
-func (c *Client) GetSampleRate() (uint32, error) {
+func (c *Client) GetSampleRate() (uint, error) {
 	return c.sampleRate, nil
 }
 
 // GetSamplesPerWindow implements the sdr.Sdr interface
-func (c *Client) GetSamplesPerWindow() (uint32, error) {
-	return uint32(c.windowSize), nil
+func (c *Client) GetSamplesPerWindow() (uint, error) {
+	return uint(c.windowSize), nil
 }
 
 // SampleFormat implements the sdr.Sdr interface

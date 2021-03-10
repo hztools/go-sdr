@@ -62,7 +62,7 @@ func (g *gain) SampleFormat() sdr.SampleFormat {
 	return g.r.SampleFormat()
 }
 
-func (g *gain) SampleRate() uint32 {
+func (g *gain) SampleRate() uint {
 	return g.r.SampleRate()
 }
 

@@ -31,13 +31,13 @@ import (
 // This will reduce the sample rate by the provided factor (so if the input
 // Reader is at 18 Msps, and we apply a factor of 10 Decimation, we'll get
 // an output Reader of 1.8 Msps.
-func DecimateReader(in sdr.Reader, factor int) (sdr.Reader, error) {
+func DecimateReader(in sdr.Reader, factor uint) (sdr.Reader, error) {
 	var offset = 0
 
 	return ReadTransformer(in, ReadTransformerConfig{
 		InputBufferLength:  32 * 1024,
 		OutputBufferLength: 32 * 1024,
-		OutputSampleRate:   in.SampleRate() / uint32(factor),
+		OutputSampleRate:   in.SampleRate() / factor,
 		OutputSampleFormat: in.SampleFormat(),
 		Proc: func(inBuf sdr.Samples, outBuf sdr.Samples) (int, error) {
 			n, err := DecimateBuffer(outBuf, inBuf, factor, offset)
@@ -53,15 +53,16 @@ func DecimateReader(in sdr.Reader, factor int) (sdr.Reader, error) {
 // This is sometimes also called "Downsamping" or "Compression", but a lot
 // of other tools use the term decimation, even though it's not always
 // a downsample of a factor of 100.
-func DecimateBuffer(to, from sdr.Samples, factor, offset int) (int, error) {
+func DecimateBuffer(to, from sdr.Samples, factor uint, offset int) (int, error) {
 	if from.Format() != to.Format() {
 		return 0, sdr.ErrSampleFormatMismatch
 	}
 
+	dFactor := int(factor)
 	toLength := to.Length()
 	fromLength := from.Length()
 
-	if toLength < fromLength/factor {
+	if toLength < fromLength/dFactor {
 		return 0, sdr.ErrDstTooSmall
 	}
 
@@ -77,17 +78,17 @@ func DecimateBuffer(to, from sdr.Samples, factor, offset int) (int, error) {
 	// will need to become aware on how to get/set specific indexes.
 
 	var i int
-	for i = 0; i < fromLength/factor; i++ {
+	for i = 0; i < fromLength/dFactor; i++ {
 		switch from := from.(type) {
 		case sdr.SamplesU8:
 			to := to.(sdr.SamplesU8)
-			to[i] = from[factor*i]
+			to[i] = from[dFactor*i]
 		case sdr.SamplesI16:
 			to := to.(sdr.SamplesI16)
-			to[i] = from[factor*i]
+			to[i] = from[dFactor*i]
 		case sdr.SamplesC64:
 			to := to.(sdr.SamplesC64)
-			to[i] = from[factor*i]
+			to[i] = from[dFactor*i]
 		default:
 			return 0, sdr.ErrSampleFormatUnknown
 		}

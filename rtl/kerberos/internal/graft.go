@@ -50,7 +50,7 @@ func (gr *graftReader) SampleFormat() sdr.SampleFormat {
 	return gr.pipeReader.SampleFormat()
 }
 
-func (gr *graftReader) SampleRate() uint32 {
+func (gr *graftReader) SampleRate() uint {
 	return gr.pipeReader.SampleRate()
 }
 
@@ -129,7 +129,7 @@ func GraftReaders(planner fft.Planner, readers []sdr.Reader) (sdr.ReadCloser, er
 		lenr   int              = len(readers)
 		iqBufs []sdr.SamplesC64 = make([]sdr.SamplesC64, lenr)
 
-		sampleRate uint32 = uint32(len(readers)) * readers[0].SampleRate()
+		sampleRate uint = uint(len(readers)) * readers[0].SampleRate()
 	)
 
 	for i := range iqBufs {

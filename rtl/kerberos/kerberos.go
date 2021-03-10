@@ -30,13 +30,13 @@ import (
 type Sdr [4]*rtl.Sdr
 
 // New will create a new Kerberos SDR
-func New(i1, i2, i3, i4 uint32, windowSize uint32) (*Sdr, error) {
+func New(i1, i2, i3, i4 uint, windowSize uint) (*Sdr, error) {
 	var (
 		err error
 		sdr = &Sdr{}
 	)
 	for i := range sdr {
-		sdr[i], err = rtl.New(uint32(i), 0)
+		sdr[i], err = rtl.New(uint(i), 0)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +86,7 @@ func (k Sdr) HardwareInfo() sdr.HardwareInfo {
 }
 
 // GetSampleRate implements the sdr.Sdr interface.
-func (k Sdr) GetSampleRate() (uint32, error) {
+func (k Sdr) GetSampleRate() (uint, error) {
 	return k[0].GetSampleRate()
 }
 
@@ -156,7 +156,7 @@ func (k Sdr) SetPPM(ppm int) error {
 }
 
 // SetSampleRate implements the sdr.Sdr interface.
-func (k Sdr) SetSampleRate(sps uint32) error {
+func (k Sdr) SetSampleRate(sps uint) error {
 	for _, s := range k {
 		if err := s.SetSampleRate(sps); err != nil {
 			return err

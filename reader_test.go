@@ -178,4 +178,17 @@ func TestTee(t *testing.T) {
 	wg.Wait()
 }
 
+func TestReaderWithCloser(t *testing.T) {
+	pipeReader, _ := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
+	closeCalled := false
+
+	rc := sdr.ReaderWithCloser(pipeReader, func() error {
+		closeCalled = true
+		return pipeReader.Close()
+	})
+	rc.Close()
+
+	assert.True(t, closeCalled)
+}
+
 // vim: foldmethod=marker

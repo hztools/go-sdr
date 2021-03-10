@@ -55,7 +55,7 @@ type FrequencySlice struct {
 
 	// SampleRate is the number of readings per second in the time domain
 	// used to generate the data input into the FFT.
-	SampleRate uint32
+	SampleRate uint
 
 	// Order is what order bins are in memory -- either ZeroFirst or
 	// NegativeFirst. More orders may be added in future, so a switch ought
@@ -67,7 +67,7 @@ type FrequencySlice struct {
 // NewFrequencySlice will create a new fft.FrequencySlice - which is a struct that represents
 // the results of a forward FFT in the frequency domain, *not* any time-domain
 // samples. Those should be of type sdr.SamplesC64.
-func NewFrequencySlice(frequency []complex64, sampleRate uint32, order Order) FrequencySlice {
+func NewFrequencySlice(frequency []complex64, sampleRate uint, order Order) FrequencySlice {
 	return FrequencySlice{
 		Frequency:  frequency,
 		SampleRate: sampleRate,
@@ -203,7 +203,7 @@ func (r FrequencySlice) BinByFreq(freq rf.Hz) (int, error) {
 
 // Shift will shift a FFT window from the native 0-index being 0 hz, to
 // 0hz being the center of the buffer.
-func Shift(frequency []complex64, sampleRate uint32) error {
+func Shift(frequency []complex64, sampleRate uint) error {
 	r := NewFrequencySlice(frequency, sampleRate, ZeroFirst)
 	_, err := r.Shift()
 	return err
@@ -211,26 +211,26 @@ func Shift(frequency []complex64, sampleRate uint32) error {
 
 // BinByFreq will return the bin index for the provided frequency for the
 // frequency buffer provided.
-func BinByFreq(frequency []complex64, sampleRate uint32, order Order, freq rf.Hz) (int, error) {
+func BinByFreq(frequency []complex64, sampleRate uint, order Order, freq rf.Hz) (int, error) {
 	r := NewFrequencySlice(frequency, sampleRate, order)
 	return r.BinByFreq(freq)
 }
 
 // FreqByBin will return the center of the bin represented by an offset.
-func FreqByBin(frequency []complex64, sampleRate uint32, order Order, bin int) (rf.Hz, error) {
+func FreqByBin(frequency []complex64, sampleRate uint, order Order, bin int) (rf.Hz, error) {
 	r := NewFrequencySlice(frequency, sampleRate, order)
 	return r.FreqByBin(bin)
 }
 
 // BinsByRange will return the bin index for the provided frequency for the
 // frequency buffer provided.
-func BinsByRange(frequency []complex64, sampleRate uint32, order Order, rng rf.Range) ([]int, error) {
+func BinsByRange(frequency []complex64, sampleRate uint, order Order, rng rf.Range) ([]int, error) {
 	r := NewFrequencySlice(frequency, sampleRate, order)
 	return r.BinsByRange(rng)
 }
 
 // BinBandwidth will return the bandwidth represented by a provided bin.
-func BinBandwidth(frequency []complex64, sampleRate uint32, order Order) rf.Hz {
+func BinBandwidth(frequency []complex64, sampleRate uint, order Order) rf.Hz {
 	r := NewFrequencySlice(frequency, sampleRate, order)
 	return r.BinBandwidth()
 }

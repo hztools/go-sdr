@@ -56,7 +56,7 @@ func (pr PipeReader) SampleFormat() SampleFormat {
 }
 
 // SampleRate implements the sdr.Reader interface.
-func (pr PipeReader) SampleRate() uint32 {
+func (pr PipeReader) SampleRate() uint {
 	return pr.pipe.SampleRate()
 }
 
@@ -86,7 +86,7 @@ func (pw PipeWriter) SampleFormat() SampleFormat {
 }
 
 // SampleRate implements the sdr.Writer interface.
-func (pw PipeWriter) SampleRate() uint32 {
+func (pw PipeWriter) SampleRate() uint {
 	return pw.pipe.SampleRate()
 }
 
@@ -101,7 +101,7 @@ type pipe struct {
 	samplesCh     chan Samples
 	readSamplesCh chan int
 
-	samplesPerSecond uint32
+	samplesPerSecond uint
 	format           SampleFormat
 
 	err error
@@ -166,7 +166,7 @@ func (pipe *pipe) Write(b Samples) (int, error) {
 }
 
 // SampleFormat implements the sdr.Reader / sdr.Writer interface.
-func (pipe *pipe) SampleRate() uint32 {
+func (pipe *pipe) SampleRate() uint {
 	return pipe.samplesPerSecond
 }
 
@@ -196,7 +196,7 @@ func (pipe *pipe) Close() error {
 // Pipe will create a new sdr.Reader and sdr.Writer that will allow writes
 // to pass through and show up to a reader. This allows "patching" a Write
 // endpoint into a "Read" endpoint.
-func Pipe(samplesPerSecond uint32, format SampleFormat) (PipeReader, PipeWriter) {
+func Pipe(samplesPerSecond uint, format SampleFormat) (PipeReader, PipeWriter) {
 	ctx := context.Background()
 	return PipeWithContext(ctx, samplesPerSecond, format)
 }
@@ -206,7 +206,7 @@ func Pipe(samplesPerSecond uint32, format SampleFormat) (PipeReader, PipeWriter)
 // control fo the lifecycle of the Pipe.
 func PipeWithContext(
 	ctx context.Context,
-	samplesPerSecond uint32,
+	samplesPerSecond uint,
 	format SampleFormat,
 ) (PipeReader, PipeWriter) {
 	ctx, cancel := context.WithCancel(ctx)

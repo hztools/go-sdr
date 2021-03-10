@@ -33,7 +33,7 @@ func (mr *multiplyReader) SampleFormat() sdr.SampleFormat {
 	return mr.r.SampleFormat()
 }
 
-func (mr *multiplyReader) SampleRate() uint32 {
+func (mr *multiplyReader) SampleRate() uint {
 	return mr.r.SampleRate()
 }
 

@@ -104,7 +104,7 @@ type ReadTransformerConfig struct {
 	// OutputSampleRate will define the sample rate of the output Reader.
 	// This won't always be the same rate as the input stream (such as
 	// in the case of Decimation).
-	OutputSampleRate uint32
+	OutputSampleRate uint
 
 	// Proc is the actual code to process each chunk of IQ data.
 	//

@@ -32,7 +32,7 @@ import (
 type byteWriterForeign struct {
 	w                io.Writer
 	byteOrder        binary.ByteOrder
-	samplesPerSecond uint32
+	samplesPerSecond uint
 	sampleFormat     SampleFormat
 }
 
@@ -68,7 +68,7 @@ func (bw byteWriterForeign) Write(samples Samples) (int, error) {
 	}
 }
 
-func (bw byteWriterForeign) SampleRate() uint32 {
+func (bw byteWriterForeign) SampleRate() uint {
 	return bw.samplesPerSecond
 }
 
@@ -78,7 +78,7 @@ func (bw byteWriterForeign) SampleFormat() SampleFormat {
 
 type byteWriterNative struct {
 	w                io.Writer
-	samplesPerSecond uint32
+	samplesPerSecond uint
 	sampleFormat     SampleFormat
 }
 
@@ -118,7 +118,7 @@ func (bw byteWriterNative) Write(samples Samples) (int, error) {
 	}
 }
 
-func (bw byteWriterNative) SampleRate() uint32 {
+func (bw byteWriterNative) SampleRate() uint {
 	return bw.samplesPerSecond
 }
 
@@ -131,7 +131,7 @@ func (bw byteWriterNative) SampleFormat() SampleFormat {
 func ByteWriter(
 	w io.Writer,
 	byteOrder binary.ByteOrder,
-	samplesPerSecond uint32,
+	samplesPerSecond uint,
 	sf SampleFormat,
 ) Writer {
 	if byteOrder == internal.NativeEndian {
@@ -153,7 +153,7 @@ func ByteWriter(
 type byteReaderForeign struct {
 	r                io.Reader
 	byteOrder        binary.ByteOrder
-	samplesPerSecond uint32
+	samplesPerSecond uint
 	sampleFormat     SampleFormat
 }
 
@@ -189,13 +189,13 @@ func (br byteReaderForeign) SampleFormat() SampleFormat {
 	return br.sampleFormat
 }
 
-func (br byteReaderForeign) SampleRate() uint32 {
+func (br byteReaderForeign) SampleRate() uint {
 	return br.samplesPerSecond
 }
 
 type byteReaderNative struct {
 	r                io.Reader
-	samplesPerSecond uint32
+	samplesPerSecond uint
 	sampleFormat     SampleFormat
 }
 
@@ -239,7 +239,7 @@ func (br byteReaderNative) SampleFormat() SampleFormat {
 	return br.sampleFormat
 }
 
-func (br byteReaderNative) SampleRate() uint32 {
+func (br byteReaderNative) SampleRate() uint {
 	return br.samplesPerSecond
 }
 
@@ -248,7 +248,7 @@ func (br byteReaderNative) SampleRate() uint32 {
 func ByteReader(
 	r io.Reader,
 	byteOrder binary.ByteOrder,
-	samplesPerSecond uint32,
+	samplesPerSecond uint,
 	sf SampleFormat,
 ) Reader {
 	if byteOrder == internal.NativeEndian {

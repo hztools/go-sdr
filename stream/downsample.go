@@ -45,13 +45,13 @@ import (
 // |     246 |       11718 |   12 |
 // +---------+-------------+------+
 //
-func DownsampleReader(in sdr.Reader, factor int) (sdr.Reader, error) {
+func DownsampleReader(in sdr.Reader, factor uint) (sdr.Reader, error) {
 	var offset = 0
 
 	return ReadTransformer(in, ReadTransformerConfig{
 		InputBufferLength:  32 * 1024,
 		OutputBufferLength: 32 * 1024,
-		OutputSampleRate:   in.SampleRate() / uint32(factor),
+		OutputSampleRate:   in.SampleRate() / factor,
 		OutputSampleFormat: sdr.SampleFormatC64,
 		Proc: func(inBuf sdr.Samples, outBuf sdr.Samples) (int, error) {
 			n, err := DownsampleBuffer(outBuf, inBuf, factor, offset)
@@ -63,15 +63,16 @@ func DownsampleReader(in sdr.Reader, factor int) (sdr.Reader, error) {
 
 // DownsampleBuffer will take an oversampled input buffer, and write the
 // downsampled output samples to the target buffer.
-func DownsampleBuffer(to, from sdr.Samples, factor, offset int) (int, error) {
+func DownsampleBuffer(to, from sdr.Samples, factor uint, offset int) (int, error) {
 	if to.Format() != sdr.SampleFormatC64 {
 		return 0, sdr.ErrSampleFormatMismatch
 	}
 
+	dFactor := int(factor)
 	toLength := to.Length()
 	fromLength := from.Length()
 
-	if toLength < fromLength/factor {
+	if toLength < fromLength/dFactor {
 		return 0, sdr.ErrDstTooSmall
 	}
 
@@ -91,11 +92,11 @@ func DownsampleBuffer(to, from sdr.Samples, factor, offset int) (int, error) {
 		out = to.(sdr.SamplesC64)
 	)
 
-	for i = 0; i < fromLength/factor; i++ {
+	for i = 0; i < fromLength/dFactor; i++ {
 		var (
-			start                  = i * factor
-			end                    = (i + 1) * factor
-			samples sdr.SamplesC64 = make(sdr.SamplesC64, factor)
+			start                  = i * dFactor
+			end                    = (i + 1) * dFactor
+			samples sdr.SamplesC64 = make(sdr.SamplesC64, dFactor)
 			sample  complex64
 		)
 
@@ -115,8 +116,8 @@ func DownsampleBuffer(to, from sdr.Samples, factor, offset int) (int, error) {
 		}
 
 		out[i] = complex64(complex(
-			real(sample)/float32(factor),
-			imag(sample)/float32(factor),
+			real(sample)/float32(dFactor),
+			imag(sample)/float32(dFactor),
 		))
 	}
 

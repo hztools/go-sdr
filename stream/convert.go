@@ -111,7 +111,7 @@ func (cw convWriter) SampleFormat() sdr.SampleFormat {
 	return cw.inputFormat
 }
 
-func (cw convWriter) SampleRate() uint32 {
+func (cw convWriter) SampleRate() uint {
 	return cw.out.SampleRate()
 }
 

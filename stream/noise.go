@@ -35,7 +35,7 @@ type NoiseConfig struct {
 	// SampleRate is a *required* param if any code will be consuming this
 	// reader. This will (unhelpfully!) default to 0, which is a massive
 	// consistancy issue. This value should be set to something sensible!
-	SampleRate uint32
+	SampleRate uint
 
 	// StandardDeviation will control how wide the Standard Deviation of values
 	// produced by this function is.
@@ -50,7 +50,7 @@ type NoiseConfig struct {
 }
 
 type noiseReader struct {
-	sampleRate uint32
+	sampleRate uint
 	rand       *rand.Rand
 	stdDev     float64
 }
@@ -59,7 +59,7 @@ func (nr *noiseReader) SampleFormat() sdr.SampleFormat {
 	return sdr.SampleFormatC64
 }
 
-func (nr *noiseReader) SampleRate() uint32 {
+func (nr *noiseReader) SampleRate() uint {
 	return nr.sampleRate
 }
 

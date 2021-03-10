@@ -1,5 +1,4 @@
 
- - Change SampleRate from uint32 to uint.
  - Remove `interface{}` from fft.Plan
  - SIMD
    - Unity Gain

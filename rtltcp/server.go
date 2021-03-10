@@ -90,7 +90,7 @@ func NewDefaultCommandHandler(defaultGainStageName, defaultIFGainStageName strin
 			return dev.SetCenterFrequency(rf.Hz(arg))
 		case CommandSetSampleRate:
 			log.Printf("Setting SampleRate to %d\n", arg)
-			return dev.SetSampleRate(arg)
+			return dev.SetSampleRate(uint(arg))
 		case CommandSetGainMode:
 			log.Printf("Setting Gain mode %d\n", arg)
 			return dev.SetAutomaticGain(arg == 0)

@@ -39,12 +39,12 @@ import (
 
 // DeviceCount will return the number of rtlsdr devices present on the
 // system.
-func DeviceCount() uint32 {
-	return uint32(C.rtlsdr_get_device_count())
+func DeviceCount() uint {
+	return uint(C.rtlsdr_get_device_count())
 }
 
 // DeviceIndexBySerial will get the device index that has the Serial provided.
-func DeviceIndexBySerial(serial string) (uint32, error) {
+func DeviceIndexBySerial(serial string) (uint, error) {
 	index := C.rtlsdr_get_index_by_serial(C.CString(serial))
 
 	// return -1 if name is NULL
@@ -60,7 +60,7 @@ func DeviceIndexBySerial(serial string) (uint32, error) {
 		return 0, fmt.Errorf("rtl: no device matching that serial found")
 	}
 
-	return uint32(index), nil
+	return uint(index), nil
 }
 
 // New will create a new Sdr struct, and initalize the internal
@@ -72,7 +72,7 @@ func DeviceIndexBySerial(serial string) (uint32, error) {
 // windowSize instructs the rtlsdr library as to how many iq samples to deliver
 //            per callback.
 //
-func New(index uint32, windowSize uint32) (*Sdr, error) {
+func New(index uint, windowSize uint) (*Sdr, error) {
 	if windowSize == 0 {
 		windowSize = 16 * 32 * 512
 	}
@@ -97,7 +97,7 @@ func New(index uint32, windowSize uint32) (*Sdr, error) {
 // library.
 type Sdr struct {
 	handle     *C.rtlsdr_dev_t
-	windowSize uint32
+	windowSize uint
 
 	ifStages     *e4k.Stages
 	hardwareInfo sdr.HardwareInfo
@@ -126,7 +126,7 @@ func (i info) HardwareInfo() sdr.HardwareInfo {
 }
 
 // InfoByDeviceIndex will return a HardwareInfo struct by a device index.
-func InfoByDeviceIndex(index uint32) (*sdr.HardwareInfo, error) {
+func InfoByDeviceIndex(index uint) (*sdr.HardwareInfo, error) {
 	var cMfgr *C.char = (*C.char)(C.malloc(255))
 	defer C.free(unsafe.Pointer(cMfgr))
 
@@ -202,18 +202,18 @@ func (r Sdr) GetCenterFrequency() (rf.Hz, error) {
 
 // SetSampleRate will set the number of samples per second. This will not
 // change the window size.
-func (r Sdr) SetSampleRate(sps uint32) error {
+func (r Sdr) SetSampleRate(sps uint) error {
 	return rvToErr(C.rtlsdr_set_sample_rate(r.handle, C.uint32_t(sps)))
 }
 
 // GetSampleRate will get the number of samples per second.
-func (r Sdr) GetSampleRate() (uint32, error) {
-	return uint32(C.rtlsdr_get_sample_rate(r.handle)), nil
+func (r Sdr) GetSampleRate() (uint, error) {
+	return uint(C.rtlsdr_get_sample_rate(r.handle)), nil
 }
 
 // GetSamplesPerWindow will return the number of samples contained in one
 // windows-worth of iq data.
-func (r Sdr) GetSamplesPerWindow() (uint32, error) {
+func (r Sdr) GetSamplesPerWindow() (uint, error) {
 	return r.windowSize / 2, nil
 }
 

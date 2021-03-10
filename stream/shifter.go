@@ -39,7 +39,7 @@ func (sr *shiftReader) SampleFormat() sdr.SampleFormat {
 	return sr.r.SampleFormat()
 }
 
-func (sr *shiftReader) SampleRate() uint32 {
+func (sr *shiftReader) SampleRate() uint {
 	return sr.r.SampleRate()
 }
 
