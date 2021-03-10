@@ -111,14 +111,14 @@ func testBackwardFFT(t *testing.T, planner fft.Planner) {
 
 		freq[bin] = 1 + 1i
 
-		plan, err := planner(iq, freq, fft.Backward, nil)
+		plan, err := planner(iq, freq, fft.Backward)
 		assert.NoError(t, err)
 		assert.NoError(t, plan.Transform())
 		assert.NoError(t, plan.Close())
 
 		freq[bin] = 0 + 0i
 
-		plan, err = planner(iq, freq, fft.Forward, nil)
+		plan, err = planner(iq, freq, fft.Forward)
 		assert.NoError(t, err)
 		assert.NoError(t, plan.Transform())
 		assert.NoError(t, plan.Close())
@@ -143,12 +143,12 @@ func testBackwardFFT(t *testing.T, planner fft.Planner) {
 func testMismatchDstFFT(t *testing.T, planner fft.Planner) {
 	iq := make(sdr.SamplesC64, 1024)
 	freq := make([]complex64, 128)
-	_, err := planner(iq, freq, fft.Forward, nil)
+	_, err := planner(iq, freq, fft.Forward)
 	assert.Equal(t, sdr.ErrDstTooSmall, err)
 
 	iq = make(sdr.SamplesC64, 128)
 	freq = make([]complex64, 1024)
-	_, err = planner(iq, freq, fft.Backward, nil)
+	_, err = planner(iq, freq, fft.Backward)
 	assert.Equal(t, sdr.ErrDstTooSmall, err)
 
 }
