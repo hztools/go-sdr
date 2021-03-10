@@ -70,14 +70,14 @@ func (gr *graftReader) do() error {
 		start := gr.fftSize * i
 		end := (gr.fftSize * (i + 1))
 		freqBufI := freqBuf[start:end]
-		plan, err := gr.planner(gr.iqBufs[i], freqBufI, fft.Forward, nil)
+		plan, err := gr.planner(gr.iqBufs[i], freqBufI, fft.Forward)
 		if err != nil {
 			return err
 		}
 		fftPlans[i] = plan
 	}
 
-	fftOutPlan, err := gr.planner(outBuf, freqBuf, fft.Backward, nil)
+	fftOutPlan, err := gr.planner(outBuf, freqBuf, fft.Backward)
 	if err != nil {
 		return err
 	}

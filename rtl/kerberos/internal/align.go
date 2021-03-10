@@ -84,15 +84,15 @@ func NewCrossCorrelater(planner fft.Planner, fftLength int) (*CrossCorrelater, e
 
 	var err error
 
-	cc.fftPlan1, err = planner(cc.bufIn1, cc.bufIn1Freq, fft.Forward, nil)
+	cc.fftPlan1, err = planner(cc.bufIn1, cc.bufIn1Freq, fft.Forward)
 	if err != nil {
 		return nil, err
 	}
-	cc.fftPlan2, err = planner(cc.bufIn1, cc.bufIn1Freq, fft.Forward, nil)
+	cc.fftPlan2, err = planner(cc.bufIn1, cc.bufIn1Freq, fft.Forward)
 	if err != nil {
 		return nil, err
 	}
-	cc.fftPlanOut, err = planner(cc.bufIn1, cc.bufIn1Freq, fft.Backward, nil)
+	cc.fftPlanOut, err = planner(cc.bufIn1, cc.bufIn1Freq, fft.Backward)
 	if err != nil {
 		return nil, err
 	}

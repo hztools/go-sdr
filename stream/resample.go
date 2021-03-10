@@ -83,12 +83,12 @@ func ResampleReader(
 		outIq   = make(sdr.SamplesC64, outputSampleRate)
 	)
 
-	forward, err := planner(inIq, inFreq, fft.Forward, nil)
+	forward, err := planner(inIq, inFreq, fft.Forward)
 	if err != nil {
 		return nil, err
 	}
 
-	backward, err := planner(outIq, outFreq, fft.Backward, nil)
+	backward, err := planner(outIq, outFreq, fft.Backward)
 	if err != nil {
 		return nil, err
 	}
