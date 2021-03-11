@@ -22,6 +22,7 @@ package sdr_test
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"sync"
 
@@ -30,7 +31,38 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/testutils"
 )
+
+func TestBytesIOLEStd(t *testing.T) {
+	ioReader, ioWriter := io.Pipe()
+
+	for n, sf := range map[string]sdr.SampleFormat{
+		"C64": sdr.SampleFormatC64,
+		"U8":  sdr.SampleFormatU8,
+		"I16": sdr.SampleFormatI16,
+	} {
+		pipeReader := sdr.ByteReader(ioReader, binary.LittleEndian, 0, sf)
+		pipeWriter := sdr.ByteWriter(ioWriter, binary.LittleEndian, 0, sf)
+		testutils.TestReader(t, fmt.Sprintf("Read-BytesIO-LE-%s", n), pipeReader)
+		testutils.TestWriter(t, fmt.Sprintf("Write-BytesIO-LE-%s", n), pipeWriter)
+	}
+}
+
+func TestBytesIOBEStd(t *testing.T) {
+	ioReader, ioWriter := io.Pipe()
+
+	for n, sf := range map[string]sdr.SampleFormat{
+		"C64": sdr.SampleFormatC64,
+		"U8":  sdr.SampleFormatU8,
+		"I16": sdr.SampleFormatI16,
+	} {
+		pipeReader := sdr.ByteReader(ioReader, binary.BigEndian, 0, sf)
+		pipeWriter := sdr.ByteWriter(ioWriter, binary.BigEndian, 0, sf)
+		testutils.TestReader(t, fmt.Sprintf("Read-BytesIO-BE-%s", n), pipeReader)
+		testutils.TestWriter(t, fmt.Sprintf("Write-BytesIO-BE-%s", n), pipeWriter)
+	}
+}
 
 func TestBytesIOLE(t *testing.T) {
 	ioReader, ioWriter := io.Pipe()

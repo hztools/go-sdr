@@ -22,7 +22,6 @@ package sdr
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"unsafe"
 
@@ -38,11 +37,7 @@ type byteWriterForeign struct {
 
 func (bw byteWriterForeign) Write(samples Samples) (int, error) {
 	if samples.Format() != bw.sampleFormat {
-		return 0, fmt.Errorf(
-			"sdr: ByteWriter.Write: incoming data doesn't match configured format (in:%s vs header:%s)",
-			samples.Format().String(),
-			bw.sampleFormat.String(),
-		)
+		return 0, ErrSampleFormatMismatch
 	}
 
 	switch buf := samples.(type) {
@@ -84,11 +79,7 @@ type byteWriterNative struct {
 
 func (bw byteWriterNative) Write(samples Samples) (int, error) {
 	if samples.Format() != bw.sampleFormat {
-		return 0, fmt.Errorf(
-			"sdr: ByteWriter.Write: incoming data doesn't match configured format (in:%s vs header:%s)",
-			samples.Format().String(),
-			bw.sampleFormat.String(),
-		)
+		return 0, ErrSampleFormatMismatch
 	}
 
 	switch buf := samples.(type) {
@@ -159,11 +150,7 @@ type byteReaderForeign struct {
 
 func (br byteReaderForeign) Read(samples Samples) (int, error) {
 	if samples.Format() != br.sampleFormat {
-		return 0, fmt.Errorf(
-			"sdr: ByteReader.Read: incoming data doesn't match configured format (in:%s vs header:%s)",
-			samples.Format().String(),
-			br.sampleFormat.String(),
-		)
+		return 0, ErrSampleFormatMismatch
 	}
 
 	switch buf := samples.(type) {
@@ -201,11 +188,7 @@ type byteReaderNative struct {
 
 func (br byteReaderNative) Read(samples Samples) (int, error) {
 	if samples.Format() != br.sampleFormat {
-		return 0, fmt.Errorf(
-			"sdr: ByteReader.Read: incoming data doesn't match configured format (in:%s vs header:%s)",
-			samples.Format().String(),
-			br.sampleFormat.String(),
-		)
+		return 0, ErrSampleFormatMismatch
 	}
 
 	switch buf := samples.(type) {

@@ -22,6 +22,7 @@ package sdr_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -31,7 +32,20 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/testutils"
 )
+
+func TestPipeStd(t *testing.T) {
+	for n, sf := range map[string]sdr.SampleFormat{
+		"C64": sdr.SampleFormatC64,
+		"U8":  sdr.SampleFormatU8,
+		"I16": sdr.SampleFormatI16,
+	} {
+		pipeReader, pipeWriter := sdr.Pipe(0, sf)
+		testutils.TestReader(t, fmt.Sprintf("Read-Pipe-%s", n), pipeReader)
+		testutils.TestWriter(t, fmt.Sprintf("Write-Pipe-%s", n), pipeWriter)
+	}
+}
 
 func TestPipe(t *testing.T) {
 	pipeReader, pipeWriter := sdr.Pipe(0, sdr.SampleFormatC64)
@@ -155,13 +169,24 @@ func TestPipeExternalCancel(t *testing.T) {
 	assert.Equal(t, sdr.ErrPipeClosed, err)
 }
 
-func TestPipeCustomError(t *testing.T) {
+func TestPipeReadCustomError(t *testing.T) {
 	ctx := context.Background()
 	pipeReader, _ := sdr.PipeWithContext(ctx, 0, sdr.SampleFormatU8)
 	pipeReader.CloseWithError(io.EOF)
 
 	buf := make(sdr.SamplesU8, 1024)
 	i, err := pipeReader.Read(buf)
+	assert.Equal(t, 0, i)
+	assert.Equal(t, io.EOF, err)
+}
+
+func TestPipeWriteCustomError(t *testing.T) {
+	ctx := context.Background()
+	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, 0, sdr.SampleFormatU8)
+	pipeReader.CloseWithError(io.EOF)
+
+	buf := make(sdr.SamplesU8, 1024)
+	i, err := pipeWriter.Write(buf)
 	assert.Equal(t, 0, i)
 	assert.Equal(t, io.EOF, err)
 }
