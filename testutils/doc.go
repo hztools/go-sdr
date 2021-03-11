@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// Package fftest contains some helper for testing fft planners. This can
-// be imported by FFT implementations to ensure that the FFT code works
-// as expected.
-package fftest
+// Package testutils contains some helpers for testing SDR code and other
+// implementations. This can be imported by implementations to ensure that
+// the standard interfaces work as expected.
+package testutils
 
 // vim: foldmethod=marker

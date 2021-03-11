@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package fftest
+package testutils
 
 import (
 	"math"
@@ -53,7 +53,7 @@ type testFrequencies struct {
 }
 
 // Run will run the standard FFT tests against the provided Planner.
-func Run(t *testing.T, planner fft.Planner) {
+func TestFFT(t *testing.T, planner fft.Planner) {
 	t.Run("ForwardFFT", func(t *testing.T) {
 		testForwardFFT(t, planner)
 	})
