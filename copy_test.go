@@ -56,6 +56,37 @@ func TestCopySamplesC64(t *testing.T) {
 	assert.Equal(t, complex64(10+20i), dst[1])
 }
 
+func TestCopySamplesMismatch(t *testing.T) {
+	src := make(sdr.SamplesC64, 10)
+	dst := make(sdr.SamplesU8, 10)
+
+	_, err := sdr.CopySamples(dst, src)
+	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
+}
+
+func TestCopyMismatch(t *testing.T) {
+	pipeReader1, _ := sdr.Pipe(0, sdr.SampleFormatU8)
+	_, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatC64)
+
+	_, err := sdr.Copy(pipeWriter2, pipeReader1)
+	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
+}
+
+func TestCopyBufferMismatch(t *testing.T) {
+	pipeReader1, _ := sdr.Pipe(0, sdr.SampleFormatC64)
+	_, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatC64)
+
+	buf, err := sdr.MakeSamples(sdr.SampleFormatU8, 128)
+	assert.NoError(t, err)
+
+	_, err = sdr.CopyBuffer(pipeWriter2, pipeReader1, buf)
+	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
+
+	pipeReader1, _ = sdr.Pipe(0, sdr.SampleFormatU8)
+	_, err = sdr.CopyBuffer(pipeWriter2, pipeReader1, buf)
+	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
+}
+
 func TestCopyU8(t *testing.T) {
 	pipeReader1, pipeWriter1 := sdr.Pipe(0, sdr.SampleFormatU8)
 	pipeReader2, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatU8)
@@ -74,6 +105,39 @@ func TestCopyU8(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		i, err := sdr.Copy(pipeWriter2, pipeReader1)
+		assert.Equal(t, int64(1024), i)
+		assert.Equal(t, sdr.ErrPipeClosed, err)
+	}()
+	wg.Add(1)
+
+	buf := make(sdr.SamplesU8, 1024)
+	sdr.ReadFull(pipeReader2, buf)
+	assert.Equal(t, uint8(0x24), buf[10][0])
+
+	wg.Wait()
+}
+
+func TestCopyBufferU8(t *testing.T) {
+	pipeReader1, pipeWriter1 := sdr.Pipe(0, sdr.SampleFormatU8)
+	pipeReader2, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatU8)
+
+	wg := sync.WaitGroup{}
+	go func() {
+		defer wg.Done()
+		buf := make(sdr.SamplesU8, 1024)
+		buf[10][0] = 0x24
+		_, err := pipeWriter1.Write(buf)
+		assert.NoError(t, err)
+		assert.NoError(t, pipeWriter1.Close())
+	}()
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		buf, err := sdr.MakeSamples(sdr.SampleFormatU8, 128)
+		assert.NoError(t, err)
+
+		i, err := sdr.CopyBuffer(pipeWriter2, pipeReader1, buf)
 		assert.Equal(t, int64(1024), i)
 		assert.Equal(t, sdr.ErrPipeClosed, err)
 	}()
