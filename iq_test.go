@@ -56,6 +56,14 @@ func TestSamplesSize(t *testing.T) {
 	assert.Equal(t, 2, sdr.SampleFormatU8.Size())
 	assert.Equal(t, 4, sdr.SampleFormatI16.Size())
 	assert.Equal(t, 8, sdr.SampleFormatC64.Size())
+	assert.Equal(t, 0, sdr.SampleFormat(100).Size())
+}
+
+func TestSamplesString(t *testing.T) {
+	assert.Equal(t, "interleaved uint8", sdr.SampleFormatU8.String())
+	assert.Equal(t, "interleaved int16", sdr.SampleFormatI16.String())
+	assert.Equal(t, "complex64", sdr.SampleFormatC64.String())
+	assert.Equal(t, "unknown", sdr.SampleFormat(100).String())
 }
 
 // vim: foldmethod=marker
