@@ -27,6 +27,14 @@ import (
 	"hz.tools/sdr"
 )
 
+// New will create a new mock sdr.
+func New(cfg Config) sdr.Transceiver {
+	return &mockSdr{
+		config:    &cfg,
+		gainState: make(map[string]float32),
+	}
+}
+
 type mockSdr struct {
 	config    *Config
 	gainState map[string]float32
@@ -56,14 +64,6 @@ type Config struct {
 	// GainStages if not nil, will be used as the gain stages supported by the
 	// MockSDR. If nil, No gain stages will be returned or settable.
 	GainStages sdr.GainStages
-}
-
-// New will create a new mock sdr.
-func New(cfg Config) sdr.Transceiver {
-	return &mockSdr{
-		config:    &cfg,
-		gainState: make(map[string]float32),
-	}
 }
 
 func (m *mockSdr) HardwareInfo() sdr.HardwareInfo {
