@@ -116,25 +116,25 @@ type Transmitter interface {
 	// stream iq samples written to the underlying hardware to be sent over
 	// the air.
 	//
-	// It's absolutely imperitive that the producing code feed iq samples into
+	// It's absolutely imperative that the producing code feed iq samples into
 	// the transmitter at the specified rate, or bad things may happen and
 	// cause wildly unpredictable things.
 	StartTx() (WriteCloser, error)
 }
 
 // Receiver is an "extension" of the SDR Interface, it contains all the
-// common control methods, plus additional bits to recieve iq data from
+// common control methods, plus additional bits to receive iq data from
 // the airwaves.
 //
 // This can either be used as part of a function signature if your code really
-// only needs to recieve, or as part of a type-cast to determine if the SDR
-// is capable of recieving.
+// only needs to receive, or as part of a type-cast to determine if the SDR
+// is capable of receiving.
 type Receiver interface {
 	Sdr
 
 	// StartRx will listen on the configured frequency and start to stream iq
 	/// samples to be read out of the provided Reader. It's absolutely
-	// imperitive that the consuming code will actively consume from the
+	// imperative that the consuming code will actively consume from the
 	// Reader, or backlogged samples can result in dropped samples or other
 	// error conditions. Those error conditions are not defined at this time,
 	// but may break in wildly unpredictable ways, since the time sensitive
@@ -143,12 +143,12 @@ type Receiver interface {
 }
 
 // Transceiver is an "extension" of the SDR Interface, it contains all the
-// common control methods, plus additional bits to both transmit and recieve
+// common control methods, plus additional bits to both transmit and receive
 // iq data.
 //
 // This can either be used as part of a function signature if your code really
-// only needs to both recieve and transmit, or as part of a type-cast to
-// determine if the SDR is capable of both recieving and transmitting.
+// only needs to both receive and transmit, or as part of a type-cast to
+// determine if the SDR is capable of both receiving and transmitting.
 type Transceiver interface {
 	Sdr
 	Receiver

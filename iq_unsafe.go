@@ -29,7 +29,7 @@ import (
 //
 // Use of the function should be *seriously* discouraged and not used to every
 // extent possible. This is only to be used at carefully controlled boundaries
-// where safe high-level primatives can't be used for a serious technical
+// where safe high-level primitives can't be used for a serious technical
 // purpose.
 func UnsafeSamplesAsBytes(buf Samples) ([]byte, error) {
 	var base uintptr

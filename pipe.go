@@ -143,7 +143,7 @@ func (pipe *pipe) Write(b Samples) (int, error) {
 		return 0, err
 	}
 
-	// TODO(paultag): Thread saftey.
+	// TODO(paultag): Thread safety.
 
 	if b.Format() != pipe.format {
 		return 0, ErrSampleFormatMismatch

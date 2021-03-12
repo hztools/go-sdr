@@ -36,7 +36,7 @@ type readTransformer struct {
 	config ReadTransformerConfig
 }
 
-// ReadTransformer will wrap an sdr.Pipe and run the provided Processer over
+// ReadTransformer will wrap an sdr.Pipe and run the provided Processor over
 // each chunk as available.
 //
 // This code will spawn a single Goroutine for each invocation who's lifetime

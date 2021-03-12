@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// Package sdr contains go fundemental types and helpers to allow for
+// Package sdr contains go fundamental types and helpers to allow for
 // reading from and writing to software defined radios.
 //
 // The interfaces and functions exposed here are designed to mirror and behave
@@ -30,7 +30,7 @@
 // Since conversion between IQ formats is very expensive, this package operates
 // on a generic "sdr.Samples" type, which is a vector of IQ samples, in some
 // format. Reading and writing time sensitive IQ data should usually be kept
-// in its native format, and allow for a non-real-time conversion on a seperate
+// in its native format, and allow for a non-real-time conversion on a separate
 // thread to take place.
 //
 // Most code designed to create and consume IQ data likely wants data

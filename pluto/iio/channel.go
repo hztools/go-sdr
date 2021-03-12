@@ -141,7 +141,7 @@ func (c Channel) WriteString(name, value string) error {
 // ChannelDirection is the direction of the channel, either able to "read"
 // or "write" to and from the channel. This is slightly different than the
 // underlying iio library, since this is called "output", but the quirk here
-// is that in an RF capacity, the "output" channel is used to read / recieve
+// is that in an RF capacity, the "output" channel is used to read / receive
 // data, not send it.
 type ChannelDirection bool
 

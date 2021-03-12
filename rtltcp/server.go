@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	// ErrSDRNotFound will be returned if no SDR can be aquired.
+	// ErrSDRNotFound will be returned if no SDR can be acquired.
 	ErrSDRNotFound error = fmt.Errorf("rtltcp: SDR Not Found")
 )
 
@@ -131,7 +131,7 @@ func NewDefaultCommandHandler(defaultGainStageName, defaultIFGainStageName strin
 	}
 }
 
-// Tunerable is an interface that allows the Sdr to specifiy what kind of
+// Tunerable is an interface that allows the Sdr to specify what kind of
 // RTL-SDR Tuner is being used.
 type Tunerable interface {
 	Tuner() rtl.Tuner

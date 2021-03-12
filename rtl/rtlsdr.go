@@ -63,7 +63,7 @@ func DeviceIndexBySerial(serial string) (uint, error) {
 	return uint(index), nil
 }
 
-// New will create a new Sdr struct, and initalize the internal
+// New will create a new Sdr struct, and initialize the internal
 // handles as required.
 //
 // index      corresponds to the index into the number of devices (as seen by
@@ -247,7 +247,7 @@ func (r Sdr) SetTestMode(on bool) error {
 
 // SetBiasT will enable or disable the bias tee.
 func (r Sdr) SetBiasT(on bool) error {
-	// TODO(paultag): check if return value is -1, which is uninitalized
+	// TODO(paultag): check if return value is -1, which is uninitialized
 	if on {
 		C.rtlsdr_set_bias_tee(r.handle, 1)
 		return nil
@@ -258,7 +258,7 @@ func (r Sdr) SetBiasT(on bool) error {
 
 // SetBiasTGPIO will enable or disable the bias tee.
 func (r Sdr) SetBiasTGPIO(pin int, on bool) error {
-	// TODO(paultag): check if return value is -1, which is uninitalized
+	// TODO(paultag): check if return value is -1, which is uninitialized
 
 	if on {
 		C.rtlsdr_set_bias_tee_gpio(r.handle, C.int(pin), 1)

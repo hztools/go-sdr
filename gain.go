@@ -90,7 +90,7 @@ const (
 	// the radio Frontend
 	GainStageTypeAmp GainStageType = 0x0008
 
-	// GainStageTypeRecieve represents a GainStage on the recieve path.
+	// GainStageTypeRecieve represents a GainStage on the receive path.
 	GainStageTypeRecieve GainStageType = 0x0100
 
 	// GainStageTypeTransmit represents a GainStage on the transmit path.

@@ -29,7 +29,7 @@ import (
 // of interleaved int16 integers. The values range from +32767 to -32768.
 // 0 remains, well 0.
 //
-// There are a few hazards for people working with this type at an IO boundry
+// There are a few hazards for people working with this type at an IO boundary
 // with an SDR (if you're consuming this data, you don't really have to care
 // much - it's a number! numbers are great! Enjoy!).
 //
@@ -42,7 +42,7 @@ import (
 // at you, PlutoSDR) expect their samples to be in both formats depending on
 // direction.
 //
-// If you are at the IO boundry with an SDR the correct format for this type is
+// If you are at the IO boundary with an SDR the correct format for this type is
 // MSB aligned data. As soon as you convert the byte stream into this type, be
 // sure it's immediately MSB aligned. If your SDR is giving you LSB algined data,
 // you may need to call ShiftLSBToMSBBits with the number of bits your data is
@@ -91,7 +91,7 @@ func (s SamplesI16) Slice(start, end int) Samples {
 // However, if the data is LSB aligned, this is a major shitshow, since the
 // max is no longer 2**16, the max is 2**12 or 2**14. Rather than make
 // multiple sdr.Sample types for each ADC bit count, the SDR code should
-// call ShiftLSBToMSBBits at the boundry to shift the data from LSB to MSB
+// call ShiftLSBToMSBBits at the boundary to shift the data from LSB to MSB
 // algined to get full-range values.
 //
 // The value `bits` is the number of bits the ADC sends. This will result in

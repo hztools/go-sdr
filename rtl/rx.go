@@ -80,7 +80,7 @@ func (rx rx) Close() error {
 	return rx.ReadCloser.Close()
 }
 
-// StartRx will start to recieve IQ samples, ready for consumption from the
+// StartRx will start to receive IQ samples, ready for consumption from the
 // returned ReadCloser.
 func (r Sdr) StartRx() (sdr.ReadCloser, error) {
 	sps, err := r.GetSampleRate()

@@ -1,6 +1,6 @@
 # hz.tools/sdr
 
-Package sdr contains go fundemental types and helpers to allow for
+Package sdr contains go fundamental types and helpers to allow for
 reading from and writing to software defined radios.
 
 The interfaces and functions exposed here are designed to mirror and behave

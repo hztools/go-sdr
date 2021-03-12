@@ -66,7 +66,7 @@ func bool2uint32(yn bool) uint32 {
 // Dial will open a connection to the underlying network connection, and
 // create a new rtltcp.Client on top of that connection.
 //
-// Unlike a regular Sdr, the recieve side starts as soon as the connection
+// Unlike a regular Sdr, the receive side starts as soon as the connection
 // is opened, and if the `StartRx` method is not called and consumed as soon
 // as opening the connection, it may lead to a backlog of sample windows, and
 // the connection may get broken.
