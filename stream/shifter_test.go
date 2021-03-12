@@ -18,57 +18,57 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package stream
+package stream_test
 
 import (
+	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/stream"
+	"hz.tools/sdr/testutils"
 )
 
-type multiplyReader struct {
-	m complex64
-	r sdr.Reader
-}
+func TestShifter(t *testing.T) {
+	cw := make(sdr.SamplesC64, 1024*60)
+	testutils.CW(cw, rf.Hz(1), 1.8e6, 0)
 
-func (mr *multiplyReader) SampleFormat() sdr.SampleFormat {
-	return mr.r.SampleFormat()
-}
+	pipeReader, pipeWriter := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
 
-func (mr *multiplyReader) SampleRate() uint {
-	return mr.r.SampleRate()
-}
+	shiftHigh, err := stream.ShiftReader(pipeReader, rf.KHz)
+	assert.NoError(t, err)
 
-func (mr *multiplyReader) Read(s sdr.Samples) (int, error) {
-	switch s.Format() {
-	case sdr.SampleFormatC64:
-		break
-	default:
-		return 0, sdr.ErrSampleFormatMismatch
+	// TODO(paultag): Check that it actually, well, shifted to 1 KHz, but
+	// that requires an external dependency to a specific fft backend, or
+	// something like goertzel, which I'm not ready to do from hz.tools/sdr
+
+	shiftLow, err := stream.ShiftReader(shiftHigh, -rf.KHz)
+	assert.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter.Write(cw)
+		assert.NoError(t, err)
+	}()
+
+	buf := make(sdr.SamplesC64, 1024*60)
+	_, err = sdr.ReadFull(shiftLow, buf)
+	assert.NoError(t, err)
+
+	var epsilon float64 = 0.0001
+
+	for i := range cw {
+		assert.InEpsilon(t, 1+real(cw[i]), 1+real(buf[i]), epsilon)
+		assert.InEpsilon(t, 1+imag(cw[i]), 1+imag(buf[i]), epsilon)
 	}
 
-	i, err := mr.r.Read(s)
-	if err != nil {
-		return i, err
-	}
-
-	// TODO(paultag): Fix this to be safe when the above format checks
-	// grow.
-	sC64 := s.Slice(0, i).(sdr.SamplesC64)
-	sC64.Multiply(mr.m)
-
-	return i, nil
-}
-
-// Multiply will multiply each iq sample by the value m. This will 'rotate'
-// each sample by the defined amount.
-func Multiply(r sdr.Reader, m complex64) (sdr.Reader, error) {
-	switch r.SampleFormat() {
-	case sdr.SampleFormatC64:
-		break
-	default:
-		return nil, sdr.ErrSampleFormatUnknown
-	}
-
-	return &multiplyReader{r: r, m: m}, nil
+	wg.Wait()
 }
 
 // vim: foldmethod=marker

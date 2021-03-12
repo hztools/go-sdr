@@ -18,57 +18,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package stream
+package testutils
 
 import (
+	"math"
+
+	"hz.tools/rf"
 	"hz.tools/sdr"
 )
 
-type multiplyReader struct {
-	m complex64
-	r sdr.Reader
-}
+func CW(buf sdr.SamplesC64, freq rf.Hz, sampleRate int, phase float64) {
+	var (
+		carrierFreq float64 = float64(freq)
+		tau                 = math.Pi * 2
+	)
 
-func (mr *multiplyReader) SampleFormat() sdr.SampleFormat {
-	return mr.r.SampleFormat()
-}
-
-func (mr *multiplyReader) SampleRate() uint {
-	return mr.r.SampleRate()
-}
-
-func (mr *multiplyReader) Read(s sdr.Samples) (int, error) {
-	switch s.Format() {
-	case sdr.SampleFormatC64:
-		break
-	default:
-		return 0, sdr.ErrSampleFormatMismatch
+	for i := range buf {
+		now := float64(i) / float64(sampleRate)
+		buf[i] = complex64(complex(
+			math.Cos(tau*carrierFreq*now+phase),
+			math.Sin(tau*carrierFreq*now+phase),
+		))
 	}
-
-	i, err := mr.r.Read(s)
-	if err != nil {
-		return i, err
-	}
-
-	// TODO(paultag): Fix this to be safe when the above format checks
-	// grow.
-	sC64 := s.Slice(0, i).(sdr.SamplesC64)
-	sC64.Multiply(mr.m)
-
-	return i, nil
-}
-
-// Multiply will multiply each iq sample by the value m. This will 'rotate'
-// each sample by the defined amount.
-func Multiply(r sdr.Reader, m complex64) (sdr.Reader, error) {
-	switch r.SampleFormat() {
-	case sdr.SampleFormatC64:
-		break
-	default:
-		return nil, sdr.ErrSampleFormatUnknown
-	}
-
-	return &multiplyReader{r: r, m: m}, nil
 }
 
 // vim: foldmethod=marker

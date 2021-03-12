@@ -27,32 +27,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"hz.tools/rf"
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
+	"hz.tools/sdr/testutils"
 )
-
-var Tau = math.Pi * 2
-
-func generateCw(buf sdr.SamplesC64, sampleRate int, phase float64) {
-	var (
-		carrierFreq float64 = 10
-	)
-
-	for i := range buf {
-		now := float64(i) / float64(sampleRate)
-		buf[i] = complex64(complex(
-			math.Cos(Tau*carrierFreq*now+phase),
-			math.Sin(Tau*carrierFreq*now+phase),
-		))
-	}
-}
 
 func TestRotate(t *testing.T) {
 	cwPhase0 := make(sdr.SamplesC64, 1024*60)
 	cwPhase90 := make(sdr.SamplesC64, 1024*60)
 
-	generateCw(cwPhase0, 1.8e6, 0)
-	generateCw(cwPhase90, 1.8e6, math.Pi/2)
+	testutils.CW(cwPhase0, rf.Hz(10), 1.8e6, 0)
+	testutils.CW(cwPhase90, rf.Hz(10), 1.8e6, math.Pi/2)
 
 	pipeReader, pipeWriter := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
 
@@ -80,6 +66,15 @@ func TestRotate(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestRotateStd(t *testing.T) {
+	pipeReader, pipeWriter := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
+	rotateReader, err := stream.Multiply(pipeReader, 0-1i)
+	assert.NoError(t, err)
+
+	testutils.TestReader(t, "Read-Rotate", rotateReader)
+	testutils.TestReadWriteSamples(t, "ReadWrite-Rotate", rotateReader, pipeWriter)
 }
 
 // vim: foldmethod=marker

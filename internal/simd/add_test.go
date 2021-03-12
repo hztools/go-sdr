@@ -121,4 +121,12 @@ func BenchmarkAddComplex(b *testing.B) {
 	}
 }
 
+func TestAddComplexMismatch(t *testing.T) {
+	a := make(sdr.SamplesC64, 5)
+	b := make(sdr.SamplesC64, 3)
+	c := make(sdr.SamplesC64, 5)
+
+	assert.Error(t, simd.AddComplex(a, b, c))
+}
+
 // vim: foldmethod=marker

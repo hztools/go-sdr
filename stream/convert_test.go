@@ -29,7 +29,24 @@ import (
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
+	"hz.tools/sdr/testutils"
 )
+
+func TestConvertReaderAPI(t *testing.T) {
+	pipeReader, pipeWriter := sdr.Pipe(0, sdr.SampleFormatU8)
+	c64pipeReader, err := stream.ConvertReader(pipeReader, sdr.SampleFormatC64)
+	assert.NoError(t, err)
+	testutils.TestReader(t, "ConvertReader-U8-C64", c64pipeReader)
+	testutils.TestReadWriteSamples(t, "ConvertReader-ReadWrite-U8-C64", c64pipeReader, pipeWriter)
+}
+
+func TestConvertWriterAPI(t *testing.T) {
+	_, pipeWriter := sdr.Pipe(0, sdr.SampleFormatU8)
+
+	c64writer, err := stream.ConvertWriter(pipeWriter, sdr.SampleFormatC64)
+	assert.NoError(t, err)
+	testutils.TestWriter(t, "ConvertWriter-U8-C64", c64writer)
+}
 
 func TestConvertReaderBufferU8C64(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer

@@ -29,7 +29,25 @@ import (
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
+	"hz.tools/sdr/testutils"
 )
+
+func TestGainReaderAPI(t *testing.T) {
+	pipeReader, pipeWriter := sdr.Pipe(1024, sdr.SampleFormatC64)
+	gainReader := stream.Gain(pipeReader, 0.5)
+	testutils.TestReader(t, "GainReader-C64", gainReader)
+	testutils.TestReadWriteSamples(t, "GainReader-ReadWrite-C64", gainReader, pipeWriter)
+
+	pipeReader, pipeWriter = sdr.Pipe(1024, sdr.SampleFormatI16)
+	gainReader = stream.Gain(pipeReader, 0.5)
+	testutils.TestReader(t, "GainReader-I16", gainReader)
+	// testutils.TestReadWriteSamples(t, "GainReader-ReadWrite-I16", gainReader, pipeWriter)
+
+	pipeReader, pipeWriter = sdr.Pipe(1024, sdr.SampleFormatU8)
+	gainReader = stream.Gain(pipeReader, 0.5)
+	testutils.TestReader(t, "GainReader-U8", gainReader)
+	// testutils.TestReadWriteSamples(t, "GainReader-ReadWrite-U8", gainReader, pipeWriter)
+}
 
 func TestGainBufferC64(t *testing.T) {
 	pipeReader, pipeWriter := sdr.Pipe(1024, sdr.SampleFormatC64)

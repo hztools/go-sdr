@@ -29,6 +29,7 @@ import (
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
+	"hz.tools/sdr/testutils"
 )
 
 func nextComplex(r *rand.Rand, stdDev float64) complex64 {
@@ -49,6 +50,16 @@ func nextComplex(r *rand.Rand, stdDev float64) complex64 {
 	}
 
 	return complex(i, q)
+}
+
+func TestNoiseReaderStd(t *testing.T) {
+	r := stream.Noise(stream.NoiseConfig{
+		Source:            rand.NewSource(1337),
+		StandardDeviation: 1.0,
+	})
+
+	testutils.TestReader(t, "Read-Noise", r)
+	testutils.TestReadWriteSamples(t, "ReadWrite-Noise", r, sdr.Discard(0, sdr.SampleFormatC64))
 }
 
 func TestNoiseReader(t *testing.T) {

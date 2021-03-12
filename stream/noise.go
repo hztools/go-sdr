@@ -75,7 +75,7 @@ func (nr *noiseReader) Read(s sdr.Samples) (int, error) {
 	case sdr.SampleFormatC64:
 		break
 	default:
-		return 0, sdr.ErrSampleFormatUnknown
+		return 0, sdr.ErrSampleFormatMismatch
 	}
 
 	// TODO(paultag): make this safer? Support additional types?

@@ -21,7 +21,6 @@
 package testutils
 
 import (
-	"math"
 	"math/cmplx"
 	"testing"
 
@@ -31,21 +30,6 @@ import (
 	"hz.tools/sdr"
 	"hz.tools/sdr/fft"
 )
-
-func generateCw(buf sdr.SamplesC64, freq rf.Hz, sampleRate int, phase float64) {
-	var (
-		carrierFreq float64 = float64(freq)
-		tau                 = math.Pi * 2
-	)
-
-	for i := range buf {
-		now := float64(i) / float64(sampleRate)
-		buf[i] = complex64(complex(
-			math.Cos(tau*carrierFreq*now+phase),
-			math.Sin(tau*carrierFreq*now+phase),
-		))
-	}
-}
 
 type testFrequencies struct {
 	Frequency rf.Hz
@@ -77,7 +61,7 @@ func testForwardFFT(t *testing.T, planner fft.Planner) {
 		testFrequencies{Frequency: rf.Hz(450000), Index: 256},
 		testFrequencies{Frequency: rf.Hz(225000), Index: 128},
 	} {
-		generateCw(cwPhase0, tfreq.Frequency, 1.8e6, 0)
+		CW(cwPhase0, tfreq.Frequency, 1.8e6, 0)
 
 		plan, err := planner(cwPhase0, out, fft.Forward)
 		assert.NoError(t, err)
@@ -151,6 +135,18 @@ func testMismatchDstFFT(t *testing.T, planner fft.Planner) {
 	_, err = planner(iq, freq, fft.Backward)
 	assert.Equal(t, sdr.ErrDstTooSmall, err)
 
+}
+
+func BenchmarkFFT(b *testing.B, planner fft.Planner) {
+	iq := make(sdr.SamplesC64, 1024)
+	freq := make([]complex64, 1024)
+	plan, err := planner(iq, freq, fft.Forward)
+	assert.NoError(b, err)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		plan.Transform()
+	}
 }
 
 // vim: foldmethod=marker

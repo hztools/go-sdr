@@ -29,25 +29,16 @@ import (
 )
 
 func TestWriter(t *testing.T, name string, w sdr.Writer) {
-	sf := w.SampleFormat()
-
 	t.Run(name, func(t *testing.T) {
-		if sf != sdr.SampleFormatU8 {
-			t.Run("SampleFormatU8", func(t *testing.T) {
-				testWriterSampleFormat(t, sdr.SampleFormatU8, w)
-			})
-		}
-		if sf != sdr.SampleFormatI16 {
-			t.Run("SampleFormatI16", func(t *testing.T) {
-				testWriterSampleFormat(t, sdr.SampleFormatI16, w)
-			})
-		}
-		if sf != sdr.SampleFormatC64 {
-			t.Run("SampleFormatC64", func(t *testing.T) {
-				testWriterSampleFormat(t, sdr.SampleFormatC64, w)
-			})
-		}
-
+		t.Run("SampleFormatU8", func(t *testing.T) {
+			testWriterSampleFormat(t, sdr.SampleFormatU8, w)
+		})
+		t.Run("SampleFormatI16", func(t *testing.T) {
+			testWriterSampleFormat(t, sdr.SampleFormatI16, w)
+		})
+		t.Run("SampleFormatC64", func(t *testing.T) {
+			testWriterSampleFormat(t, sdr.SampleFormatC64, w)
+		})
 		t.Run("SampleRate", func(t *testing.T) {
 			// We're just invoking this to ensure we don't panic.
 			w.SampleRate()
@@ -56,6 +47,11 @@ func TestWriter(t *testing.T, name string, w sdr.Writer) {
 }
 
 func testWriterSampleFormat(t *testing.T, sf sdr.SampleFormat, w sdr.Writer) {
+	if sf == w.SampleFormat() {
+		t.Skip()
+		return
+	}
+
 	s, err := sdr.MakeSamples(sf, 128)
 	assert.NoError(t, err)
 	_, err = w.Write(s)

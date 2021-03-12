@@ -21,6 +21,7 @@
 package testutils
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,26 +29,48 @@ import (
 	"hz.tools/sdr"
 )
 
-func TestReader(t *testing.T, name string, r sdr.Reader) {
-	sf := r.SampleFormat()
-
+func TestReadWriteSamples(t *testing.T, name string, r sdr.Reader, w sdr.Writer) {
 	t.Run(name, func(t *testing.T) {
-		if sf != sdr.SampleFormatU8 {
-			t.Run("SampleFormatU8", func(t *testing.T) {
-				testReaderSampleFormat(t, sdr.SampleFormatU8, r)
-			})
-		}
-		if sf != sdr.SampleFormatI16 {
-			t.Run("SampleFormatI16", func(t *testing.T) {
-				testReaderSampleFormat(t, sdr.SampleFormatI16, r)
-			})
-		}
-		if sf != sdr.SampleFormatC64 {
-			t.Run("SampleFormatC64", func(t *testing.T) {
-				testReaderSampleFormat(t, sdr.SampleFormatC64, r)
-			})
-		}
+		var (
+			sampleChunk  int = 1024
+			sampleChunks int = 32
+			wg               = sync.WaitGroup{}
+		)
 
+		go func() {
+			defer wg.Done()
+			wb, err := sdr.MakeSamples(w.SampleFormat(), sampleChunk)
+			assert.NoError(t, err)
+
+			for i := 0; i < sampleChunks; i++ {
+				i, err := w.Write(wb)
+				assert.NoError(t, err)
+				assert.Equal(t, sampleChunk, i)
+			}
+		}()
+		wg.Add(1)
+
+		rb, err := sdr.MakeSamples(r.SampleFormat(), sampleChunk*sampleChunks)
+		assert.NoError(t, err)
+		i, err := sdr.ReadFull(r, rb)
+		assert.NoError(t, err)
+		assert.Equal(t, sampleChunk*sampleChunks, i)
+
+		wg.Wait()
+	})
+}
+
+func TestReader(t *testing.T, name string, r sdr.Reader) {
+	t.Run(name, func(t *testing.T) {
+		t.Run("SampleFormatU8", func(t *testing.T) {
+			testReaderSampleFormat(t, sdr.SampleFormatU8, r)
+		})
+		t.Run("SampleFormatI16", func(t *testing.T) {
+			testReaderSampleFormat(t, sdr.SampleFormatI16, r)
+		})
+		t.Run("SampleFormatC64", func(t *testing.T) {
+			testReaderSampleFormat(t, sdr.SampleFormatC64, r)
+		})
 		t.Run("SampleRate", func(t *testing.T) {
 			// We're just invoking this to ensure we don't panic.
 			r.SampleRate()
@@ -56,6 +79,11 @@ func TestReader(t *testing.T, name string, r sdr.Reader) {
 }
 
 func testReaderSampleFormat(t *testing.T, sf sdr.SampleFormat, r sdr.Reader) {
+	if sf == r.SampleFormat() {
+		t.Skip()
+		return
+	}
+
 	s, err := sdr.MakeSamples(sf, 128)
 	assert.NoError(t, err)
 	_, err = r.Read(s)

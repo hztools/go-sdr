@@ -46,6 +46,7 @@ func TestBytesIOLEStd(t *testing.T) {
 		pipeWriter := sdr.ByteWriter(ioWriter, binary.LittleEndian, 0, sf)
 		testutils.TestReader(t, fmt.Sprintf("Read-BytesIO-LE-%s", n), pipeReader)
 		testutils.TestWriter(t, fmt.Sprintf("Write-BytesIO-LE-%s", n), pipeWriter)
+		testutils.TestReadWriteSamples(t, fmt.Sprintf("ReadWrite-BytesIO-LE-%s", n), pipeReader, pipeWriter)
 	}
 }
 
@@ -61,6 +62,7 @@ func TestBytesIOBEStd(t *testing.T) {
 		pipeWriter := sdr.ByteWriter(ioWriter, binary.BigEndian, 0, sf)
 		testutils.TestReader(t, fmt.Sprintf("Read-BytesIO-BE-%s", n), pipeReader)
 		testutils.TestWriter(t, fmt.Sprintf("Write-BytesIO-BE-%s", n), pipeWriter)
+		testutils.TestReadWriteSamples(t, fmt.Sprintf("ReadWrite-BytesIO-BE-%s", n), pipeReader, pipeWriter)
 	}
 }
 
