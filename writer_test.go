@@ -91,4 +91,19 @@ func TestWriterWithCloser(t *testing.T) {
 	assert.True(t, closeCalled)
 }
 
+func TestDiscard(t *testing.T) {
+	for _, sf := range map[string]sdr.SampleFormat{
+		"C64": sdr.SampleFormatC64,
+		"I16": sdr.SampleFormatI16,
+		"U8":  sdr.SampleFormatU8,
+	} {
+		w := sdr.Discard(0, sdr.SampleFormatC64)
+		b, err := sdr.MakeSamples(sf, 1024*32)
+		assert.NoError(t, err)
+		i, err := w.Write(b)
+		assert.NoError(t, err)
+		assert.Equal(t, 1024*32, i)
+	}
+}
+
 // vim: foldmethod=marker

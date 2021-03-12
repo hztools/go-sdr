@@ -144,4 +144,31 @@ func WriterWithCloser(w Writer, c func() error) WriteCloser {
 	}
 }
 
+type discard struct {
+	sampleFormat SampleFormat
+	sampleRate   uint
+}
+
+func (d discard) SampleFormat() SampleFormat {
+	return d.sampleFormat
+}
+
+func (d discard) SampleRate() uint {
+	return d.sampleRate
+}
+
+func (d discard) Write(s Samples) (int, error) {
+	return s.Length(), nil
+}
+
+// Discard will accept writes, and store them safely... nowhere. This is
+// a highly optimized and very fast writer. Just don't expect to get your
+// data back.
+func Discard(sampleRate uint, sampleFormat SampleFormat) Writer {
+	return discard{
+		sampleFormat: sampleFormat,
+		sampleRate:   sampleRate,
+	}
+}
+
 // vim: foldmethod=marker
