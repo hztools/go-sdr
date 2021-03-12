@@ -48,6 +48,14 @@ func TestMakeSamples(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, 1024, len(samplesC64))
 
+	_, err = sdr.MakeSamples(sdr.SampleFormat(100), 1024)
+	assert.Error(t, err)
+}
+
+func TestSamplesSize(t *testing.T) {
+	assert.Equal(t, 2, sdr.SampleFormatU8.Size())
+	assert.Equal(t, 4, sdr.SampleFormatI16.Size())
+	assert.Equal(t, 8, sdr.SampleFormatC64.Size())
 }
 
 // vim: foldmethod=marker
