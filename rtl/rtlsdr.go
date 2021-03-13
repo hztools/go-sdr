@@ -111,6 +111,9 @@ func (r Sdr) SampleFormat() sdr.SampleFormat {
 
 // info will provide information about the Sdr that this data relates
 // to.
+//
+// TODO(paultag): Remove this now that we have sdr.HardwareInfo
+//
 type info struct {
 	Manufacturer string
 	Product      string
