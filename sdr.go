@@ -133,7 +133,7 @@ type Receiver interface {
 	Sdr
 
 	// StartRx will listen on the configured frequency and start to stream iq
-	/// samples to be read out of the provided Reader. It's absolutely
+	// samples to be read out of the provided Reader. It's absolutely
 	// imperative that the consuming code will actively consume from the
 	// Reader, or backlogged samples can result in dropped samples or other
 	// error conditions. Those error conditions are not defined at this time,
