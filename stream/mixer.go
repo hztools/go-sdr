@@ -104,11 +104,8 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 	if s.Format() != sdr.SampleFormatC64 {
 		return 0, sdr.ErrSampleFormatUnknown
 	}
-	samples, ok := s.(sdr.SamplesC64)
-	if !ok {
-		return 0, fmt.Errorf("sdr.Mixer: sample format is c64 but isn't a c64 type?")
-	}
 
+	samples := s.(sdr.SamplesC64)
 	samplesLength := samples.Length()
 
 	buffers := make([]sdr.SamplesC64, len(mr.readers))
