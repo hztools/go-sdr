@@ -23,7 +23,6 @@ package sdr
 import (
 	"encoding/binary"
 	"io"
-	"unsafe"
 
 	"hz.tools/sdr/internal"
 )
@@ -160,13 +159,13 @@ func (br byteReaderForeign) Read(samples Samples) (int, error) {
 			return 0, err
 		}
 		i, err := io.ReadFull(br.r, bufBytes)
-		return i / int(unsafe.Sizeof(buf[0])), err
+		return i / SampleFormatU8.Size(), err
 	case SamplesI16:
 		err := binary.Read(br.r, br.byteOrder, buf)
-		return len(buf), err
+		return buf.Length(), err
 	case SamplesC64:
 		err := binary.Read(br.r, br.byteOrder, buf)
-		return len(buf), err
+		return buf.Length(), err
 	default:
 		return 0, ErrSampleFormatUnknown
 	}
@@ -198,21 +197,21 @@ func (br byteReaderNative) Read(samples Samples) (int, error) {
 			return 0, err
 		}
 		i, err := io.ReadFull(br.r, bufBytes)
-		return i / int(unsafe.Sizeof(buf[0])), err
+		return i / SampleFormatU8.Size(), err
 	case SamplesI16:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
 		}
 		i, err := io.ReadFull(br.r, bufBytes)
-		return i / int(unsafe.Sizeof(buf[0])), err
+		return i / SampleFormatI16.Size(), err
 	case SamplesC64:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
 		}
 		i, err := io.ReadFull(br.r, bufBytes)
-		return i / int(unsafe.Sizeof(buf[0])), err
+		return i / SampleFormatC64.Size(), err
 	default:
 		return 0, ErrSampleFormatUnknown
 	}
