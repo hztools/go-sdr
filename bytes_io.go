@@ -88,21 +88,21 @@ func (bw byteWriterNative) Write(samples Samples) (int, error) {
 			return 0, err
 		}
 		i, err := bw.w.Write(bufBytes)
-		return i / 2, err
+		return i / SampleFormatU8.Size(), err
 	case SamplesI16:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
 		}
 		i, err := bw.w.Write(bufBytes)
-		return i / 4, err
+		return i / SampleFormatI16.Size(), err
 	case SamplesC64:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
 		}
 		i, err := bw.w.Write(bufBytes)
-		return i / 8, err
+		return i / SampleFormatC64.Size(), err
 	default:
 		return 0, ErrSampleFormatUnknown
 	}
@@ -158,9 +158,11 @@ func (br byteReaderForeign) Read(samples Samples) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		i, err := io.ReadFull(br.r, bufBytes)
+		i, err := br.r.Read(bufBytes)
 		return i / SampleFormatU8.Size(), err
 	case SamplesI16:
+		// TODO(paultag): binary.Read here forces a ReadFull which isn't
+		// ideal.
 		err := binary.Read(br.r, br.byteOrder, buf)
 		return buf.Length(), err
 	case SamplesC64:
@@ -196,21 +198,21 @@ func (br byteReaderNative) Read(samples Samples) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		i, err := io.ReadFull(br.r, bufBytes)
+		i, err := br.r.Read(bufBytes)
 		return i / SampleFormatU8.Size(), err
 	case SamplesI16:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
 		}
-		i, err := io.ReadFull(br.r, bufBytes)
+		i, err := br.r.Read(bufBytes)
 		return i / SampleFormatI16.Size(), err
 	case SamplesC64:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
 		}
-		i, err := io.ReadFull(br.r, bufBytes)
+		i, err := br.r.Read(bufBytes)
 		return i / SampleFormatC64.Size(), err
 	default:
 		return 0, ErrSampleFormatUnknown
