@@ -171,32 +171,12 @@ func (br byteReaderNative) Read(samples Samples) (int, error) {
 	if samples.Format() != br.sampleFormat {
 		return 0, ErrSampleFormatMismatch
 	}
-
-	switch buf := samples.(type) {
-	case SamplesU8:
-		bufBytes, err := UnsafeSamplesAsBytes(buf)
-		if err != nil {
-			return 0, err
-		}
-		i, err := br.r.Read(bufBytes)
-		return i / SampleFormatU8.Size(), err
-	case SamplesI16:
-		bufBytes, err := UnsafeSamplesAsBytes(buf)
-		if err != nil {
-			return 0, err
-		}
-		i, err := br.r.Read(bufBytes)
-		return i / SampleFormatI16.Size(), err
-	case SamplesC64:
-		bufBytes, err := UnsafeSamplesAsBytes(buf)
-		if err != nil {
-			return 0, err
-		}
-		i, err := br.r.Read(bufBytes)
-		return i / SampleFormatC64.Size(), err
-	default:
-		return 0, ErrSampleFormatUnknown
+	bufBytes, err := UnsafeSamplesAsBytes(samples)
+	if err != nil {
+		return 0, err
 	}
+	i, err := br.r.Read(bufBytes)
+	return i / samples.Format().Size(), err
 }
 
 func (br byteReaderNative) SampleFormat() SampleFormat {
