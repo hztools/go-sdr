@@ -36,7 +36,7 @@ type testFrequencies struct {
 	Index     int
 }
 
-// Run will run the standard FFT tests against the provided Planner.
+// TestFFT will run the standard FFT tests against the provided Planner.
 func TestFFT(t *testing.T, planner fft.Planner) {
 	t.Run("ForwardFFT", func(t *testing.T) {
 		testForwardFFT(t, planner)
@@ -137,6 +137,7 @@ func testMismatchDstFFT(t *testing.T, planner fft.Planner) {
 
 }
 
+// BenchmarkFFT will run the FFT repeatedly to understand how it performs.
 func BenchmarkFFT(b *testing.B, planner fft.Planner) {
 	iq := make(sdr.SamplesC64, 1024)
 	freq := make([]complex64, 1024)
