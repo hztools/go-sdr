@@ -72,9 +72,9 @@ func (s SamplesU8) Slice(start, end int) Samples {
 
 // ToI16 will convert the uint8 data to a vector of interleaved int16
 // values.
-func (s SamplesU8) ToI16(out SamplesI16) error {
+func (s SamplesU8) ToI16(out SamplesI16) (int, error) {
 	if s.Length() > out.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 	for i := range s {
 		out[i] = [2]int16{
@@ -82,16 +82,16 @@ func (s SamplesU8) ToI16(out SamplesI16) error {
 			int16((int32(s[i][1]) << 8) - 32768),
 		}
 	}
-	return nil
+	return s.Length(), nil
 }
 
 // ToC64 will convert the uint8 data to a vector of complex64 numbers.
-func (s SamplesU8) ToC64(out SamplesC64) error {
+func (s SamplesU8) ToC64(out SamplesC64) (int, error) {
 	if s.Length() > out.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 	convU8ToC64(s, out)
-	return nil
+	return s.Length(), nil
 }
 
 func convU8ToC64Native(s1 SamplesU8, s2 SamplesC64) {

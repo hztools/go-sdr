@@ -74,9 +74,9 @@ func (s SamplesC64) Slice(start, end int) Samples {
 }
 
 // ToU8 will convert the Complex data to a vector of interleaved uint8s.
-func (s SamplesC64) ToU8(out SamplesU8) error {
+func (s SamplesC64) ToU8(out SamplesU8) (int, error) {
 	if s.Length() > out.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 	for i, sample := range s {
 		sampleReal := (real(sample) * 127.5) + 127.5
@@ -85,13 +85,13 @@ func (s SamplesC64) ToU8(out SamplesU8) error {
 		out[i][0] = uint8(sampleReal)
 		out[i][1] = uint8(sampleImag)
 	}
-	return nil
+	return s.Length(), nil
 }
 
 // ToI16 will convert the complex64 data to int16 data.
-func (s SamplesC64) ToI16(out SamplesI16) error {
+func (s SamplesC64) ToI16(out SamplesI16) (int, error) {
 	if s.Length() > out.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 	for i := range s {
 		out[i] = [2]int16{
@@ -99,7 +99,7 @@ func (s SamplesC64) ToI16(out SamplesI16) error {
 			int16(imag(s[i]) * math.MaxInt16),
 		}
 	}
-	return nil
+	return s.Length(), nil
 }
 
 // Scale will multiply each I and Q value by the provided real value 'r'. This

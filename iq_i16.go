@@ -113,9 +113,9 @@ func (s SamplesI16) ShiftLSBToMSBBits(bits int) {
 // ToU8 will convert the int16 data to interleaved uint8 bit samples.
 // This looks a lot like a (weirdly) simplified version of c64 -> u8
 // since both have to deal with shifting from negative.
-func (s SamplesI16) ToU8(out SamplesU8) error {
+func (s SamplesI16) ToU8(out SamplesU8) (int, error) {
 	if s.Length() > out.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 
 	for i, sample := range s {
@@ -130,20 +130,20 @@ func (s SamplesI16) ToU8(out SamplesU8) error {
 			uint8(uint16(int32(sample[1])+32768) >> 8),
 		}
 	}
-	return nil
+	return s.Length(), nil
 }
 
 // ToC64 will convert the int16 data to a vector of complex64 numbers.
-func (s SamplesI16) ToC64(out SamplesC64) error {
+func (s SamplesI16) ToC64(out SamplesC64) (int, error) {
 	if s.Length() > out.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 	for i := range s {
 		cI := float32(s[i][0]) / math.MaxInt16
 		cQ := float32(s[i][1]) / math.MaxInt16
 		out[i] = complex(cI, cQ)
 	}
-	return nil
+	return s.Length(), nil
 }
 
 // vim: foldmethod=marker

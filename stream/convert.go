@@ -21,6 +21,8 @@
 package stream
 
 import (
+	"fmt"
+
 	"hz.tools/sdr"
 )
 
@@ -39,11 +41,7 @@ func ConvertReader(in sdr.Reader, to sdr.SampleFormat) (sdr.Reader, error) {
 		OutputSampleRate:   in.SampleRate(),
 		OutputSampleFormat: to,
 		Proc: func(inBuf sdr.Samples, outBuf sdr.Samples) (int, error) {
-			err := sdr.ConvertBuffer(outBuf, inBuf)
-			if err != nil {
-				return 0, err
-			}
-			return inBuf.Length(), nil
+			return sdr.ConvertBuffer(outBuf, inBuf)
 		},
 	})
 }
@@ -91,11 +89,15 @@ func (cw convWriter) Write(in sdr.Samples) (int, error) {
 			ie = in.Length()
 		}
 
-		if err := sdr.ConvertBuffer(cw.buffer, in.Slice(i, ie)); err != nil {
+		leng, err := sdr.ConvertBuffer(cw.buffer, in.Slice(i, ie))
+		if err != nil {
 			return n, err
 		}
 
-		leng := ie - i
+		if ie-i != leng {
+			return n, fmt.Errorf("ConvertWriter: Conversion mismatch")
+		}
+
 		j, err := cw.out.Write(cw.buffer.Slice(0, leng))
 
 		n += j

@@ -54,7 +54,8 @@ func TestConvertU8ToC64Long(t *testing.T) {
 	for i := range u8Samples {
 		u8Samples[i] = [2]uint8{0xFF, 0xFF}
 	}
-	assert.NoError(t, u8Samples.ToC64(c64Samples))
+	_, err := u8Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 	for i := range c64Samples {
 		assert.InEpsilon(t, 1, real(c64Samples[i]), epsilon)
 		assert.InEpsilon(t, 1, imag(c64Samples[i]), epsilon)
@@ -67,7 +68,8 @@ func TestConvertU8ToC64OverUnder(t *testing.T) {
 	for i := range u8Samples {
 		u8Samples[i] = [2]uint8{0xFF, 0xFF}
 	}
-	assert.NoError(t, u8Samples[32:69].ToC64(c64Samples[32:69]))
+	_, err := u8Samples[32:69].ToC64(c64Samples[32:69])
+	assert.NoError(t, err)
 	for i := 0; i < 32; i++ {
 		assert.Equal(t, float32(0), real(c64Samples[i]))
 		assert.Equal(t, float32(0), imag(c64Samples[i]))
@@ -87,21 +89,25 @@ func TestConvertU8ToC64Short(t *testing.T) {
 	c64Samples := make(sdr.SamplesC64, 16)
 
 	u8Samples[0] = [2]uint8{255, 255}
-	assert.NoError(t, u8Samples.ToC64(c64Samples))
+	_, err := u8Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 
 	assert.InEpsilon(t, 1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 1, imag(c64Samples[0]), epsilon)
 
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, u8Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, u8Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 1, imag(c64Samples[0]), epsilon)
 
 	u8Samples[0] = [2]uint8{0, 0}
-	assert.NoError(t, u8Samples.ToC64(c64Samples))
+	_, err = u8Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 
 	assert.InEpsilon(t, -1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, -1, imag(c64Samples[0]), epsilon)
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, u8Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, u8Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, -1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, -1, imag(c64Samples[0]), epsilon)
 
@@ -109,7 +115,8 @@ func TestConvertU8ToC64Short(t *testing.T) {
 	// below 0 and 1 slightly over 0 (127 and 128) and checking how that stacks
 	u8Samples[0] = [2]uint8{128, 128}
 	u8Samples[1] = [2]uint8{127, 127}
-	assert.NoError(t, u8Samples.ToC64(c64Samples))
+	_, err = u8Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 
 	i := real(c64Samples[0]) + real(c64Samples[1])
 	q := imag(c64Samples[0]) + imag(c64Samples[1])
@@ -117,7 +124,8 @@ func TestConvertU8ToC64Short(t *testing.T) {
 	assert.InEpsilon(t, 1, i+1, epsilon)
 	assert.InEpsilon(t, 1, q+1, epsilon)
 
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, u8Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, u8Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 1, i+1, epsilon)
 	assert.InEpsilon(t, 1, q+1, epsilon)
 
@@ -128,7 +136,8 @@ func TestConvertU8ToI16(t *testing.T) {
 	i16Samples := make(sdr.SamplesI16, 2)
 
 	u8Samples[0] = [2]uint8{255, 255}
-	assert.NoError(t, u8Samples.ToI16(i16Samples))
+	_, err := u8Samples.ToI16(i16Samples)
+	assert.NoError(t, err)
 
 	// the max value here will be 255 shifted up. It's close enough.
 	assert.Equal(t, i16Samples[0], [2]int16{
@@ -137,10 +146,12 @@ func TestConvertU8ToI16(t *testing.T) {
 	})
 
 	u8Samples[0] = [2]uint8{0, 0}
-	assert.NoError(t, u8Samples.ToI16(i16Samples))
+	_, err = u8Samples.ToI16(i16Samples)
+	assert.NoError(t, err)
 	assert.Equal(t, i16Samples[0], [2]int16{math.MinInt16, math.MinInt16})
 
-	assert.NoError(t, sdr.ConvertBuffer(i16Samples, u8Samples))
+	_, err = sdr.ConvertBuffer(i16Samples, u8Samples)
+	assert.NoError(t, err)
 	assert.Equal(t, i16Samples[0], [2]int16{math.MinInt16, math.MinInt16})
 }
 

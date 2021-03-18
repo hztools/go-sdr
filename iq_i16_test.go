@@ -38,44 +38,54 @@ func TestConvertI16ToC64(t *testing.T) {
 	c64Samples := make(sdr.SamplesC64, 1)
 
 	i16Samples[0] = [2]int16{math.MaxInt16, math.MaxInt16}
-	assert.NoError(t, i16Samples.ToC64(c64Samples))
+	_, err := i16Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 1, imag(c64Samples[0]), epsilon)
 
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, i16Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, i16Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 1, imag(c64Samples[0]), epsilon)
 
 	i16Samples[0] = [2]int16{math.MinInt16, math.MinInt16}
-	assert.NoError(t, i16Samples.ToC64(c64Samples))
+	_, err = i16Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, -1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, -1, imag(c64Samples[0]), epsilon)
 
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, i16Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, i16Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, -1, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, -1, imag(c64Samples[0]), epsilon)
 
 	i16Samples[0] = [2]int16{0, 0}
-	assert.NoError(t, i16Samples.ToC64(c64Samples))
+	i16Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 1, 1+real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 1, 1+imag(c64Samples[0]), epsilon)
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, i16Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, i16Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 1, 1+real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 1, 1+imag(c64Samples[0]), epsilon)
 
 	i16Samples[0] = [2]int16{math.MaxInt16 / 2, math.MaxInt16 / 2}
-	assert.NoError(t, i16Samples.ToC64(c64Samples))
+	_, err = i16Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 0.5, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 0.5, imag(c64Samples[0]), epsilon)
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, i16Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, i16Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, 0.5, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, 0.5, imag(c64Samples[0]), epsilon)
 
 	i16Samples[0] = [2]int16{math.MinInt16 / 2, math.MinInt16 / 2}
-	assert.NoError(t, i16Samples.ToC64(c64Samples))
+	_, err = i16Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, -0.5, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, -0.5, imag(c64Samples[0]), epsilon)
-	assert.NoError(t, sdr.ConvertBuffer(c64Samples, i16Samples))
+	_, err = sdr.ConvertBuffer(c64Samples, i16Samples)
+	assert.NoError(t, err)
 	assert.InEpsilon(t, -0.5, real(c64Samples[0]), epsilon)
 	assert.InEpsilon(t, -0.5, imag(c64Samples[0]), epsilon)
 }

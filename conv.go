@@ -38,38 +38,38 @@ var (
 //
 // In the event that the desired format is the same as the provided format
 // this function will copy the source samples to the target buffer.
-func ConvertBuffer(dst, src Samples) error {
+func ConvertBuffer(dst, src Samples) (int, error) {
 	if src.Format() == dst.Format() {
 		_, err := CopySamples(dst, src)
-		return err
+		return 0, err
 	}
 
 	if src.Length() > dst.Length() {
-		return ErrDstTooSmall
+		return 0, ErrDstTooSmall
 	}
 
 	switch dst.Format() {
 	case SampleFormatU8:
-		convertable, ok := src.(interface{ ToU8(SamplesU8) error })
+		convertable, ok := src.(interface{ ToU8(SamplesU8) (int, error) })
 		if !ok {
-			return ErrConversionNotImplemented
+			return 0, ErrConversionNotImplemented
 		}
 		return convertable.ToU8(dst.(SamplesU8))
 	case SampleFormatI16:
-		convertable, ok := src.(interface{ ToI16(SamplesI16) error })
+		convertable, ok := src.(interface{ ToI16(SamplesI16) (int, error) })
 		if !ok {
-			return ErrConversionNotImplemented
+			return 0, ErrConversionNotImplemented
 		}
 		return convertable.ToI16(dst.(SamplesI16))
 	case SampleFormatC64:
-		convertable, ok := src.(interface{ ToC64(SamplesC64) error })
+		convertable, ok := src.(interface{ ToC64(SamplesC64) (int, error) })
 		if !ok {
-			return ErrConversionNotImplemented
+			return 0, ErrConversionNotImplemented
 		}
 		return convertable.ToC64(dst.(SamplesC64))
 	default:
 		// Someone added a new type on us
-		return ErrSampleFormatUnknown
+		return 0, ErrSampleFormatUnknown
 	}
 }
 
