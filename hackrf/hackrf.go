@@ -30,11 +30,17 @@ import (
 	"fmt"
 	"unsafe"
 
+	"hz.tools/rf"
 	"hz.tools/sdr"
 )
 
 var (
-	hasInit bool = false
+	hasInit         bool = false
+	usbBoardMapping      = map[uint32]Board{
+		0x604B: BoardJawbreaker,
+		0x6089: BoardHackRfOne,
+		0xFFFF: BoardInvalid,
+	}
 )
 
 func checkInit() error {
@@ -53,18 +59,18 @@ func rvToErr(rv C.int) error {
 }
 
 // Board represents the type of HackRf hardware.
-type Board uint32
+type Board uint8
 
 var (
 	// BoardInvalid indicates the board that relates to the request is invalid.
-	BoardInvalid Board = 0xFFFF
+	BoardInvalid Board = 0xFF
 
 	// BoardJawbreaker represents a Jawbreaker, the beta test hardware platform
 	// for the HackRf.
-	BoardJawbreaker Board = 0x604B
+	BoardJawbreaker Board = 1
 
 	// BoardHackRfOne represents the production HackRf One.
-	BoardHackRfOne Board = 0x6089
+	BoardHackRfOne Board = 2
 )
 
 // String will return a human readable string representing the hardware.
@@ -100,7 +106,7 @@ func List() ([]sdr.HardwareInfo, error) {
 		ret = append(ret, sdr.HardwareInfo{
 			Serial:       C.GoString(serials[i]),
 			Manufacturer: "Great Scott Gadgets",
-			Product:      Board(usbBoardIds[i]).String(),
+			Product:      Board(usbBoardMapping[usbBoardIds[i]]).String(),
 		})
 	}
 
@@ -122,6 +128,100 @@ func Init() error {
 // shutting down, or otherwise done with the HackRF.
 func Exit() error {
 	return rvToErr(C.hackrf_exit())
+}
+
+// Version will return the HackRF library version and release.
+func Version() (string, string) {
+	return C.GoString(C.hackrf_library_version()), C.GoString(C.hackrf_library_release())
+}
+
+// Open will open the first HackRF on the system.
+func Open() (*Sdr, error) {
+	var dev *C.hackrf_device
+
+	if err := rvToErr(C.hackrf_open(&dev)); err != nil {
+		return nil, err
+	}
+
+	return &Sdr{
+		dev: dev,
+	}, nil
+}
+
+// Sdr implements the sdr.Sdr interface for a HackRF.
+type Sdr struct {
+	dev *C.hackrf_device
+}
+
+func (s *Sdr) Close() error {
+	return rvToErr(C.hackrf_close(s.dev))
+}
+
+func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
+	return rvToErr(C.hackrf_set_freq(
+		s.dev,
+		C.uint64_t(freq),
+	))
+}
+
+func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
+	return rf.Hz(0), sdr.ErrNotSupported
+}
+
+func (s *Sdr) SetAutomaticGain(bool) error {
+	return nil
+}
+
+func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
+	return nil, nil
+}
+
+func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
+	return 0, nil
+}
+
+func (s *Sdr) SetGain(sdr.GainStage, float32) error {
+	return nil
+}
+
+func (s *Sdr) SetSampleRate(sampleRate uint) error {
+	return rvToErr(C.hackrf_set_sample_rate(s.dev, C.double(sampleRate)))
+}
+
+func (s *Sdr) GetSampleRate() (uint, error) {
+	return 0, sdr.ErrNotSupported
+}
+
+func (s *Sdr) SampleFormat() sdr.SampleFormat {
+	return sdr.SampleFormatU8
+}
+
+func (s *Sdr) SetPPM(int) error {
+	return nil
+}
+
+func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
+	var (
+		partid = C.read_partid_serialno_t{}
+		board  C.uint8_t
+	)
+
+	C.hackrf_board_partid_serialno_read(s.dev, &partid)
+	C.hackrf_board_id_read(s.dev, &board)
+
+	serial := fmt.Sprintf(
+		"%08x%08x%08x%08x",
+		partid.serial_no[0],
+		partid.serial_no[1],
+		partid.serial_no[2],
+		partid.serial_no[3],
+	)
+
+	return sdr.HardwareInfo{
+		Serial:       serial,
+		Product:      Board(board).String(),
+		Manufacturer: "Great Scott Gadgets",
+	}
 }
 
 // vim: foldmethod=marker
