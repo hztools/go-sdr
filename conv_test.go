@@ -24,10 +24,6 @@ import (
 	"testing"
 )
 
-func TestConvert(t *testing.T) {
-	t.Skip()
-}
-
 func TestConvertBuffer(t *testing.T) {
 	t.Skip()
 }
