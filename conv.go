@@ -30,31 +30,6 @@ var (
 	ErrConversionNotImplemented error = fmt.Errorf("sdr.Convert: unknown format conversion")
 )
 
-// Convert the provided Samples to the desired output format.
-//
-// The conversion will happen in CPU, and this format can be a little slow,
-// but it will get the job done, and beats the heck out of having to worry
-// about the underlying data format.
-//
-// In the event that the desired format is the same as the provided format
-// this function will noop and return in unmodified, CPU time is only spent
-// if there is a conversion to be done. This may or may not return the same
-// object, so preforming a copy on the returned value is a good idea.
-func Convert(in Samples, to SampleFormat) (Samples, error) {
-	if in.Format() == to {
-		return in, nil
-	}
-
-	dst, err := MakeSamples(to, in.Length())
-	if err != nil {
-		return nil, err
-	}
-	if err := ConvertBuffer(dst, in); err != nil {
-		return nil, err
-	}
-	return dst, nil
-}
-
 // ConvertBuffer the provided Samples to the desired output format.
 //
 // The conversion will happen in CPU, and this format can be a little slow,
