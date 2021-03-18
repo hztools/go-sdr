@@ -34,3 +34,5 @@ func rvToErr(rv C.int) error {
 	}
 	return nil
 }
+
+// vim: foldmethod=marker
