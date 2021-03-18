@@ -28,6 +28,8 @@ import (
 	"hz.tools/sdr"
 )
 
+// TestWriter will check that sample format mismatches will trigger the correct
+// sdr errors.
 func TestWriter(t *testing.T, name string, w sdr.Writer) {
 	t.Run(name, func(t *testing.T) {
 		t.Run("SampleFormatU8", func(t *testing.T) {

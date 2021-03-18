@@ -29,6 +29,8 @@ import (
 	"hz.tools/sdr"
 )
 
+// TestReadWriteSamples will test that writing a specific number of samples
+// comes out the Reader on the other end.
 func TestReadWriteSamples(t *testing.T, name string, r sdr.Reader, w sdr.Writer) {
 	t.Run(name, func(t *testing.T) {
 		var (
@@ -60,6 +62,7 @@ func TestReadWriteSamples(t *testing.T, name string, r sdr.Reader, w sdr.Writer)
 	})
 }
 
+// TestReader will check that sample mismatches trigger the correct SDR Errors.
 func TestReader(t *testing.T, name string, r sdr.Reader) {
 	t.Run(name, func(t *testing.T) {
 		t.Run("SampleFormatU8", func(t *testing.T) {

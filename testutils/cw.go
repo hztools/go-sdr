@@ -27,6 +27,7 @@ import (
 	"hz.tools/sdr"
 )
 
+// CW will generate a Carrier Wave at a specific frequency.
 func CW(buf sdr.SamplesC64, freq rf.Hz, sampleRate int, phase float64) {
 	var (
 		carrierFreq float64 = float64(freq)
