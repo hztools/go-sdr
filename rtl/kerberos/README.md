@@ -9,6 +9,7 @@ on-chip RNG to sync clocks. The first will stich together 4 SDRs in adjacent
 frequencies to a single sample stream at 4x the sample rate. The second will
 align all 4 on the same frequency, in sample lock for coherent applications.
 
+| | |
 |-------------|----|
 | Format Type | U8 |
 | Receiver    | ✓  |
