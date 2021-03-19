@@ -8,3 +8,10 @@ in a way that is expected and not supprising to a Go developer. A lot of the
 design here is taken from the Go io package. A new set of interfaces are
 required in order to provide a set of tools to work with reading and writing
 IQ samples.
+
+| SDR                                    | Format   | RX/TX  |
+|----------------------------------------|----------|--------|
+| [rtl](rtl/README.md)                   | u8       | RX     |
+| [HackRF](hackrf/README.md)             | i8       | RX/TX  |
+| [PlutoSDR](pluto/README.md)            | i16      | RX/TX  |
+| [rtl kerberos](rtl/kerberos/README.md) | u8       | RX     |
