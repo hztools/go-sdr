@@ -40,7 +40,7 @@ func (bw byteWriterForeign) Write(samples Samples) (int, error) {
 	}
 
 	switch buf := samples.(type) {
-	case SamplesU8:
+	case SamplesU8, SamplesI8:
 		bufBytes, err := UnsafeSamplesAsBytes(buf)
 		if err != nil {
 			return 0, err
@@ -140,6 +140,13 @@ func (br byteReaderForeign) Read(samples Samples) (int, error) {
 		}
 		i, err := br.r.Read(bufBytes)
 		return i / SampleFormatU8.Size(), err
+	case SamplesI8:
+		bufBytes, err := UnsafeSamplesAsBytes(buf)
+		if err != nil {
+			return 0, err
+		}
+		i, err := br.r.Read(bufBytes)
+		return i / SampleFormatI8.Size(), err
 	case SamplesI16:
 		// TODO(paultag): binary.Read here forces a ReadFull which isn't
 		// ideal.

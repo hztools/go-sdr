@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -142,6 +142,21 @@ func (s SamplesI16) ToC64(out SamplesC64) (int, error) {
 		cI := float32(s[i][0]) / math.MaxInt16
 		cQ := float32(s[i][1]) / math.MaxInt16
 		out[i] = complex(cI, cQ)
+	}
+	return s.Length(), nil
+}
+
+// ToI8 will convert the int16 data to interleaved int8 bit samples.
+func (s SamplesI16) ToI8(out SamplesI8) (int, error) {
+	if s.Length() > out.Length() {
+		return 0, ErrDstTooSmall
+	}
+
+	for i, sample := range s {
+		out[i] = [2]int8{
+			int8(sample[0] >> 8),
+			int8(sample[1] >> 8),
+		}
 	}
 	return s.Length(), nil
 }

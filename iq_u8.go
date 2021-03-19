@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ import (
 // is not representable, but it's *very* effective to send data over
 // a connection, since it's the most compact represntation.
 //
-// This is the native format of the HackRF and rtl-sdr.
+// This is the native format of the rtl-sdr.
 type SamplesU8 [][2]uint8
 
 // Format returns the type of this vector, as exported by the SampleFormat
@@ -80,6 +80,20 @@ func (s SamplesU8) ToI16(out SamplesI16) (int, error) {
 		out[i] = [2]int16{
 			int16((int32(s[i][0]) << 8) - 32768),
 			int16((int32(s[i][1]) << 8) - 32768),
+		}
+	}
+	return s.Length(), nil
+}
+
+// ToI8 will convert the uint8 data to a vector of int8 values.
+func (s SamplesU8) ToI8(out SamplesI8) (int, error) {
+	if s.Length() > out.Length() {
+		return 0, ErrDstTooSmall
+	}
+	for i := range s {
+		out[i] = [2]int8{
+			int8(int16(s[i][0]) - 128),
+			int8(int16(s[i][1]) - 128),
 		}
 	}
 	return s.Length(), nil

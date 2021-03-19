@@ -45,9 +45,10 @@ var (
 // the native format of the SDR without requiring expensive conversions to
 // other types.
 //
-// This package contains 3 Samples implementations:
+// This package contains 4 Samples implementations:
 //
 //  - SamplesU8  - interleaved uint8 values
+//  - SamplesI8  - interleaved int8 values
 //  - SamplesI16 - interleaved int16 values
 //  - SamplesC64 - vector of complex64 values (interleaved float32 values)
 //
@@ -95,7 +96,7 @@ type SampleFormat uint8
 // phasor, both real and imaginary.
 func (sf SampleFormat) Size() int {
 	switch sf {
-	case SampleFormatU8:
+	case SampleFormatU8, SampleFormatI8:
 		return 2
 	case SampleFormatI16:
 		return 4
@@ -118,6 +119,10 @@ const (
 	// SampleFormatI16 indicates that SamplesI16 will be handled. See
 	// sdr.SamplesI16 for more information.
 	SampleFormatI16 SampleFormat = 3
+
+	// SampleFormatI8 indicates that SamplesI8 will be handled. See
+	// sdr.SamplesI8 for more information.
+	SampleFormatI8 SampleFormat = 4
 )
 
 // MakeSamples will create a buffer of a specified size and type. This will
@@ -131,6 +136,8 @@ func MakeSamples(sampleFormat SampleFormat, sampleSize int) (Samples, error) {
 	switch sampleFormat {
 	case SampleFormatU8:
 		return make(SamplesU8, sampleSize), nil
+	case SampleFormatI8:
+		return make(SamplesI8, sampleSize), nil
 	case SampleFormatI16:
 		return make(SamplesI16, sampleSize), nil
 	case SampleFormatC64:
@@ -143,6 +150,8 @@ func MakeSamples(sampleFormat SampleFormat, sampleSize int) (Samples, error) {
 // String returns the format name as a human readable String.
 func (sf SampleFormat) String() string {
 	switch sf {
+	case SampleFormatI8:
+		return "interleaved int8"
 	case SampleFormatU8:
 		return "interleaved uint8"
 	case SampleFormatI16:

@@ -37,6 +37,9 @@ func CopySamples(dst, src Samples) (int, error) {
 	case SamplesU8:
 		src := src.(SamplesU8)
 		return copy(dst, src), nil
+	case SamplesI8:
+		src := src.(SamplesI8)
+		return copy(dst, src), nil
 	case SamplesI16:
 		src := src.(SamplesI16)
 		return copy(dst, src), nil

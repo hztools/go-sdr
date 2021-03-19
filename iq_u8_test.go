@@ -131,6 +131,18 @@ func TestConvertU8ToC64Short(t *testing.T) {
 
 }
 
+func TestConvertU8ToI8(t *testing.T) {
+	u8Samples := make(sdr.SamplesU8, 2)
+	i8Samples := make(sdr.SamplesI8, 2)
+
+	u8Samples[0] = [2]uint8{255, 0}
+	_, err := u8Samples.ToI8(i8Samples)
+	assert.NoError(t, err)
+
+	assert.Equal(t, int8(127), i8Samples[0][0])
+	assert.Equal(t, int8(-128), i8Samples[0][1])
+}
+
 func TestConvertU8ToI16(t *testing.T) {
 	u8Samples := make(sdr.SamplesU8, 2)
 	i16Samples := make(sdr.SamplesI16, 2)

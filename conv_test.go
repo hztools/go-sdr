@@ -21,11 +21,73 @@
 package sdr_test
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"hz.tools/sdr"
 )
 
+type unsupportedFormat [][2]int32
+
+func (uf unsupportedFormat) Slice(s, e int) sdr.Samples {
+	return uf[s:e]
+}
+
+func (uf unsupportedFormat) Format() sdr.SampleFormat {
+	return sdr.SampleFormat(100)
+}
+
+func (uf unsupportedFormat) Length() int {
+	return len(uf)
+}
+
+func (uf unsupportedFormat) Size() int {
+	return 8
+}
+
 func TestConvertBuffer(t *testing.T) {
-	t.Skip()
+	allFormats := map[string]sdr.SampleFormat{
+		"U8":  sdr.SampleFormatU8,
+		"I8":  sdr.SampleFormatI8,
+		"I16": sdr.SampleFormatI16,
+		"C64": sdr.SampleFormatC64,
+	}
+
+	for inFormatName, inFormat := range allFormats {
+		for outFormatName, outFormat := range allFormats {
+			t.Run(fmt.Sprintf("Conv-%s-%s", inFormatName, outFormatName), func(t *testing.T) {
+				in, err := sdr.MakeSamples(inFormat, 1024)
+				assert.NoError(t, err)
+				out, err := sdr.MakeSamples(outFormat, 1024)
+				assert.NoError(t, err)
+
+				i, err := sdr.ConvertBuffer(out, in)
+				assert.NoError(t, err)
+				assert.Equal(t, 1024, i)
+			})
+		}
+	}
+
+	unBuffer := make(unsupportedFormat, 1024)
+
+	for formatName, format := range allFormats {
+		t.Run(fmt.Sprintf("Conv-UNK-%s", formatName), func(t *testing.T) {
+			samples, err := sdr.MakeSamples(format, 1024)
+			assert.NoError(t, err)
+
+			_, err = sdr.ConvertBuffer(samples, unBuffer)
+			assert.Equal(t, sdr.ErrConversionNotImplemented, err)
+		})
+		t.Run(fmt.Sprintf("Conv-%s-UNK", formatName), func(t *testing.T) {
+			samples, err := sdr.MakeSamples(format, 1024)
+			assert.NoError(t, err)
+
+			_, err = sdr.ConvertBuffer(unBuffer, samples)
+			assert.Equal(t, sdr.ErrSampleFormatUnknown, err)
+		})
+	}
 }
 
 // vim: foldmethod=marker

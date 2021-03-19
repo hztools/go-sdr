@@ -68,6 +68,9 @@ func TestReader(t *testing.T, name string, r sdr.Reader) {
 		t.Run("SampleFormatU8", func(t *testing.T) {
 			testReaderSampleFormat(t, sdr.SampleFormatU8, r)
 		})
+		t.Run("SampleFormatI8", func(t *testing.T) {
+			testReaderSampleFormat(t, sdr.SampleFormatI8, r)
+		})
 		t.Run("SampleFormatI16", func(t *testing.T) {
 			testReaderSampleFormat(t, sdr.SampleFormatI16, r)
 		})

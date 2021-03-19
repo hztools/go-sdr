@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,11 +35,13 @@ func UnsafeSamplesAsBytes(buf Samples) ([]byte, error) {
 	var base uintptr
 
 	switch buf := buf.(type) {
+	case SamplesU8:
+		base = uintptr(unsafe.Pointer(&buf[0]))
+	case SamplesI8:
+		base = uintptr(unsafe.Pointer(&buf[0]))
 	case SamplesI16:
 		base = uintptr(unsafe.Pointer(&buf[0]))
 	case SamplesC64:
-		base = uintptr(unsafe.Pointer(&buf[0]))
-	case SamplesU8:
 		base = uintptr(unsafe.Pointer(&buf[0]))
 	default:
 		return nil, ErrSampleFormatUnknown

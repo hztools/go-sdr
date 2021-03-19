@@ -93,6 +93,20 @@ func TestConvertC64ToI16(t *testing.T) {
 	assert.Equal(t, [2]int16{0, 0}, i16Samples[0])
 }
 
+func TestConvertC64ToI8(t *testing.T) {
+	c64Samples := make(sdr.SamplesC64, 1)
+	i8Samples := make(sdr.SamplesI8, 1)
+
+	c64Samples[0] = complex(1, -1)
+	_, err := c64Samples.ToI8(i8Samples)
+	assert.NoError(t, err)
+
+	// *sigh*
+	//   This will clip a -1 to less than -1 in int8 due to max / min being
+	//   different because of the signed bit.
+	assert.Equal(t, [2]int8{127, -127}, i8Samples[0])
+}
+
 func TestC64Scale(t *testing.T) {
 	c64Samples := make(sdr.SamplesC64, 31)
 	for i := range c64Samples {

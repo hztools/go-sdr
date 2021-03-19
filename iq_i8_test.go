@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,9 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package testutils
+package sdr_test
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,39 +29,39 @@ import (
 	"hz.tools/sdr"
 )
 
-// TestWriter will check that sample format mismatches will trigger the correct
-// sdr errors.
-func TestWriter(t *testing.T, name string, w sdr.Writer) {
-	t.Run(name, func(t *testing.T) {
-		t.Run("SampleFormatU8", func(t *testing.T) {
-			testWriterSampleFormat(t, sdr.SampleFormatU8, w)
-		})
-		t.Run("SampleFormatI8", func(t *testing.T) {
-			testWriterSampleFormat(t, sdr.SampleFormatI8, w)
-		})
-		t.Run("SampleFormatI16", func(t *testing.T) {
-			testWriterSampleFormat(t, sdr.SampleFormatI16, w)
-		})
-		t.Run("SampleFormatC64", func(t *testing.T) {
-			testWriterSampleFormat(t, sdr.SampleFormatC64, w)
-		})
-		t.Run("SampleRate", func(t *testing.T) {
-			// We're just invoking this to ensure we don't panic.
-			w.SampleRate()
-		})
-	})
+func TestConvertI8ToC64(t *testing.T) {
+	i8Samples := make(sdr.SamplesI8, 1)
+	c64Samples := make(sdr.SamplesC64, 1)
+
+	i8Samples[0] = [2]int8{math.MaxInt8, math.MinInt8}
+	_, err := i8Samples.ToC64(c64Samples)
+	assert.NoError(t, err)
+	assert.InEpsilon(t, 1, real(c64Samples[0]), 0.008)
+	assert.InEpsilon(t, -1, imag(c64Samples[0]), 0.008)
 }
 
-func testWriterSampleFormat(t *testing.T, sf sdr.SampleFormat, w sdr.Writer) {
-	if sf == w.SampleFormat() {
-		t.Skip()
-		return
-	}
+func TestConvertI8ToI16(t *testing.T) {
+	i8Samples := make(sdr.SamplesI8, 1)
+	i16Samples := make(sdr.SamplesI16, 1)
 
-	s, err := sdr.MakeSamples(sf, 128)
+	i8Samples[0] = [2]int8{math.MaxInt8, math.MinInt8}
+	_, err := i8Samples.ToI16(i16Samples)
 	assert.NoError(t, err)
-	_, err = w.Write(s)
-	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
+	// Let's check that a max int8 is a max int16 with the low bits lopped off.
+	assert.Equal(t, int16((math.MaxInt16>>8)<<8), i16Samples[0][0])
+	assert.Equal(t, int16((math.MinInt16>>8)<<8), i16Samples[0][1])
+}
+
+func TestConvertI8ToU8(t *testing.T) {
+	i8Samples := make(sdr.SamplesI8, 1)
+	u8Samples := make(sdr.SamplesU8, 1)
+
+	i8Samples[0] = [2]int8{math.MaxInt8, math.MinInt8}
+	_, err := i8Samples.ToU8(u8Samples)
+	assert.NoError(t, err)
+
+	assert.Equal(t, uint8(0xFF), u8Samples[0][0])
+	assert.Equal(t, uint8(0x00), u8Samples[0][1])
 }
 
 // vim: foldmethod=marker

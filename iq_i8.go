@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,43 +21,36 @@
 package sdr
 
 import (
-	"math"
 	"unsafe"
-
-	"hz.tools/sdr/internal/simd"
 )
 
-// SamplesC64 indicates that the samples are in a complex64
-// number, which is itself two interleaved float32 numbers, the
-// i and q value. In memory, this is the same thing as interleaving i and q
-// values in a float array.
+// SamplesI8 indicates that the samples are being sent as a vector
+// of interleaved int8 numbers, where -128 is -1, and 1 is 127.
 //
-// This is the format that is most useful to process iq data in from a
-// mathmatical perspective, and is going to be the most common type to
-// work with when writing signal processing code.
-type SamplesC64 []complex64
+// This is the native format of the HackRF
+type SamplesI8 [][2]int8
 
 // Format returns the type of this vector, as exported by the SampleFormat
 // enum.
-func (s SamplesC64) Format() SampleFormat {
-	return SampleFormatC64
+func (s SamplesI8) Format() SampleFormat {
+	return SampleFormatI8
 }
 
 // Size will return the size of this sdr.Samples in *bytes*. This is used
 // when your code needs to be aware of the underlying storage size. This
 // should usually only be used at i/o boundaries.
-func (s SamplesC64) Size() int {
-	return int(unsafe.Sizeof(complex64(0))) * len(s)
+func (s SamplesI8) Size() int {
+	return int(unsafe.Sizeof([2]int8{})) * len(s)
 }
 
 // Length will return the number of IQ samples in this vector of Samples.
 //
 // This is the count of real and imaginary pairs, so in the case
-// of the U8 type, this will be half the size of the vector.
+// of the I8 type, this will be half the size of the vector.
 //
 // This function is usually the correct one to use when processing
 // sample information.
-func (s SamplesC64) Length() int {
+func (s SamplesI8) Length() int {
 	return len(s)
 }
 
@@ -69,64 +62,60 @@ func (s SamplesC64) Length() int {
 // samples.Slice(0, 10) is assumed to be the same as samples[:10], except
 // it does not require the typecast to the concrete type implementing
 // this interface.
-func (s SamplesC64) Slice(start, end int) Samples {
+func (s SamplesI8) Slice(start, end int) Samples {
 	return s[start:end]
 }
 
-// ToU8 will convert the Complex data to a vector of interleaved uint8s.
-func (s SamplesC64) ToU8(out SamplesU8) (int, error) {
-	if s.Length() > out.Length() {
-		return 0, ErrDstTooSmall
-	}
-	for i, sample := range s {
-		sampleReal := (real(sample) * 127.5) + 127.5
-		sampleImag := (imag(sample) * 127.5) + 127.5
-		// TODO(paultag): Check for over/underflow and cap the values.
-		out[i][0] = uint8(sampleReal)
-		out[i][1] = uint8(sampleImag)
-	}
-	return s.Length(), nil
-}
-
-// ToI16 will convert the complex64 data to int16 data.
-func (s SamplesC64) ToI16(out SamplesI16) (int, error) {
+// ToI16 will convert the int8 data to a vector of interleaved int16
+// values.
+func (s SamplesI8) ToI16(out SamplesI16) (int, error) {
 	if s.Length() > out.Length() {
 		return 0, ErrDstTooSmall
 	}
 	for i := range s {
 		out[i] = [2]int16{
-			int16(real(s[i]) * math.MaxInt16),
-			int16(imag(s[i]) * math.MaxInt16),
+			int16(s[i][0]) << 8,
+			int16(s[i][1]) << 8,
 		}
 	}
 	return s.Length(), nil
 }
 
-// ToI8 will convert the complex64 data to int8 data.
-func (s SamplesC64) ToI8(out SamplesI8) (int, error) {
+// ToU8 will convert the int8 data to a vector of interleaved uint8
+func (s SamplesI8) ToU8(out SamplesU8) (int, error) {
 	if s.Length() > out.Length() {
 		return 0, ErrDstTooSmall
 	}
 	for i := range s {
-		out[i] = [2]int8{
-			int8(real(s[i]) * math.MaxInt8),
-			int8(imag(s[i]) * math.MaxInt8),
+		out[i] = [2]uint8{
+			uint8(int16(s[i][0]) + 128),
+			uint8(int16(s[i][1]) + 128),
 		}
 	}
 	return s.Length(), nil
 }
 
-// Scale will multiply each I and Q value by the provided real value 'r'. This
-// will *not* do a complex multiplication, this is the same as if each phasor
-// had their real and imag parts multiplied by the provided real value 'r'.
-func (s SamplesC64) Scale(r float32) {
-	simd.ScaleComplex(r, s)
+// ToC64 will convert the int8 data to a vector of complex64 numbers.
+func (s SamplesI8) ToC64(out SamplesC64) (int, error) {
+	if s.Length() > out.Length() {
+		return 0, ErrDstTooSmall
+	}
+	convI8ToC64Native(s, out)
+	return s.Length(), nil
 }
 
-// Multiply will conduct a complex multiplication of each phasor in this buffer
-// by a provided complex number 'c'.
-func (s SamplesC64) Multiply(c complex64) {
-	simd.RotateComplex(c, s)
+func convI8ToC64Native(s1 SamplesI8, s2 SamplesC64) {
+	for i := range s1 {
+		rel := s1[i][0]
+		img := s1[i][1]
+
+		// we use 128 not 127 to avoid going under -1 for min values,
+		// but this means +1 is never fully +1
+		s2[i] = complex(
+			(float32(rel))/128,
+			(float32(img))/128,
+		)
+	}
 }
 
 // vim: foldmethod=marker
