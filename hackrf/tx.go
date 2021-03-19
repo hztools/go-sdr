@@ -41,6 +41,18 @@ type txCallbackState struct {
 	pipeWriter sdr.PipeWriter
 }
 
+func goBytesButReally(
+	base uintptr,
+	size int,
+) []byte {
+	var b = struct {
+		base uintptr
+		len  int
+		cap  int
+	}{base, size, size}
+	return *(*[]byte)(unsafe.Pointer(&b))
+}
+
 //export hackrfTxCallback
 func hackrfTxCallback(transfer *C.hackrf_transfer) int {
 	state := pointer.Restore(transfer.tx_ctx).(*txCallbackState)
@@ -54,7 +66,7 @@ func hackrfTxCallback(transfer *C.hackrf_transfer) int {
 		log.Printf("hackrf: tx: bufSize is misaligned")
 		bufSize--
 	}
-	buf := C.GoBytes(unsafe.Pointer(transfer.buffer), C.int(bufSize))
+	buf := goBytesButReally(uintptr(unsafe.Pointer(transfer.buffer)), bufSize)
 	bufIQLength := bufSize / sdr.SampleFormatI8.Size()
 
 	// Now, let's grab some fresh bytes from the ole' pipe
@@ -97,8 +109,8 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 			return nil
 		}
 		defer pointer.Unref(state)
-		err := rvToErr(C.hackrf_stop_tx(s.dev))
 		pipeWriter.Close()
+		err := rvToErr(C.hackrf_stop_tx(s.dev))
 		closed = true
 		return err
 	}), nil
