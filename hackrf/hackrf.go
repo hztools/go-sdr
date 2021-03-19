@@ -20,7 +20,6 @@
 
 package hackrf
 
-// #cgo linux LDFLAGS: -lhackrf
 // #cgo pkg-config: libhackrf
 //
 // #include <libhackrf/hackrf.h>
@@ -45,7 +44,7 @@ var (
 
 func checkInit() error {
 	if !hasInit {
-		return fmt.Errorf("hackrf: hackrf.Init was not called!")
+		return fmt.Errorf("hackrf: Init was not called")
 	}
 	return nil
 }
@@ -148,58 +147,68 @@ func Open() (*Sdr, error) {
 	}, nil
 }
 
-// Sdr implements the sdr.Sdr interface for a HackRF.
+// Sdr implements the sdr.Sdr interface for the HackRF One.
 type Sdr struct {
 	dev *C.hackrf_device
+
+	sampleRate      uint
+	centerFrequency rf.Hz
 }
 
+// Close implements the sdr.Sdr interface
 func (s *Sdr) Close() error {
 	return rvToErr(C.hackrf_close(s.dev))
 }
 
+// SetCenterFrequency implements the sdr.Sdr interface
 func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
-	return rvToErr(C.hackrf_set_freq(
+	err := rvToErr(C.hackrf_set_freq(
 		s.dev,
 		C.uint64_t(freq),
 	))
+	if err != nil {
+		return err
+	}
+	s.centerFrequency = freq
+	return nil
 }
 
+// GetCenterFrequency implements the sdr.Sdr interface
 func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
-	return rf.Hz(0), sdr.ErrNotSupported
+	return s.centerFrequency, nil
 }
 
+// SetAutomaticGain implements the sdr.Sdr interface
 func (s *Sdr) SetAutomaticGain(bool) error {
-	return nil
+	return sdr.ErrNotSupported
 }
 
-func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
-	return nil, nil
-}
-
-func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
-	return 0, nil
-}
-
-func (s *Sdr) SetGain(sdr.GainStage, float32) error {
-	return nil
-}
-
+// SetSampleRate implements the sdr.Sdr interface
 func (s *Sdr) SetSampleRate(sampleRate uint) error {
-	return rvToErr(C.hackrf_set_sample_rate(s.dev, C.double(sampleRate)))
-}
-
-func (s *Sdr) GetSampleRate() (uint, error) {
-	return 0, sdr.ErrNotSupported
-}
-
-func (s *Sdr) SampleFormat() sdr.SampleFormat {
-	return sdr.SampleFormatU8
-}
-
-func (s *Sdr) SetPPM(int) error {
+	err := rvToErr(C.hackrf_set_sample_rate(s.dev, C.double(sampleRate)))
+	if err != nil {
+		return err
+	}
+	s.sampleRate = sampleRate
 	return nil
 }
 
+// GetSampleRate implements the sdr.Sdr interface
+func (s *Sdr) GetSampleRate() (uint, error) {
+	return s.sampleRate, nil
+}
+
+// SampleFormat implements the sdr.Sdr interface
+func (s *Sdr) SampleFormat() sdr.SampleFormat {
+	return sdr.SampleFormatI8
+}
+
+// SetPPM implements the sdr.Sdr interface
+func (s *Sdr) SetPPM(int) error {
+	return sdr.ErrNotSupported
+}
+
+// HardwareInfo implements the sdr.Sdr interface
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	var (
 		partid = C.read_partid_serialno_t{}

@@ -33,6 +33,17 @@ func TestConvertI16ToU8(t *testing.T) {
 	t.Skip()
 }
 
+func TestConvertI16ToI8(t *testing.T) {
+	i16Samples := make(sdr.SamplesI16, 1)
+	i8Samples := make(sdr.SamplesI8, 1)
+
+	i16Samples[0] = [2]int16{math.MaxInt16, math.MinInt16}
+	_, err := i16Samples.ToI8(i8Samples)
+	assert.NoError(t, err)
+	assert.Equal(t, int8(math.MaxInt8), i8Samples[0][0])
+	assert.Equal(t, int8(math.MinInt8), i8Samples[0][1])
+}
+
 func TestConvertI16ToC64(t *testing.T) {
 	i16Samples := make(sdr.SamplesI16, 1)
 	c64Samples := make(sdr.SamplesC64, 1)

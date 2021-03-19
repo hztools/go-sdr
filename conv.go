@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,22 @@ import (
 var (
 	// ErrConversionNotImplemented will be returned if the Sample type is
 	// unable to be converted into the desired target format.
-	ErrConversionNotImplemented error = fmt.Errorf("sdr.Convert: unknown format conversion")
+	ErrConversionNotImplemented error = fmt.Errorf("sdr: unknown format conversion")
 )
+
+//         ===   Table of Conversions, what's implemented?  ===
+//
+//
+//      | u8| i8|i16|c64|
+//      +---+---+---+---+   Currently, all conversions are supported, but this
+//  u8  | o | ✓ | ✓ | ✓ |   may change as new (or exotic) formats are added.
+//  i8  | ✓ | o | ✓ | ✓ |   There may come a time where some format only supports
+//  i16 | ✓ | ✓ | o | ✓ |   converting into, say, complex64, since most code
+//  c64 | ✓ | ✓ | ✓ | o |   works in complex64.
+//      +---+---+---+---+
+//
+//
+//
 
 // ConvertBuffer the provided Samples to the desired output format.
 //
@@ -40,8 +54,7 @@ var (
 // this function will copy the source samples to the target buffer.
 func ConvertBuffer(dst, src Samples) (int, error) {
 	if src.Format() == dst.Format() {
-		_, err := CopySamples(dst, src)
-		return 0, err
+		return CopySamples(dst, src)
 	}
 
 	if src.Length() > dst.Length() {
@@ -55,6 +68,12 @@ func ConvertBuffer(dst, src Samples) (int, error) {
 			return 0, ErrConversionNotImplemented
 		}
 		return convertable.ToU8(dst.(SamplesU8))
+	case SampleFormatI8:
+		convertable, ok := src.(interface{ ToI8(SamplesI8) (int, error) })
+		if !ok {
+			return 0, ErrConversionNotImplemented
+		}
+		return convertable.ToI8(dst.(SamplesI8))
 	case SampleFormatI16:
 		convertable, ok := src.(interface{ ToI16(SamplesI16) (int, error) })
 		if !ok {
