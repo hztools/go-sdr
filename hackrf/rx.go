@@ -29,6 +29,7 @@ import "C"
 
 import (
 	"log"
+	"sync"
 	"unsafe"
 
 	"github.com/mattn/go-pointer"
@@ -101,11 +102,18 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, err
 	}
 
-	var closed bool
+	var (
+		lock   = &sync.Mutex{}
+		closed bool
+	)
 	return sdr.ReaderWithCloser(pipeReader, func() error {
+		lock.Lock()
+		defer lock.Unlock()
+
 		if closed {
 			return nil
 		}
+
 		defer pointer.Unref(state)
 		err := rvToErr(C.hackrf_stop_rx(s.dev))
 		pipeWriter.Close()

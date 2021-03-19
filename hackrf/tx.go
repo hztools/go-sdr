@@ -29,6 +29,7 @@ import "C"
 
 import (
 	"log"
+	"sync"
 	"unsafe"
 
 	"github.com/mattn/go-pointer"
@@ -103,11 +104,18 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		return nil, err
 	}
 
-	var closed bool
+	var (
+		lock   = &sync.Mutex{}
+		closed bool
+	)
 	return sdr.WriterWithCloser(pipeWriter, func() error {
+		lock.Lock()
+		defer lock.Unlock()
+
 		if closed {
 			return nil
 		}
+
 		defer pointer.Unref(state)
 		pipeWriter.Close()
 		err := rvToErr(C.hackrf_stop_tx(s.dev))
