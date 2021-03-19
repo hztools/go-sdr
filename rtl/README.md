@@ -5,6 +5,7 @@ The rtl-sdr driver was the first driver that was written in early
 work has gone into keeping this code fast enough to work on constrained
 platforms.
 
+| | |
 |-------------|----|
 | Format Type | U8 |
 | Receiver    | ✓  |

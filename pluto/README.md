@@ -8,6 +8,7 @@ the suite.
 It's combination of SampleRate range and 14 bit ADC are incredibly compelling
 tech.
 
+| | |
 |-------------|-----|
 | Format Type | I16 |
 | Receiver    |  ✓  |

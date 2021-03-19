@@ -13,6 +13,7 @@ For clients, StartRx + reading from the buffer ought to be done as fast as
 possible with this driver, or the windows may back up and cause problems for
 the server.
 
+| | |
 |-------------|----|
 | Format Type | U8 |
 | Receiver    | ✓  |
