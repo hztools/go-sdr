@@ -25,13 +25,9 @@ import (
 )
 
 // SamplesI8 indicates that the samples are being sent as a vector
-// of interleaved int8 numbers, where 0 is -1, and 1 is 0xFF.
+// of interleaved int8 numbers, where -128 is -1, and 1 is 127.
 //
-// This type is very hard to process, since the 0 value is 127.5, which
-// is not representable, but it's *very* effective to send data over
-// a connection, since it's the most compact represntation.
-//
-// This is the native format of the rtl-sdr.
+// This is the native format of the HackRF
 type SamplesI8 [][2]int8
 
 // Format returns the type of this vector, as exported by the SampleFormat
