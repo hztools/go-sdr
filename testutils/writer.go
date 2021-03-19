@@ -35,6 +35,9 @@ func TestWriter(t *testing.T, name string, w sdr.Writer) {
 		t.Run("SampleFormatU8", func(t *testing.T) {
 			testWriterSampleFormat(t, sdr.SampleFormatU8, w)
 		})
+		t.Run("SampleFormatI8", func(t *testing.T) {
+			testWriterSampleFormat(t, sdr.SampleFormatI8, w)
+		})
 		t.Run("SampleFormatI16", func(t *testing.T) {
 			testWriterSampleFormat(t, sdr.SampleFormatI16, w)
 		})

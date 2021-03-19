@@ -31,10 +31,15 @@ import (
 func TestMakeSamples(t *testing.T) {
 	samples, err := sdr.MakeSamples(sdr.SampleFormatU8, 1024)
 	assert.NoError(t, err)
-
 	samplesU8, ok := samples.(sdr.SamplesU8)
 	assert.True(t, ok)
 	assert.Equal(t, 1024, len(samplesU8))
+
+	samples, err = sdr.MakeSamples(sdr.SampleFormatI8, 1024)
+	assert.True(t, ok)
+	samplesI8, ok := samples.(sdr.SamplesI8)
+	assert.True(t, ok)
+	assert.Equal(t, 1024, len(samplesI8))
 
 	samples, err = sdr.MakeSamples(sdr.SampleFormatI16, 1024)
 	assert.True(t, ok)
@@ -53,6 +58,7 @@ func TestMakeSamples(t *testing.T) {
 }
 
 func TestSamplesSize(t *testing.T) {
+	assert.Equal(t, 2, sdr.SampleFormatI8.Size())
 	assert.Equal(t, 2, sdr.SampleFormatU8.Size())
 	assert.Equal(t, 4, sdr.SampleFormatI16.Size())
 	assert.Equal(t, 8, sdr.SampleFormatC64.Size())
