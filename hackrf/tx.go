@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ package hackrf
 //
 // #include <libhackrf/hackrf.h>
 //
-// extern int hackrf_rx_callback(hackrf_transfer* transfer);
+// extern int hackrf_tx_callback(hackrf_transfer* transfer);
 import "C"
 
 import (
@@ -36,14 +36,14 @@ import (
 	"hz.tools/sdr"
 )
 
-type rxCallbackState struct {
+type txCallbackState struct {
 	pipeReader sdr.PipeReader
 	pipeWriter sdr.PipeWriter
 }
 
-//export hackrfRxCallback
-func hackrfRxCallback(transfer *C.hackrf_transfer) int {
-	state := pointer.Restore(transfer.rx_ctx).(*rxCallbackState)
+//export hackrfTxCallback
+func hackrfTxCallback(transfer *C.hackrf_transfer) int {
+	state := pointer.Restore(transfer.tx_ctx).(*txCallbackState)
 
 	// First, we need to load the incoming bytes from HackRF to a Go
 	// []byte type.
@@ -51,63 +51,53 @@ func hackrfRxCallback(transfer *C.hackrf_transfer) int {
 	// Let's first compute bounds to avoid doing weirdo stuff later.
 	bufSize := int(transfer.valid_length)
 	if bufSize%2 != 0 {
-		log.Printf("hackrf: rx: bufSize is misaligned")
+		log.Printf("hackrf: tx: bufSize is misaligned")
 		bufSize--
 	}
+	buf := C.GoBytes(unsafe.Pointer(transfer.buffer), C.int(bufSize))
 	bufIQLength := bufSize / sdr.SampleFormatI8.Size()
 
-	buf := C.GoBytes(unsafe.Pointer(transfer.buffer), C.int(bufSize))
-
-	// TODO(paultag): use a pool?
-	//
-	// Now let's allocate a new sdr.Samples, copy the bytes from the
-	// []byte above directly onto the IQ samples, and write that into the
-	// pipe.
+	// Now, let's grab some fresh bytes from the ole' pipe
 	samples := make(sdr.SamplesI8, bufIQLength)
 
-	if copy(sdr.MustUnsafeSamplesAsBytes(samples), buf) != bufSize {
-		log.Printf("hackrf: rx: copy() didn't move the whole window over")
-		return -1
-	}
-
-	i, err := state.pipeWriter.Write(samples)
+	_, err := sdr.ReadFull(state.pipeReader, samples)
 	if err != nil {
-		log.Printf("hackrf: rx: write error %s", err)
+		log.Printf("hackrf: tx: failed to ReadFull")
 		return -1
 	}
 
-	if i != bufIQLength {
-		log.Printf("hackrf: rx: short write")
+	if copy(buf, sdr.MustUnsafeSamplesAsBytes(samples)) != bufSize {
+		log.Printf("hackrf: tx: copy() didn't move the whole window over")
 		return -1
 	}
 
 	return 0
 }
 
-// StartRx implements the sdr.Sdr interface.
-func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
+// StartTx implements the sdr.Sdr interface.
+func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, sdr.SampleFormatI8)
 
-	state := pointer.Save(&rxCallbackState{
+	state := pointer.Save(&txCallbackState{
 		pipeReader: pipeReader,
 		pipeWriter: pipeWriter,
 	})
 
-	if err := rvToErr(C.hackrf_start_rx(
+	if err := rvToErr(C.hackrf_start_tx(
 		s.dev,
-		C.hackrf_sample_block_cb_fn(C.hackrf_rx_callback),
+		C.hackrf_sample_block_cb_fn(C.hackrf_tx_callback),
 		state,
 	)); err != nil {
 		return nil, err
 	}
 
 	var closed bool
-	return sdr.ReaderWithCloser(pipeReader, func() error {
+	return sdr.WriterWithCloser(pipeWriter, func() error {
 		if closed {
 			return nil
 		}
 		defer pointer.Unref(state)
-		err := rvToErr(C.hackrf_stop_rx(s.dev))
+		err := rvToErr(C.hackrf_stop_tx(s.dev))
 		pipeWriter.Close()
 		closed = true
 		return err
