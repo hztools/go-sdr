@@ -20,7 +20,7 @@
 
 package iio
 
-// #cgo linux LDFLAGS: -liio
+// #cgo pkg-config: libiio
 //
 // #include <iio.h>
 import "C"
