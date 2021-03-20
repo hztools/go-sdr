@@ -20,7 +20,7 @@
 
 package hackrf
 
-// #cgo linux LDFLAGS: -lhackrf
+// #cgo pkg-config: libhackrf
 //
 // #include <libhackrf/hackrf.h>
 import "C"
