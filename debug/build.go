@@ -23,6 +23,7 @@ package debug
 import (
 	"encoding/binary"
 
+	"hz.tools/sdr"
 	"hz.tools/sdr/internal"
 	"hz.tools/sdr/internal/simd"
 )
@@ -40,6 +41,10 @@ type SIMDInfo struct {
 // BuildInfo contains information about the compiled support inside this
 // library.
 type BuildInfo struct {
+	// SampleFormats will return all known sdr.SampleFormats understood
+	// by this compiled version of hz.tools/sdr
+	SampleFormats []sdr.SampleFormat
+
 	// SIMD will return the compile-time SIMD support.
 	SIMD SIMDInfo
 
@@ -51,6 +56,12 @@ type BuildInfo struct {
 // including implementation details.
 func ReadBuildInfo() BuildInfo {
 	return BuildInfo{
+		SampleFormats: []sdr.SampleFormat{
+			sdr.SampleFormatC64,
+			sdr.SampleFormatI16,
+			sdr.SampleFormatU8,
+			sdr.SampleFormatI8,
+		},
 		SIMD: SIMDInfo{
 			Backends: simd.Backends,
 			Enabled:  simd.Enabled,
