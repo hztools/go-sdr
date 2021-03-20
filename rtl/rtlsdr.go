@@ -20,7 +20,7 @@
 
 package rtl
 
-// #cgo linux LDFLAGS: -lrtlsdr
+// #cgo pkg-config: librtlsdr
 //
 // #include <stdint.h>
 // #include <malloc.h>
