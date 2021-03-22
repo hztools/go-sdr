@@ -36,7 +36,7 @@ import (
 
 func rvToErr(rv C.int) error {
 	if rv != 0 {
-		v := C.LMS_GetLastErrorMessage()
+		v := C.GoString(C.LMS_GetLastErrorMessage())
 		return fmt.Errorf("lime: err %d: %s", rv, v)
 	}
 	return nil
@@ -79,6 +79,8 @@ func Open() (*Sdr, error) {
 type Sdr struct {
 	dev  *C.lms_device_t
 	info sdr.HardwareInfo
+
+	sampleRate uint
 }
 
 func (s *Sdr) devPtr() unsafe.Pointer {
@@ -92,7 +94,11 @@ func (s *Sdr) Close() error {
 
 // SetSampleRate implements the sdr.Sdr interface.
 func (s *Sdr) SetSampleRate(rate uint) error {
-	return rvToErr(C.LMS_SetSampleRate(s.devPtr(), C.double(rate), 0))
+	if err := rvToErr(C.LMS_SetSampleRate(s.devPtr(), C.double(rate), 0)); err != nil {
+		return err
+	}
+	s.sampleRate = rate
+	return nil
 }
 
 // GetCenterFrequency implements the sdr.Sdr interface.
