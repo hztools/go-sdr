@@ -42,6 +42,39 @@ func rvToErr(rv C.int) error {
 	return nil
 }
 
+// Open will open the first LimeSDR plugged into the system.
+func Open() (*Sdr, error) {
+	var (
+		device    = C.lms_device_t{}
+		devicePtr = unsafe.Pointer(&device)
+	)
+
+	// TODO(paultag): Update `nil, nil` to allow specific SDR loading.
+	if err := rvToErr(C.LMS_Open(&devicePtr, nil, nil)); err != nil {
+		return nil, err
+	}
+
+	if err := rvToErr(C.LMS_Init(devicePtr)); err != nil {
+		return nil, err
+	}
+
+	// TODO(paultag): There's a lot more in here that would be nice to provide
+	// to users. Maybe extend sdr.HardwareInfo ?
+	devInfo := C.LMS_GetDeviceInfo(devicePtr)
+	info := sdr.HardwareInfo{
+		Serial:       fmt.Sprintf("%x", devInfo.boardSerialNumber),
+		Product:      strings.Trim(C.GoStringN(&devInfo.deviceName[0], 32), "\x00"),
+		Manufacturer: "Lime",
+	}
+
+	s := &Sdr{
+		dev:  (*C.lms_device_t)(devicePtr),
+		info: info,
+	}
+
+	return s, nil
+}
+
 // Sdr is a Lime SDR of some type.
 type Sdr struct {
 	dev  *C.lms_device_t
@@ -79,6 +112,15 @@ func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 
 // SetCenterFrequency implements the sdr.Sdr interface.
 func (s *Sdr) SetCenterFrequency(r rf.Hz) error {
+	// Here, we set both the RX and TX frequency at the same time, which
+	// is perhaps a bug in the sdr.Sdr interface.
+	//
+	// This is something we do in the PlutoSDR driver too, which is, again
+	// a bit awkward. It'd be nice to support mismatched RX/TX for things like
+	// transmit/rx channels (or like, a repeater).
+	//
+	// But, for now, we can live with this.
+
 	if err := rvToErr(C.LMS_SetLOFrequency(
 		s.devPtr(),
 		true,
@@ -95,61 +137,34 @@ func (s *Sdr) SetCenterFrequency(r rf.Hz) error {
 	))
 }
 
+// SetAutomaticGain implements the sdr.Sdr interface.
 func (s *Sdr) SetAutomaticGain(bool) error {
 	return sdr.ErrNotSupported
 }
 
+// GetGainStages implements the sdr.Sdr interface.
 func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 	return nil, nil
 }
 
+// GetGain implements the sdr.Sdr interface.
 func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
 	return 0, sdr.ErrNotSupported
 }
 
+// SetGain implements the sdr.Sdr interface.
 func (s *Sdr) SetGain(sdr.GainStage, float32) error {
 	return sdr.ErrNotSupported
 }
 
+// SampleFormat implements the sdr.Sdr interface.
 func (s *Sdr) SampleFormat() sdr.SampleFormat {
 	return sdr.SampleFormatI16
 }
 
+// SetPPM implements the sdr.Sdr interface.
 func (s *Sdr) SetPPM(int) error {
 	return sdr.ErrNotSupported
-}
-
-// Open will open the first LimeSDR plugged into the system.
-func Open() (*Sdr, error) {
-	var (
-		device    = C.lms_device_t{}
-		devicePtr = unsafe.Pointer(&device)
-	)
-
-	// TODO(paultag): Update `nil, nil` to allow specific SDR loading.
-	if err := rvToErr(C.LMS_Open(&devicePtr, nil, nil)); err != nil {
-		return nil, err
-	}
-
-	if err := rvToErr(C.LMS_Init(devicePtr)); err != nil {
-		return nil, err
-	}
-
-	// TODO(paultag): There's a lot more in here that would be nice to provide
-	// to users. Maybe extend sdr.HardwareInfo ?
-	devInfo := C.LMS_GetDeviceInfo(devicePtr)
-	info := sdr.HardwareInfo{
-		Serial:       fmt.Sprintf("%x", devInfo.boardSerialNumber),
-		Product:      strings.Trim(C.GoStringN(&devInfo.deviceName[0], 32), "\x00"),
-		Manufacturer: "Lime",
-	}
-
-	s := &Sdr{
-		dev:  (*C.lms_device_t)(devicePtr),
-		info: info,
-	}
-
-	return s, nil
 }
 
 // vim: foldmethod=marker
