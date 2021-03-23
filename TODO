@@ -1,4 +1,10 @@
 
+
+ - StartRx / StartTx channel param
+   - For Coherent applications, selecting the channel would be handy.
+
+ - SetCenterFrequency channel param (rx/tx, 1, 2, 3)
+
  - SIMD
    - Unity Gain
    - Downsample
