@@ -5,6 +5,8 @@
 
  - SetCenterFrequency channel param (rx/tx, 1, 2, 3)
 
+ - Refactor hackrf/lime goBytesReally to an unsafe helper. Limit the gross.
+
  - SIMD
    - Unity Gain
    - Downsample
