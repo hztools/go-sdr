@@ -32,6 +32,7 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/internal/warning"
 )
 
 type direction bool
@@ -55,6 +56,8 @@ func rvToErr(rv C.int) error {
 
 // Open will open the first LimeSDR plugged into the system.
 func Open() (*Sdr, error) {
+	warning.Experimental("limesdr")
+
 	var (
 		device    = C.lms_device_t{}
 		devicePtr = unsafe.Pointer(&device)
