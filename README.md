@@ -9,9 +9,11 @@ design here is taken from the Go io package. A new set of interfaces are
 required in order to provide a set of tools to work with reading and writing
 IQ samples.
 
-| SDR                                    | Format   | RX/TX  |
-|----------------------------------------|----------|--------|
-| [rtl](rtl/README.md)                   | u8       | RX     |
-| [HackRF](hackrf/README.md)             | i8       | RX/TX  |
-| [PlutoSDR](pluto/README.md)            | i16      | RX/TX  |
-| [rtl kerberos](rtl/kerberos/README.md) | u8       | RX     |
+| SDR                                    | Format   | RX/TX  | State |
+|----------------------------------------|----------|--------|-------|
+| [rtl](rtl/README.md)                   | u8       | RX     | Good  |
+| [HackRF](hackrf/README.md)             | i8       | RX/TX  | Good  |
+| [PlutoSDR](pluto/README.md)            | i16      | RX/TX  | Good  |
+| [rtl kerberos](rtl/kerberos/README.md) | u8       | RX     | Good  |
+| [lime](lime/README.md)                 | i16      | RX/TX  | Exp   |
+
