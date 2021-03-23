@@ -122,6 +122,7 @@ func (s *Sdr) SetSampleRate(rate uint) error {
 	)); err != nil {
 		return err
 	}
+
 	s.sampleRate = rate
 	return nil
 }

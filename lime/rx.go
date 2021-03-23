@@ -93,7 +93,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 
 			rxBufferCBytes := C.GoBytes(unsafe.Pointer(rxBufferC), C.int(rxBufferSizeC))
 			i := copy(rxBufferBytes, rxBufferCBytes)
-			if i == int(v) {
+			if int(v)*phasorSize != i {
 				log.Printf("copy mismatched LMS_RecvStream")
 				return
 			}
