@@ -34,6 +34,17 @@ import (
 	"hz.tools/sdr"
 )
 
+type direction bool
+
+const (
+	rx direction = false
+	tx direction = true
+)
+
+func (d direction) api() C.bool {
+	return C.bool(d)
+}
+
 func rvToErr(rv C.int) error {
 	if rv != 0 {
 		v := C.GoString(C.LMS_GetLastErrorMessage())
@@ -51,6 +62,10 @@ func Open() (*Sdr, error) {
 
 	// TODO(paultag): Update `nil, nil` to allow specific SDR loading.
 	if err := rvToErr(C.LMS_Open(&devicePtr, nil, nil)); err != nil {
+		return nil, err
+	}
+
+	if err := rvToErr(C.LMS_Reset(devicePtr)); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +109,17 @@ func (s *Sdr) Close() error {
 
 // SetSampleRate implements the sdr.Sdr interface.
 func (s *Sdr) SetSampleRate(rate uint) error {
-	if err := rvToErr(C.LMS_SetSampleRate(s.devPtr(), C.double(rate), 0)); err != nil {
+
+	var (
+		targetRate uint = rate
+		oversample uint = 16
+	)
+
+	if err := rvToErr(C.LMS_SetSampleRate(
+		s.devPtr(),
+		C.double(float64(targetRate)),
+		C.ulong(oversample),
+	)); err != nil {
 		return err
 	}
 	s.sampleRate = rate
@@ -129,37 +154,22 @@ func (s *Sdr) SetCenterFrequency(r rf.Hz) error {
 
 	if err := rvToErr(C.LMS_SetLOFrequency(
 		s.devPtr(),
-		true,
+		rx.api(),
 		0,
-		C.float_type(r),
+		C.double(float64(r)),
 	)); err != nil {
 		return err
 	}
 	return rvToErr(C.LMS_SetLOFrequency(
 		s.devPtr(),
-		true,
+		tx.api(),
 		0,
-		C.float_type(r),
+		C.double(float64(r)),
 	))
 }
 
 // SetAutomaticGain implements the sdr.Sdr interface.
 func (s *Sdr) SetAutomaticGain(bool) error {
-	return sdr.ErrNotSupported
-}
-
-// GetGainStages implements the sdr.Sdr interface.
-func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
-	return nil, nil
-}
-
-// GetGain implements the sdr.Sdr interface.
-func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
-	return 0, sdr.ErrNotSupported
-}
-
-// SetGain implements the sdr.Sdr interface.
-func (s *Sdr) SetGain(sdr.GainStage, float32) error {
 	return sdr.ErrNotSupported
 }
 

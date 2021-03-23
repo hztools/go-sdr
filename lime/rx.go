@@ -34,19 +34,31 @@ import (
 
 // StartRx implements the sdr.Receiver interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
+	phasorSize := 2 * 2 // [2]int16
+	rxBufferSize := 1024 * 32
+	rxBufferSizeC := rxBufferSize * phasorSize
+
 	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, s.SampleFormat())
 
 	rxStream := C.lms_stream_t{}
 	rxStream.channel = 0
-	rxStream.fifoSize = 256 * 1024
+	rxStream.fifoSize = C.uint(rxBufferSize)
 	rxStream.throughputVsLatency = 0.5
 	rxStream.dataFmt = C.LMS_FMT_I16
-	rxStream.isTx = false
+	rxStream.isTx = rx.api()
 
-	rxMeta := C.lms_stream_meta_t{}
-	rxMeta.waitForTimestamp = false
-	rxMeta.flushPartialPacket = false
-	rxMeta.timestamp = 0
+	// rxMeta := C.lms_stream_meta_t{}
+	// rxMeta.waitForTimestamp = false
+	// rxMeta.flushPartialPacket = false
+	// rxMeta.timestamp = 0
+
+	var (
+		enabled C.bool  = true
+		channel C.ulong = 0
+	)
+	if err := rvToErr(C.LMS_EnableChannel(s.devPtr(), rx.api(), channel, enabled)); err != nil {
+		return nil, err
+	}
 
 	if err := rvToErr(C.LMS_SetupStream(s.devPtr(), &rxStream)); err != nil {
 		return nil, err
@@ -56,14 +68,9 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, err
 	}
 
-	phasorSize := 2 * 2 // [2]int16
-	rxBufferSize := 1024 * 256
-	rxBufferSizeC := rxBufferSize * phasorSize
-
 	rxBufferC := C.malloc(C.ulong(rxBufferSizeC))
 	rxBuffer := make(sdr.SamplesI16, rxBufferSize)
 	rxBufferBytes := sdr.MustUnsafeSamplesAsBytes(rxBuffer)
-	rxBufferCBytes := C.GoBytes(unsafe.Pointer(rxBufferC), C.int(rxBufferSizeC))
 
 	go func() {
 		defer pipeWriter.Close()
@@ -74,7 +81,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 				&rxStream,
 				rxBufferC,
 				C.ulong(rxBufferSize),
-				&rxMeta,
+				nil, // &rxMeta,
 				1000,
 			)
 
@@ -84,14 +91,17 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 				return
 			}
 
+			rxBufferCBytes := C.GoBytes(unsafe.Pointer(rxBufferC), C.int(rxBufferSizeC))
 			i := copy(rxBufferBytes, rxBufferCBytes)
-
 			if i == int(v) {
 				log.Printf("copy mismatched LMS_RecvStream")
 				return
 			}
 
-			log.Printf("%d bytes", i)
+			if i%phasorSize != 0 {
+				log.Printf("copy misaligned phasors")
+			}
+
 			_, err := pipeWriter.Write(rxBuffer.Slice(0, i/phasorSize))
 			if err != nil {
 				log.Printf("writer.Write: %s", err)
