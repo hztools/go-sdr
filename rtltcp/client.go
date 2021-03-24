@@ -28,8 +28,13 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/rtl"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/rtltcp.Client")
+}
 
 // Client is an rtltcp "SDR" implementation.
 //

@@ -87,24 +87,25 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 
 			if v < 0 {
 				err := rvToErr(v)
-				log.Printf("LMS_RecvStream: %s", err)
+				log.Printf("lime: LMS_RecvStream broke with %s", err)
 				return
 			}
 
 			rxBufferCBytes := C.GoBytes(unsafe.Pointer(rxBufferC), C.int(rxBufferSizeC))
 			i := copy(rxBufferBytes, rxBufferCBytes)
 			if int(v)*phasorSize != i {
-				log.Printf("copy mismatched LMS_RecvStream")
+				log.Printf("lime: phasors became unaligned, aborting to avoid bad iq")
 				return
 			}
 
 			if i%phasorSize != 0 {
-				log.Printf("copy misaligned phasors")
+				log.Printf("lime: somhow we don't have things aligned to [2]int16 bounds")
+				return
 			}
 
 			_, err := pipeWriter.Write(rxBuffer.Slice(0, i/phasorSize))
 			if err != nil {
-				log.Printf("writer.Write: %s", err)
+				log.Printf("lime: failed to write rx buffer: %s", err)
 				return
 			}
 		}

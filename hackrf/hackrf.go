@@ -31,7 +31,12 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/hackrf.Sdr")
+}
 
 var (
 	hasInit         bool = false

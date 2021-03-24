@@ -34,8 +34,13 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/rtl/e4k"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/rtl.Sdr")
+}
 
 // DeviceCount will return the number of rtlsdr devices present on the
 // system.

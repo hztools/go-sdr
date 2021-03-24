@@ -25,8 +25,13 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/pluto/iio"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/pluto.Sdr")
+}
 
 var (
 	// plutoPhyName is the name of the transceiver itself, used for control

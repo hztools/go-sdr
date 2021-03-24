@@ -23,8 +23,13 @@ package kerberos
 import (
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/rtl"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/rtl/kerberos.Sdr")
+}
 
 // Sdr is a Kerberos SDR, 4 RTL-SDR dongles in one!
 type Sdr [4]*rtl.Sdr

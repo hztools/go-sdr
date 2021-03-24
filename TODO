@@ -11,3 +11,8 @@
    - Unity Gain
    - Downsample
 
+
+ - Allow custom HardwareInfo by SDR
+   - RTL-SDR tuner info
+   - LimeSDR info, versions
+   - HackRF info, versions

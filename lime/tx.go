@@ -95,13 +95,13 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		for {
 			i, err := sdr.ReadFull(pipeReader, txBuffer)
 			if err != nil {
-				log.Printf("ReadFull: %s", err)
+				log.Printf("lime: failed to read tx buffer: %s", err)
 				return
 			}
 
 			n := copy(txBufferCBytes, txBufferBytes)
 			if i*phasorSize != n {
-				log.Printf("copy mismatched")
+				log.Printf("lime: phasors became unaligned, aborting to avoid bad iq")
 				return
 			}
 
@@ -113,12 +113,12 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 				1000,
 			)
 			if int(v) != i {
-				log.Printf("LMS_SendStream didn't send all phasors")
+				log.Printf("lime: incomplete write")
 			}
 
 			if v < 0 {
 				err := rvToErr(v)
-				log.Printf("LMS_SendStream: %s", err)
+				log.Printf("lime: LMS_SendStream broke with %s", err)
 				return
 			}
 		}

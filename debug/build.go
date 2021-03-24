@@ -45,6 +45,9 @@ type BuildInfo struct {
 	// by this compiled version of hz.tools/sdr
 	SampleFormats []sdr.SampleFormat
 
+	// RadioDrivers is a string seperated list of known radio drivers.
+	RadioDrivers []string
+
 	// SIMD will return the compile-time SIMD support.
 	SIMD SIMDInfo
 
@@ -62,6 +65,7 @@ func ReadBuildInfo() BuildInfo {
 			sdr.SampleFormatU8,
 			sdr.SampleFormatI8,
 		},
+		RadioDrivers: radioDrivers,
 		SIMD: SIMDInfo{
 			Backends: simd.Backends,
 			Enabled:  simd.Enabled,

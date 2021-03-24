@@ -32,8 +32,13 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/internal/warning"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/lime.Sdr")
+}
 
 type direction bool
 

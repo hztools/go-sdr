@@ -66,7 +66,7 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 func (s *Sdr) GetGain(gainStage sdr.GainStage) (float32, error) {
 	stage, ok := gainStage.(limeGainStage)
 	if !ok {
-		return 0, fmt.Errorf("hackrf: unknown GainStage")
+		return 0, fmt.Errorf("lime: unknown GainStage")
 	}
 	return stage.GetGain(s)
 }
@@ -75,7 +75,7 @@ func (s *Sdr) GetGain(gainStage sdr.GainStage) (float32, error) {
 func (s *Sdr) SetGain(gainStage sdr.GainStage, gain float32) error {
 	stage, ok := gainStage.(limeGainStage)
 	if !ok {
-		return fmt.Errorf("hackrf: unknown GainStage")
+		return fmt.Errorf("lime: unknown GainStage")
 	}
 	return stage.SetGain(s, gain)
 }
@@ -101,7 +101,6 @@ func (lgs limeGainStage) Type() sdr.GainStageType {
 
 func (lgs limeGainStage) GetGain(s *Sdr) (float32, error) {
 	var gain C.uint
-
 	if err := rvToErr(C.LMS_GetGaindB(
 		s.devPtr(),
 		lgs.direction.api(),
@@ -110,7 +109,6 @@ func (lgs limeGainStage) GetGain(s *Sdr) (float32, error) {
 	)); err != nil {
 		return 0, err
 	}
-
 	return float32(gain), nil
 }
 
