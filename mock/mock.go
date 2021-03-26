@@ -67,7 +67,11 @@ type Config struct {
 }
 
 func (m *mockSdr) HardwareInfo() sdr.HardwareInfo {
-	return sdr.HardwareInfo{}
+	return sdr.HardwareInfo{
+		Manufacturer: "hz.tools",
+		Product:      "mocksdr",
+		Serial:       "",
+	}
 }
 
 // Close implements the sdr.Sdr interface.
