@@ -118,7 +118,7 @@ type ReadTransformerConfig struct {
 func (r *readTransformer) run() error {
 	defer r.output.Close()
 	for {
-		inn, err := r.input.Read(r.inputBuffer)
+		inn, err := sdr.ReadFull(r.input, r.inputBuffer)
 		if err != nil {
 			r.output.CloseWithError(err)
 			return err
