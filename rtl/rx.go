@@ -37,7 +37,6 @@ import (
 	"github.com/mattn/go-pointer"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/bufpipe"
 )
 
 var (
@@ -46,7 +45,8 @@ var (
 )
 
 type callbackContext struct {
-	pipe *bufpipe.Pipe
+	pipeReader sdr.PipeReader
+	pipeWriter sdr.PipeWriter
 }
 
 //export rtlsdrRxCallback
@@ -58,7 +58,7 @@ func rtlsdrRxCallback(cBuf *C.char, cBufLen C.uint32_t, ptr unsafe.Pointer) {
 
 	copy(sdr.MustUnsafeSamplesAsBytes(samples), buf)
 
-	i, err := context.pipe.Write(samples)
+	i, err := context.pipeWriter.Write(samples)
 	if err != nil {
 		log.Println(err)
 	}
@@ -88,16 +88,16 @@ func (r Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, err
 	}
 
-	pipe, err := bufpipe.New(bufferCapacity, sps, sdr.SampleFormatU8)
-	if err != nil {
-		return nil, err
-	}
+	pipeReader, pipeWriter := sdr.Pipe(sps, sdr.SampleFormatU8)
 
 	if err := r.ResetBuffer(); err != nil {
 		return nil, err
 	}
 
-	cc := &callbackContext{pipe: pipe}
+	cc := &callbackContext{
+		pipeReader: pipeReader,
+		pipeWriter: pipeWriter,
+	}
 
 	state := pointer.Save(cc)
 
@@ -112,7 +112,7 @@ func (r Sdr) StartRx() (sdr.ReadCloser, error) {
 	}(r, state)
 
 	return rx{
-		ReadCloser: pipe,
+		ReadCloser: pipeReader,
 		rtlSdr:     r,
 	}, nil
 }
