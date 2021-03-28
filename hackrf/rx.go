@@ -115,8 +115,8 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		}
 
 		defer pointer.Unref(state)
-		err := rvToErr(C.hackrf_stop_rx(s.dev))
 		pipeWriter.Close()
+		err := rvToErr(C.hackrf_stop_rx(s.dev))
 		closed = true
 		return err
 	}), nil
