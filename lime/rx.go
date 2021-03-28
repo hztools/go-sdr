@@ -34,18 +34,28 @@ import (
 
 // StartRx implements the sdr.Receiver interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
-	phasorSize := 2 * 2 // [2]int16
-	rxBufferSize := 1024 * 32
+	sampleFormat := s.SampleFormat()
+	phasorSize := sampleFormat.Size()
+
+	rxBufferSize := s.options.getBufferSize()
 	rxBufferSizeC := rxBufferSize * phasorSize
 
-	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, s.SampleFormat())
+	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, sampleFormat)
 
 	rxStream := C.lms_stream_t{}
-	rxStream.channel = 0
+	rxStream.channel = C.uint(s.options.getChannel())
 	rxStream.fifoSize = C.uint(rxBufferSize)
 	rxStream.throughputVsLatency = 0.5
-	rxStream.dataFmt = C.LMS_FMT_I16
 	rxStream.isTx = rx.api()
+
+	switch sampleFormat {
+	case sdr.SampleFormatI16:
+		rxStream.dataFmt = C.LMS_FMT_I16
+	case sdr.SampleFormatC64:
+		rxStream.dataFmt = C.LMS_FMT_F32
+	default:
+		return nil, sdr.ErrSampleFormatUnknown
+	}
 
 	// rxMeta := C.lms_stream_meta_t{}
 	// rxMeta.waitForTimestamp = false
@@ -54,7 +64,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 
 	var (
 		enabled C.bool  = true
-		channel C.ulong = 0
+		channel C.ulong = C.ulong(s.options.getChannel())
 	)
 	if err := rvToErr(C.LMS_EnableChannel(s.devPtr(), rx.api(), channel, enabled)); err != nil {
 		return nil, err
@@ -69,7 +79,10 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	}
 
 	rxBufferC := C.malloc(C.ulong(rxBufferSizeC))
-	rxBuffer := make(sdr.SamplesI16, rxBufferSize)
+	rxBuffer, err := sdr.MakeSamples(sampleFormat, rxBufferSize)
+	if err != nil {
+		return nil, err
+	}
 	rxBufferBytes := sdr.MustUnsafeSamplesAsBytes(rxBuffer)
 
 	go func() {

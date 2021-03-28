@@ -59,9 +59,74 @@ func rvToErr(rv C.int) error {
 	return nil
 }
 
+// Options has configuration options for the LimeSDR.
+type Options struct {
+	// Channel is which RX/TX channel to use.
+	Channel uint
+
+	// SampleFormat dictate what type of IQ format the SDR will send to
+	// the hz.tools libraries. This must either be SampleFormatI16 or
+	// SampleFormatC64
+	SampleFormat sdr.SampleFormat
+
+	// BufferSize defines how large of a buffer we will ask the LimeSDR
+	// internals to use when at the I/O boundary.
+	BufferSize int
+
+	// ThroughputVsLatency is a number between -1 and 1, which balances the
+	// throughput against latency of IQ data.
+	//
+	// A value of "1" will optimize for max throughput.
+	// A value of "-1" will options for lowest latency.
+	//
+	// This is *different* than the LimeSDR value, since that ranges
+	// from 0 to 1. If you're used to putting "0.5" here, put a "0" down. This
+	// is done to allow the default to be the balanced option without having
+	// a "ThroughputVsLatency IsValid" boolean.
+	ThroughputVsLatency float32
+}
+
+func (o *Options) getChannel() uint {
+	if o == nil {
+		return 0
+	}
+	return o.Channel
+}
+
+func (o *Options) getSampleFormat() sdr.SampleFormat {
+	if o == nil || o.SampleFormat == sdr.SampleFormat(0) {
+		return sdr.SampleFormatI16
+	}
+	return o.SampleFormat
+}
+
+func (o *Options) getBufferSize() int {
+	if o == nil || o.BufferSize == 0 {
+		return 1024 * 32
+	}
+	return o.BufferSize
+}
+
+func (o *Options) getThroughputVsLatency() float32 {
+	if o == nil {
+		return 0.5
+	}
+	return (o.ThroughputVsLatency + 1) / 2
+}
+
 // Open will open the first LimeSDR plugged into the system.
-func Open() (*Sdr, error) {
+func Open(opts *Options) (*Sdr, error) {
 	warning.Experimental("limesdr")
+
+	if opts != nil {
+		switch opts.SampleFormat {
+		case sdr.SampleFormat(0):
+		case sdr.SampleFormatI16:
+		case sdr.SampleFormatC64:
+		default:
+			return nil, fmt.Errorf("lime: unsupported native sample format")
+		}
+	}
 
 	var (
 		device    = C.lms_device_t{}
@@ -91,8 +156,9 @@ func Open() (*Sdr, error) {
 	}
 
 	s := &Sdr{
-		dev:  (*C.lms_device_t)(devicePtr),
-		info: info,
+		dev:     (*C.lms_device_t)(devicePtr),
+		info:    info,
+		options: opts,
 	}
 
 	return s, nil
@@ -100,8 +166,9 @@ func Open() (*Sdr, error) {
 
 // Sdr is a Lime SDR of some type.
 type Sdr struct {
-	dev  *C.lms_device_t
-	info sdr.HardwareInfo
+	dev     *C.lms_device_t
+	info    sdr.HardwareInfo
+	options *Options
 
 	sampleRate uint
 }
@@ -120,7 +187,7 @@ func (s *Sdr) SetSampleRate(rate uint) error {
 
 	var (
 		targetRate uint = rate
-		oversample uint = 16
+		oversample uint = 0
 	)
 
 	if err := rvToErr(C.LMS_SetSampleRate(
@@ -161,10 +228,14 @@ func (s *Sdr) SetCenterFrequency(r rf.Hz) error {
 	//
 	// But, for now, we can live with this.
 
+	var (
+		channel = C.ulong(s.options.getChannel())
+	)
+
 	if err := rvToErr(C.LMS_SetLOFrequency(
 		s.devPtr(),
 		rx.api(),
-		0,
+		channel,
 		C.double(float64(r)),
 	)); err != nil {
 		return err
@@ -172,7 +243,7 @@ func (s *Sdr) SetCenterFrequency(r rf.Hz) error {
 	return rvToErr(C.LMS_SetLOFrequency(
 		s.devPtr(),
 		tx.api(),
-		0,
+		channel,
 		C.double(float64(r)),
 	))
 }
@@ -184,7 +255,7 @@ func (s *Sdr) SetAutomaticGain(bool) error {
 
 // SampleFormat implements the sdr.Sdr interface.
 func (s *Sdr) SampleFormat() sdr.SampleFormat {
-	return sdr.SampleFormatI16
+	return s.options.getSampleFormat()
 }
 
 // SetPPM implements the sdr.Sdr interface.

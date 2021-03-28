@@ -46,18 +46,28 @@ func goBytesButReally(
 
 // StartTx implements the sdr.Transmitter interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
-	phasorSize := 2 * 2 // [2]int16
-	txBufferSize := 1024 * 32
+	sampleFormat := s.SampleFormat()
+	phasorSize := sampleFormat.Size()
+
+	txBufferSize := s.options.getBufferSize()
 	txBufferSizeC := txBufferSize * phasorSize
 
-	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, s.SampleFormat())
+	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, sampleFormat)
 
 	txStream := C.lms_stream_t{}
-	txStream.channel = 0
+	txStream.channel = C.uint(s.options.getChannel())
 	txStream.fifoSize = C.uint(txBufferSize * 10)
-	txStream.throughputVsLatency = 0.5
-	txStream.dataFmt = C.LMS_FMT_I16
+	txStream.throughputVsLatency = C.float(s.options.getThroughputVsLatency())
 	txStream.isTx = tx.api()
+
+	switch sampleFormat {
+	case sdr.SampleFormatI16:
+		txStream.dataFmt = C.LMS_FMT_I16
+	case sdr.SampleFormatC64:
+		txStream.dataFmt = C.LMS_FMT_F32
+	default:
+		return nil, sdr.ErrSampleFormatUnknown
+	}
 
 	txMeta := C.lms_stream_meta_t{}
 	txMeta.waitForTimestamp = false
@@ -66,7 +76,7 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 
 	var (
 		enabled C.bool  = true
-		channel C.ulong = 0
+		channel C.ulong = C.ulong(s.options.getChannel())
 	)
 	if err := rvToErr(C.LMS_EnableChannel(s.devPtr(), tx.api(), channel, enabled)); err != nil {
 		return nil, err
@@ -81,7 +91,10 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 	}
 
 	txBufferC := C.malloc(C.ulong(txBufferSizeC))
-	txBuffer := make(sdr.SamplesI16, txBufferSize)
+	txBuffer, err := sdr.MakeSamples(sampleFormat, txBufferSize)
+	if err != nil {
+		return nil, err
+	}
 	txBufferBytes := sdr.MustUnsafeSamplesAsBytes(txBuffer)
 	txBufferCBytes := goBytesButReally(
 		uintptr(unsafe.Pointer(txBufferC)),
