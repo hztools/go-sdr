@@ -33,9 +33,9 @@ import (
 
 func TestDecimateBufferU8(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer
-	// should be 1000*8/10, but here we'll just make it match to try a raw copy.
-	inputBuffer := make(sdr.SamplesU8, 1000*8)
-	outputBuffer := make(sdr.SamplesU8, 1000*8)
+	// should be 1024*32/10, but here we'll just make it match to try a raw copy.
+	inputBuffer := make(sdr.SamplesU8, 1024*32)
+	outputBuffer := make(sdr.SamplesU8, 1024*32)
 
 	n, err := stream.DecimateBuffer(outputBuffer, inputBuffer, 10, 0)
 	assert.NoError(t, err)
@@ -46,9 +46,9 @@ func TestDecimateBufferU8(t *testing.T) {
 
 func TestDecimateBufferI16(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer
-	// should be 1000*8/10, but here we'll just make it match to try a raw copy.
-	inputBuffer := make(sdr.SamplesI16, 1000*8)
-	outputBuffer := make(sdr.SamplesI16, 1000*8)
+	// should be 1024*32/10, but here we'll just make it match to try a raw copy.
+	inputBuffer := make(sdr.SamplesI16, 1024*32)
+	outputBuffer := make(sdr.SamplesI16, 1024*32)
 
 	n, err := stream.DecimateBuffer(outputBuffer, inputBuffer, 10, 0)
 	assert.NoError(t, err)
@@ -59,9 +59,9 @@ func TestDecimateBufferI16(t *testing.T) {
 
 func TestDecimateBufferC64(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer
-	// should be 1000*8/10, but here we'll just make it match to try a raw copy.
-	inputBuffer := make(sdr.SamplesC64, 1000*8)
-	outputBuffer := make(sdr.SamplesC64, 1000*8)
+	// should be 1024*32/10, but here we'll just make it match to try a raw copy.
+	inputBuffer := make(sdr.SamplesC64, 1024*32)
+	outputBuffer := make(sdr.SamplesC64, 1024*32)
 
 	n, err := stream.DecimateBuffer(outputBuffer, inputBuffer, 10, 0)
 	assert.NoError(t, err)
@@ -72,9 +72,9 @@ func TestDecimateBufferC64(t *testing.T) {
 
 func TestDecimateBufferMismatch(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer
-	// should be 1000*8/10, but here we'll just make it match to try a raw copy.
-	inputBuffer := make(sdr.SamplesC64, 1000*8)
-	outputBuffer := make(sdr.SamplesU8, 1000*8)
+	// should be 1024*32/10, but here we'll just make it match to try a raw copy.
+	inputBuffer := make(sdr.SamplesC64, 1024*32)
+	outputBuffer := make(sdr.SamplesU8, 1024*32)
 
 	n, err := stream.DecimateBuffer(outputBuffer, inputBuffer, 10, 0)
 	assert.Equal(t, sdr.ErrSampleFormatMismatch, err)
@@ -83,8 +83,8 @@ func TestDecimateBufferMismatch(t *testing.T) {
 
 func TestDecimateBufferShort(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer
-	// should be 1000*8/10, but here we'll just make it match to try a raw copy.
-	inputBuffer := make(sdr.SamplesU8, 1000*8)
+	// should be 1024*32/10, but here we'll just make it match to try a raw copy.
+	inputBuffer := make(sdr.SamplesU8, 1024*32)
 	outputBuffer := make(sdr.SamplesU8, 10)
 
 	n, err := stream.DecimateBuffer(outputBuffer, inputBuffer, 10, 0)
@@ -107,22 +107,22 @@ func TestDecimateCount(t *testing.T) {
 	decReader, err := stream.DecimateReader(pipeReader, 10)
 	assert.NoError(t, err)
 
-	inputBuffer := make(sdr.SamplesU8, 1000*8)
+	inputBuffer := make(sdr.SamplesU8, 1024*32)
 	wg := sync.WaitGroup{}
 	go func() {
 		defer wg.Done()
-		outputBuffer := make(sdr.SamplesU8, 1000*8)
+		outputBuffer := make(sdr.SamplesU8, 1024*32)
 		n, err := sdr.ReadFull(decReader, outputBuffer)
 		// error here is ok since we're using readfull
 		assert.Error(t, err)
 		// inputBuffer's length divided by the factor passed to Decimate
-		assert.Equal(t, (1000*8)/10, n)
+		assert.Equal(t, (1024*32)/10, n)
 	}()
 	wg.Add(1)
 
 	n, err := pipeWriter.Write(inputBuffer)
 	assert.NoError(t, err)
-	assert.Equal(t, 1000*8, n)
+	assert.Equal(t, 1024*32, n)
 	pipeWriter.Close()
 
 	wg.Wait()
@@ -134,7 +134,7 @@ func TestDecimateSkippyboi(t *testing.T) {
 	decReader, err := stream.DecimateReader(pipeReader, 10)
 	assert.NoError(t, err)
 
-	inputBuffer := make(sdr.SamplesU8, 1000*8)
+	inputBuffer := make(sdr.SamplesU8, 1024*32)
 	for i := 0; i < len(inputBuffer); i++ {
 		z := uint8(i % 10)
 		inputBuffer[i] = [2]uint8{z, z}
@@ -144,12 +144,12 @@ func TestDecimateSkippyboi(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		outputBuffer := make(sdr.SamplesU8, 100*8)
+		outputBuffer := make(sdr.SamplesU8, (1024*32)/10)
 		n, err := sdr.ReadFull(decReader, outputBuffer)
 		// error here is ok since we're using readfull
 		assert.NoError(t, err)
 		// inputBuffer's length divided by the factor passed to Decimate
-		assert.Equal(t, (1000*8)/10, n)
+		assert.Equal(t, (1024*32)/10, n)
 
 		for j := 0; j < n; j++ {
 			assert.Equal(t, [2]uint8{0, 0}, outputBuffer[j])
@@ -159,7 +159,7 @@ func TestDecimateSkippyboi(t *testing.T) {
 
 	n, err := pipeWriter.Write(inputBuffer)
 	assert.NoError(t, err)
-	assert.Equal(t, 1000*8, n)
+	assert.Equal(t, 1024*32, n)
 	pipeWriter.Close()
 
 	wg.Wait()

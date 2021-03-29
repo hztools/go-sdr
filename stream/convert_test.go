@@ -51,8 +51,8 @@ func TestConvertWriterAPI(t *testing.T) {
 func TestConvertReaderBufferU8C64(t *testing.T) {
 	// we're matching size to detect any over or underruns. The output buffer
 	// should be 1000*8/10, but here we'll just make it match to try a raw copy.
-	inputBuffer := make(sdr.SamplesU8, 1000*8)
-	outputBuffer := make(sdr.SamplesC64, 1000*8)
+	inputBuffer := make(sdr.SamplesU8, 1024*32)
+	outputBuffer := make(sdr.SamplesC64, 1024*32)
 
 	for i := 0; i < len(inputBuffer); i++ {
 		inputBuffer[i] = [2]uint8{0xFF, 0xFF}
@@ -60,19 +60,19 @@ func TestConvertReaderBufferU8C64(t *testing.T) {
 
 	pipeReader, pipeWriter := sdr.Pipe(0, sdr.SampleFormatU8)
 	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		n, err := pipeWriter.Write(inputBuffer)
-		assert.Equal(t, 1000*8, n)
+		assert.Equal(t, 1024*32, n)
 		assert.NoError(t, err)
 	}()
-	wg.Add(1)
 
 	c64pipeReader, err := stream.ConvertReader(pipeReader, sdr.SampleFormatC64)
 	assert.NoError(t, err)
 
 	n, err := sdr.ReadFull(c64pipeReader, outputBuffer)
-	assert.Equal(t, 1000*8, n)
+	assert.Equal(t, 1024*32, n)
 	assert.NoError(t, err)
 
 	wg.Wait()

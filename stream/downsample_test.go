@@ -37,20 +37,20 @@ func TestDownsampleCount(t *testing.T) {
 	decReader, err := stream.DownsampleReader(pipeReader, 4)
 	assert.NoError(t, err)
 
-	inputBuffer := make(sdr.SamplesC64, 1000*8)
+	inputBuffer := make(sdr.SamplesC64, 1024*32)
 	wg := sync.WaitGroup{}
 	go func() {
 		defer wg.Done()
-		outputBuffer := make(sdr.SamplesC64, 1000*8)
+		outputBuffer := make(sdr.SamplesC64, 1024*32)
 		n, err := sdr.ReadFull(decReader, outputBuffer)
 		assert.Error(t, err)
-		assert.Equal(t, (1000*8)/4, n)
+		assert.Equal(t, (1024*32)/4, n)
 	}()
 	wg.Add(1)
 
 	n, err := pipeWriter.Write(inputBuffer)
 	assert.NoError(t, err)
-	assert.Equal(t, 1000*8, n)
+	assert.Equal(t, 1024*32, n)
 	pipeWriter.Close()
 
 	wg.Wait()
@@ -62,14 +62,14 @@ func TestDownsampleCalc(t *testing.T) {
 	decReader, err := stream.DownsampleReader(pipeReader, 4)
 	assert.NoError(t, err)
 
-	inputBuffer := make(sdr.SamplesC64, 1000*8)
+	inputBuffer := make(sdr.SamplesC64, 1024*32)
 	wg := sync.WaitGroup{}
 	go func() {
 		defer wg.Done()
-		outputBuffer := make(sdr.SamplesC64, 1000*8)
+		outputBuffer := make(sdr.SamplesC64, 1024*32)
 		n, err := sdr.ReadFull(decReader, outputBuffer)
 		assert.Error(t, err)
-		assert.Equal(t, (1000*8)/4, n)
+		assert.Equal(t, (1024*32)/4, n)
 
 		outputBuffer = outputBuffer[:n]
 
@@ -86,7 +86,7 @@ func TestDownsampleCalc(t *testing.T) {
 
 	n, err := pipeWriter.Write(inputBuffer)
 	assert.NoError(t, err)
-	assert.Equal(t, 1000*8, n)
+	assert.Equal(t, 1024*32, n)
 	pipeWriter.Close()
 
 	wg.Wait()
