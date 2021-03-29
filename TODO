@@ -3,6 +3,8 @@
  - StartRx / StartTx channel param
    - For Coherent applications, selecting the channel would be handy.
 
+ - Should AGC be a Gain Stage? Something?
+
  - SetCenterFrequency channel param (rx/tx, 1, 2, 3)
 
  - Refactor hackrf/lime goBytesReally to an unsafe helper. Limit the gross.
