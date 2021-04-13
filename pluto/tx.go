@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/pluto/iio"
 )
 
@@ -74,6 +75,7 @@ func (wc *writeCloser) Write(iq sdr.Samples) (int, error) {
 func (wc *writeCloser) Close() error {
 	wc.reader.Close()
 	wc.wg.Wait()
+	debug.PprofCloser().Remove(wc)
 	return nil
 }
 
@@ -149,6 +151,7 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		sdr:    s,
 		buf:    make(sdr.SamplesI16, s.txWindowSize),
 	}
+	debug.PprofCloser().Add(wc, 1)
 
 	go func() {
 		if err := wc.run(); err != nil {

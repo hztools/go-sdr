@@ -25,14 +25,17 @@ import (
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 )
 
 // New will create a new mock sdr.
 func New(cfg Config) sdr.Transceiver {
-	return &mockSdr{
+	msdr := &mockSdr{
 		config:    &cfg,
 		gainState: make(map[string]float32),
 	}
+	debug.PprofCloser().Add(msdr, 1)
+	return msdr
 }
 
 type mockSdr struct {
@@ -76,6 +79,7 @@ func (m *mockSdr) HardwareInfo() sdr.HardwareInfo {
 
 // Close implements the sdr.Sdr interface.
 func (m *mockSdr) Close() error {
+	debug.PprofCloser().Remove(m)
 	return nil
 }
 

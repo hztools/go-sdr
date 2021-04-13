@@ -116,7 +116,7 @@ func Open(endpoint string) (*Sdr, error) {
 		return nil, err
 	}
 
-	return &Sdr{
+	dev := &Sdr{
 		endpoint: endpoint,
 
 		ictx:        ictx,
@@ -131,11 +131,15 @@ func Open(endpoint string) (*Sdr, error) {
 
 		rx: rx,
 		tx: tx,
-	}, nil
+	}
+	debug.PprofCloser().Add(dev, 1)
+	return dev, nil
 }
 
 // Close implements the sdr.Sdr interface.
 func (s *Sdr) Close() error {
+	s.ictx.Close()
+	debug.PprofCloser().Remove(s)
 	return nil
 }
 

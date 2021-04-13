@@ -28,6 +28,8 @@ import "C"
 
 import (
 	"unsafe"
+
+	"hz.tools/sdr/debug"
 )
 
 // Context is a bit of hardware we're talking to.
@@ -53,6 +55,7 @@ func (c Context) Close() error {
 	}
 	C.iio_context_destroy(c.handle)
 	*c.closed = true
+	debug.PprofCloser().Remove(c.handle)
 	return nil
 }
 
@@ -83,6 +86,7 @@ func Open(uri string) (*Context, error) {
 	if ctx == nil {
 		return nil, err
 	}
+	debug.PprofCloser().Add(ctx, 1)
 
 	var closed bool
 	return &Context{

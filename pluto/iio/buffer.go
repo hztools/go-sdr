@@ -29,6 +29,8 @@ import (
 	"fmt"
 	"syscall"
 	"unsafe"
+
+	"hz.tools/sdr/debug"
 )
 
 // Buffer wraps an iio_buffer, which allows for reading samples from and writing
@@ -45,6 +47,7 @@ func (b Buffer) Close() error {
 	}
 	C.iio_buffer_destroy(b.handle)
 	*b.closed = true
+	debug.PprofCloser().Remove(b.handle)
 	return nil
 }
 
@@ -139,6 +142,7 @@ func (d Device) CreateBuffer(samplesCount int) (*Buffer, error) {
 	if buf == nil {
 		return nil, err
 	}
+	debug.PprofCloser().Add(buf, 1)
 	var closed bool
 	return &Buffer{
 		handle: buf,

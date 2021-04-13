@@ -24,6 +24,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 	"hz.tools/sdr/pluto/iio"
 )
 
@@ -70,6 +71,7 @@ func (rc *readCloser) Read(iq sdr.Samples) (int, error) {
 }
 
 func (rc *readCloser) Close() error {
+	debug.PprofCloser().Remove(rc)
 	rc.writer.Close()
 	return nil
 }
@@ -127,6 +129,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		sdr:    s,
 		buf:    make(sdr.SamplesI16, s.rxWindowSize),
 	}
+	debug.PprofCloser().Add(rc, 1)
 
 	go func() {
 		if err := rc.run(); err != nil {
