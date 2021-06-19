@@ -104,13 +104,6 @@ func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser,
 		}
 	}
 
-	for i := range k {
-		ret[i], err = k[i].StartRx()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if err := k.SetAutomaticGain(true); err != nil {
 		ret.Close()
 		return nil, err
@@ -119,6 +112,13 @@ func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser,
 	if err := k.SetBiasT(true); err != nil {
 		ret.Close()
 		return nil, err
+	}
+
+	for i := range k {
+		ret[i], err = k[i].StartRx()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := ret.Sync(planner); err != nil {
@@ -131,10 +131,10 @@ func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser,
 		return nil, err
 	}
 
-	if err := k.SetAutomaticGain(agc); err != nil {
-		ret.Close()
-		return nil, err
-	}
+	// if err := k.SetAutomaticGain(agc); err != nil {
+	// 	ret.Close()
+	// 	return nil, err
+	// }
 
 	return ret, nil
 }
