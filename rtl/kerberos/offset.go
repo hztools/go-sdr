@@ -156,7 +156,7 @@ func (rcc readCloserCloser) Close() error {
 // Mismatched sample rates, changing frequencies under the hood or changing
 // things manually during the RX may result in some seriously weird shit.
 func (k *OffsetSdr) StartRx() (sdr.ReadCloser, error) {
-	readClosers, err := k.Sdr.StartCoherentRx(k.planner, false)
+	readClosers, err := k.Sdr.StartCoherentRx(k.planner)
 	if err != nil {
 		return nil, err
 	}

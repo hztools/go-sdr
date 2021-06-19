@@ -81,9 +81,10 @@ func (cr CoherentReadCloser) Close() error {
 // StartCoherentRx will start all the RTL dongles, align the Readers, and
 // return a slice of CoherentReadCloser objects.
 //
-// This will toggle the BiasT feature (RNG), and also flip the AGC on, and
-// then set it to the passed `agc` value.
-func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser, error) {
+// This will toggle the BiasT feature (RNG), and also flip the AGC on.
+// If the AGC is not needed, it needs to be explicitly turned off after
+// this function call.
+func (k Sdr) StartCoherentRx(planner fft.Planner) (CoherentReadCloser, error) {
 	var (
 		err error
 		sps uint
@@ -130,11 +131,6 @@ func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser,
 		ret.Close()
 		return nil, err
 	}
-
-	// if err := k.SetAutomaticGain(agc); err != nil {
-	// 	ret.Close()
-	// 	return nil, err
-	// }
 
 	return ret, nil
 }
