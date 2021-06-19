@@ -111,11 +111,13 @@ func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser,
 		}
 	}
 
-	if err := k.SetBiasT(true); err != nil {
+	if err := k.SetAutomaticGain(true); err != nil {
+		ret.Close()
 		return nil, err
 	}
 
-	if err := k.SetAutomaticGain(true); err != nil {
+	if err := k.SetBiasT(true); err != nil {
+		ret.Close()
 		return nil, err
 	}
 
@@ -125,10 +127,12 @@ func (k Sdr) StartCoherentRx(planner fft.Planner, agc bool) (CoherentReadCloser,
 	}
 
 	if err := k.SetBiasT(false); err != nil {
+		ret.Close()
 		return nil, err
 	}
 
 	if err := k.SetAutomaticGain(agc); err != nil {
+		ret.Close()
 		return nil, err
 	}
 

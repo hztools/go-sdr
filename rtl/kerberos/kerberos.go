@@ -41,7 +41,7 @@ func New(i1, i2, i3, i4 uint, windowSize uint) (*Sdr, error) {
 		sdr = &Sdr{}
 	)
 	for i := range sdr {
-		sdr[i], err = rtl.New(uint(i), 0)
+		sdr[i], err = rtl.New(uint(i), windowSize)
 		if err != nil {
 			return nil, err
 		}
