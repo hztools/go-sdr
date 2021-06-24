@@ -28,6 +28,7 @@ import "C"
 
 import (
 	"fmt"
+	"syscall"
 	"unsafe"
 )
 
@@ -67,6 +68,22 @@ type Device struct {
 // String will return the name of the Device.
 func (d Device) String() string {
 	return d.name
+}
+
+// WriteDebugInt64 will write a debug int64 chanel attribute to the backing device.
+func (d Device) WriteDebugInt64(name string, value int64) error {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+
+	errno := C.iio_device_debug_attr_write_longlong(
+		d.handle,
+		cName,
+		C.longlong(value),
+	)
+	if errno == 0 {
+		return nil
+	}
+	return syscall.Errno(-errno)
 }
 
 // vim: foldmethod=marker

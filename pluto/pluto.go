@@ -134,6 +134,24 @@ func Open(endpoint string) (*Sdr, error) {
 	}, nil
 }
 
+// SetLoopback will set BIST Loopback to send TX data to the RX port, to do
+// things like determine the phase offset between RX and TX.
+func (s *Sdr) SetLoopback(b bool) error {
+	// s.phy
+	// loopback
+
+	// 0  Disable
+	// 1  Digital TX → Digital RX
+	// 2  RF RX → RF TX
+
+	var v int64 = 0
+	if b {
+		v = 1
+	}
+
+	return s.phy.WriteDebugInt64("loopback", v)
+}
+
 // Close implements the sdr.Sdr interface.
 func (s *Sdr) Close() error {
 	return nil
