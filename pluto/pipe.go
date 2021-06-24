@@ -50,9 +50,9 @@ func (p *Sdr) Loopback(ctx context.Context) (sdr.Reader, sdr.Writer, error) {
 
 	go func() {
 		<-ctx.Done()
+		p.SetLoopback(false)
 		tx.Close()
 		rx.Close()
-		p.SetLoopback(false)
 	}()
 
 	return rx, tx, nil
