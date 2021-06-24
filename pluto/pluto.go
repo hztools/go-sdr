@@ -116,7 +116,7 @@ func Open(endpoint string) (*Sdr, error) {
 		return nil, err
 	}
 
-	return &Sdr{
+	s := &Sdr{
 		endpoint: endpoint,
 
 		ictx:        ictx,
@@ -131,7 +131,17 @@ func Open(endpoint string) (*Sdr, error) {
 
 		rx: rx,
 		tx: tx,
-	}, nil
+	}
+
+	// Since we expose Loopback, we should reset Loopback to false. I'm worried
+	// that someone will set this to 'true' for a test program / calibration,
+	// have that program crash halfway through, and wind up with this set to
+	// true, even weeks to months later.
+	if err := s.SetLoopback(false); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 // SetLoopback will set BIST Loopback to send TX data to the RX port, to do
