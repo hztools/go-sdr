@@ -291,6 +291,7 @@ func (ag ampGain) SetGain(s *Sdr, gain float32) error {
 	if onOff != 0 {
 		enabledU8 = 1
 	}
+	s.amp = enabledU8 == 1
 	return rvToErr(C.hackrf_set_amp_enable(s.dev, enabledU8))
 }
 

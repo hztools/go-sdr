@@ -89,6 +89,17 @@ func hackrfTxCallback(transfer *C.hackrf_transfer) int {
 
 // StartTx implements the sdr.Sdr interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
+	if s.amp {
+		log.Printf("Setting Amp again")
+		if err := ampGain(newSteppedGain(
+			"Amp",
+			sdr.GainStageTypeAmp,
+			0, 14, 14,
+		)).SetGain(s, 14); err != nil {
+			return nil, err
+		}
+	}
+
 	pipeReader, pipeWriter := sdr.Pipe(s.sampleRate, sdr.SampleFormatI8)
 
 	state := pointer.Save(&txCallbackState{

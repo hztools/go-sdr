@@ -158,6 +158,7 @@ type Sdr struct {
 
 	sampleRate      uint
 	centerFrequency rf.Hz
+	amp             bool
 }
 
 // Close implements the sdr.Sdr interface
