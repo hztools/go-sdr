@@ -144,6 +144,15 @@ func Open(endpoint string) (*Sdr, error) {
 	return s, nil
 }
 
+// CheckBuffer will check to see if there was an overrun or underrun in the
+// PHY whilst streaming IQ samples.
+//
+// If there was an overrun condition, this will return an iio.ErrOverrun
+// If there was an underrun condition, this will return an iio.ErrUnderrun
+func (s *Sdr) CheckBuffer() error {
+	return s.phy.CheckBuffer()
+}
+
 // SetLoopback will set BIST Loopback to send TX data to the RX port, to do
 // things like determine the phase offset between RX and TX.
 func (s *Sdr) SetLoopback(b bool) error {
