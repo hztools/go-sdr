@@ -45,20 +45,6 @@ func (c Context) FindDevice(name string) (*Device, error) {
 	return &Device{name: name, handle: dev}, nil
 }
 
-// TODO(paultag) make this a real thing...
-// func (d Device) OverrunDetected() error {
-// 	var val C.uint32_t
-// 	errno := C.iio_device_reg_read(d.handle, 0x80000088, &val)
-// 	if errno != 0 {
-// 		return syscall.Errno(-errno)
-// 	}
-// 	if (val & 4) == 4 {
-// 		log.Println("Overflow")
-// 	}
-//
-// 	return nil
-// }
-
 // Device represents an iio_device within an iio_context.
 type Device struct {
 	name   string
@@ -68,6 +54,37 @@ type Device struct {
 // String will return the name of the Device.
 func (d Device) String() string {
 	return d.name
+}
+
+var (
+	// ErrOverrun will be returned if samples have been dropped on the
+	// recieve path.
+	ErrOverrun error = fmt.Errorf("iio: iq overrun")
+
+	// ErrUnderrun will be returned if the buffer ran out of samples while
+	// transmitting.
+	ErrUnderrun error = fmt.Errorf("iio: iq underrun")
+)
+
+// CheckBuffer will check to see if there was an overrun when streaming
+// IQ samples.
+//
+// If there was an overrun condition, this will return an iio.ErrOverrun
+// If there was an underrun condition, this will return an iio.ErrUnderrun
+func (d Device) CheckBuffer() error {
+	var val C.uint32_t
+	errno := C.iio_device_reg_read(d.handle, 0x80000088, &val)
+	if errno != 0 {
+		return syscall.Errno(-errno)
+	}
+	if (val & 1) == 1 {
+		return ErrUnderrun
+	}
+
+	if (val & 4) == 4 {
+		return ErrOverrun
+	}
+	return nil
 }
 
 // WriteDebugInt64 will write a debug int64 chanel attribute to the backing device.
