@@ -95,16 +95,8 @@ func (rc *readCloser) run() error {
 	}
 	defer ibuf.Close()
 
-	if err := rx.adc.ClearCheckBuffer(); err != nil {
-		return err
-	}
-
 	buf := rc.buf
 	for {
-		if err := rx.adc.CheckBuffer(); err != nil {
-			return err
-		}
-
 		i, err := ibuf.Refill()
 		if err != nil {
 			return err
