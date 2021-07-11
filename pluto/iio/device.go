@@ -66,6 +66,15 @@ var (
 	ErrUnderrun error = fmt.Errorf("iio: iq underrun")
 )
 
+// ClearCheckBuffer will clear registry flags.
+func (d Device) ClearCheckBuffer() error {
+	errno := C.iio_device_reg_write(d.handle, 0x80000088, 6)
+	if errno == 0 {
+		return nil
+	}
+	return syscall.Errno(-errno)
+}
+
 // CheckBuffer will check to see if there was an overrun when streaming
 // IQ samples.
 //
@@ -77,11 +86,14 @@ func (d Device) CheckBuffer() error {
 	if errno != 0 {
 		return syscall.Errno(-errno)
 	}
+
 	if (val & 1) == 1 {
+		C.iio_device_reg_write(d.handle, 0x80000088, 1)
 		return ErrUnderrun
 	}
 
 	if (val & 4) == 4 {
+		C.iio_device_reg_write(d.handle, 0x80000088, 4)
 		return ErrOverrun
 	}
 	return nil

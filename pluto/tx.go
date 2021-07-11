@@ -108,11 +108,18 @@ func (wc *writeCloser) run() error {
 		return err
 	}
 	defer ibuf.Close()
+	if err := tx.dac.ClearCheckBuffer(); err != nil {
+		return err
+	}
 
 	wc.powerup()
 	defer wc.powerdown()
 
 	for {
+		if err := tx.dac.CheckBuffer(); err != nil {
+			return err
+		}
+
 		_, err := sdr.ReadFull(wc.reader, buf)
 		if err != nil {
 			return err
