@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020-2021
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package bufpipe
+package stream
 
 import (
 	"context"
@@ -33,9 +33,9 @@ var (
 	ErrBufferOverrun error = fmt.Errorf("sdr/internal/bufpipe: Buffer Overrun")
 )
 
-// Dupe will duplicate (and copy) samples from one buffer s1, to a new
+// dupe will duplicate (and copy) samples from one buffer s1, to a new
 // buffer that is freshly allocated, and returned.
-func Dupe(s1 sdr.Samples) (sdr.Samples, int, error) {
+func dupe(s1 sdr.Samples) (sdr.Samples, int, error) {
 	s2, err := sdr.MakeSamples(s1.Format(), s1.Length())
 	if err != nil {
 		return nil, 0, err
@@ -44,12 +44,12 @@ func Dupe(s1 sdr.Samples) (sdr.Samples, int, error) {
 	return s2, n, err
 }
 
-// Pipe wraps a normal sdr.Pipe, but writes will not block. Writes are queued
+// BufPipe wraps a normal sdr.Pipe, but writes will not block. Writes are queued
 // into a channel.
 //
 // If the writes exceed the buf capcity, all future writes and reads will return
 // an ErrBufferOverrun.
-type Pipe struct {
+type BufPipe struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	err    error
@@ -63,17 +63,17 @@ type Pipe struct {
 }
 
 // SampleFormat implements the sdr.ReadWriter interface.
-func (p *Pipe) SampleFormat() sdr.SampleFormat {
+func (p *BufPipe) SampleFormat() sdr.SampleFormat {
 	return p.sampleFormat
 }
 
 // SampleRate implements the sdr.ReadWriter interface.
-func (p *Pipe) SampleRate() uint {
+func (p *BufPipe) SampleRate() uint {
 	return p.sampleRate
 }
 
 // Read implements the sdr.ReadWriter interface.
-func (p *Pipe) Read(s sdr.Samples) (int, error) {
+func (p *BufPipe) Read(s sdr.Samples) (int, error) {
 	if p.err != nil {
 		// TODO(paultag): Should this exhaust the queue until the end,
 		// and then return that? Not sure.
@@ -87,7 +87,7 @@ func (p *Pipe) Read(s sdr.Samples) (int, error) {
 	return p.pipeReader.Read(s)
 }
 
-func (p *Pipe) do() {
+func (p *BufPipe) do() {
 	for {
 		select {
 		case s1 := <-p.buf:
@@ -111,7 +111,7 @@ func (p *Pipe) do() {
 }
 
 // Write implements the sdr.Writer interface.
-func (p *Pipe) Write(s1 sdr.Samples) (int, error) {
+func (p *BufPipe) Write(s1 sdr.Samples) (int, error) {
 	if p.err != nil {
 		return 0, p.err
 	}
@@ -121,7 +121,7 @@ func (p *Pipe) Write(s1 sdr.Samples) (int, error) {
 	}
 
 	// TODO(paultag): Dupe may not be needed?
-	s2, i, err := Dupe(s1)
+	s2, i, err := dupe(s1)
 	if err != nil {
 		return 0, err
 	}
@@ -137,7 +137,7 @@ func (p *Pipe) Write(s1 sdr.Samples) (int, error) {
 
 // CloseWithError will close the pipe, and return the provided error on any
 // subsequent call.
-func (p *Pipe) CloseWithError(err error) error {
+func (p *BufPipe) CloseWithError(err error) error {
 	p.err = err
 	p.Close()
 	return nil
@@ -145,29 +145,29 @@ func (p *Pipe) CloseWithError(err error) error {
 
 // Close will cancel the Pipe's context, terminating the goroutine spawned,
 // and closing the context of any children objects.
-func (p *Pipe) Close() error {
+func (p *BufPipe) Close() error {
 	p.cancel()
 	return nil
 }
 
-// New will create a new bufpipe.Pipe, which wraps a normal sdr.Pipe,
+// NewBufPipe will create a new stream.BufPipe, which wraps a normal sdr.Pipe,
 // but writes will not block.
-func New(capacity int, sampleRate uint, sampleFormat sdr.SampleFormat) (*Pipe, error) {
-	return NewWithContext(context.Background(), capacity, sampleRate, sampleFormat)
+func NewBufPipe(capacity int, sampleRate uint, sampleFormat sdr.SampleFormat) (*BufPipe, error) {
+	return NewBufPipeWithContext(context.Background(), capacity, sampleRate, sampleFormat)
 }
 
-// NewWithContext will create a new bufpipe.Pipe, which wraps a normal sdr.Pipe,
+// NewBufPipeWithContext will create a new bufpipe.Pipe, which wraps a normal sdr.Pipe,
 // but writes will not block.
 //
 // This includes a parent context, which if it is expired or is cancelled
 // will trigger a close of this context as well.
-func NewWithContext(ctx context.Context, capacity int, sampleRate uint, sampleFormat sdr.SampleFormat) (*Pipe, error) {
+func NewBufPipeWithContext(ctx context.Context, capacity int, sampleRate uint, sampleFormat sdr.SampleFormat) (*BufPipe, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sampleRate, sampleFormat)
 
 	buf := make(chan sdr.Samples, capacity)
-	pipe := &Pipe{
+	pipe := &BufPipe{
 		ctx:    ctx,
 		cancel: cancel,
 		err:    nil,

@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package bufpipe_test
+package stream_test
 
 import (
 	"testing"
@@ -26,11 +26,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/bufpipe"
+	"hz.tools/sdr/stream"
 )
 
-func TestPipeBasic(t *testing.T) {
-	pipe, err := bufpipe.New(1, 0, sdr.SampleFormatU8)
+func TestBufPipeBasic(t *testing.T) {
+	pipe, err := stream.NewBufPipe(1, 0, sdr.SampleFormatU8)
 	assert.NoError(t, err)
 
 	b1 := make(sdr.SamplesU8, 1024)
@@ -54,8 +54,8 @@ func TestPipeBasic(t *testing.T) {
 	}
 }
 
-func TestPipeDouble(t *testing.T) {
-	pipe, err := bufpipe.New(2, 0, sdr.SampleFormatU8)
+func TestBufPipeDouble(t *testing.T) {
+	pipe, err := stream.NewBufPipe(2, 0, sdr.SampleFormatU8)
 	assert.NoError(t, err)
 
 	b1 := make(sdr.SamplesU8, 1024)
@@ -86,8 +86,8 @@ func TestPipeDouble(t *testing.T) {
 	}
 }
 
-func TestPipeTooManyWrite(t *testing.T) {
-	pipe, err := bufpipe.New(2, 0, sdr.SampleFormatU8)
+func TestBufPipeTooManyWrite(t *testing.T) {
+	pipe, err := stream.NewBufPipe(2, 0, sdr.SampleFormatU8)
 	assert.NoError(t, err)
 
 	b1 := make(sdr.SamplesU8, 1024)
@@ -107,14 +107,14 @@ func TestPipeTooManyWrite(t *testing.T) {
 		if err == nil {
 			continue
 		}
-		assert.Equal(t, bufpipe.ErrBufferOverrun, err)
+		assert.Equal(t, stream.ErrBufferOverrun, err)
 		return
 	}
 	t.Fatal("Write did not overflow")
 }
 
-func TestPipeTooManyWriteThenRead(t *testing.T) {
-	pipe, err := bufpipe.New(2, 0, sdr.SampleFormatU8)
+func TestBufPipeTooManyWriteThenRead(t *testing.T) {
+	pipe, err := stream.NewBufPipe(2, 0, sdr.SampleFormatU8)
 	assert.NoError(t, err)
 
 	b1 := make(sdr.SamplesU8, 1024)
@@ -134,17 +134,17 @@ func TestPipeTooManyWriteThenRead(t *testing.T) {
 		if err == nil {
 			continue
 		}
-		assert.Equal(t, bufpipe.ErrBufferOverrun, err)
+		assert.Equal(t, stream.ErrBufferOverrun, err)
 		return
 	}
 	t.Fatal("Write did not overflow")
 
 	_, err = pipe.Read(b1)
-	assert.Equal(t, bufpipe.ErrBufferOverrun, err)
+	assert.Equal(t, stream.ErrBufferOverrun, err)
 }
 
-func TestPipeMismatch(t *testing.T) {
-	pipe, err := bufpipe.New(1, 0, sdr.SampleFormatU8)
+func TestBufPipeMismatch(t *testing.T) {
+	pipe, err := stream.NewBufPipe(1, 0, sdr.SampleFormatU8)
 	assert.NoError(t, err)
 
 	b1 := make(sdr.SamplesC64, 1024)
@@ -158,8 +158,8 @@ func TestPipeMismatch(t *testing.T) {
 	assert.Equal(t, 0, i)
 }
 
-func TestPipeParts(t *testing.T) {
-	pipe, err := bufpipe.New(1, 0, sdr.SampleFormatC64)
+func TestBufPipeParts(t *testing.T) {
+	pipe, err := stream.NewBufPipe(1, 0, sdr.SampleFormatC64)
 	assert.NoError(t, err)
 
 	wb := make(sdr.SamplesC64, 1024)
