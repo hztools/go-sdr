@@ -125,12 +125,7 @@ func (b Buffer) Refill() (int, error) {
 	return int(i), nil
 }
 
-// CreateBuffer will create an iio_buffer from a given device.
-//
-// At least one channel must be Enabled prior to this call.
-func (d Device) CreateBuffer(samplesCount int) (*Buffer, error) {
-	// TODO(paultag): Fix this eventually.
-	cyclic := false
+func (d Device) createBuffer(samplesCount int, cyclic bool) (*Buffer, error) {
 	buf, err := C.iio_device_create_buffer(
 		d.handle,
 		C.size_t(samplesCount),
@@ -144,6 +139,20 @@ func (d Device) CreateBuffer(samplesCount int) (*Buffer, error) {
 		handle: buf,
 		closed: &closed,
 	}, nil
+}
+
+// CreateBuffer will create an iio_buffer from a given device.
+//
+// At least one channel must be Enabled prior to this call.
+func (d Device) CreateBuffer(samplesCount int) (*Buffer, error) {
+	return d.createBuffer(samplesCount, false)
+}
+
+// CreateCyclicBuffer will create an iio_buffer from a given device.
+//
+// At least one channel must be Enabled prior to this call.
+func (d Device) CreateCyclicBuffer(samplesCount int) (*Buffer, error) {
+	return d.createBuffer(samplesCount, true)
 }
 
 // vim: foldmethod=marker
