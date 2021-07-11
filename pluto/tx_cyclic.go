@@ -29,7 +29,8 @@ import (
 	"hz.tools/sdr/pluto/iio"
 )
 
-// CyclicTx will transmit the buffer in a loop.
+// CyclicTx will transmit a specific buffer in a loop. If the buffer is to be
+// updated after the fact, be sure to invoke 'Push'.
 type CyclicTx struct {
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -41,20 +42,26 @@ type CyclicTx struct {
 	buf  sdr.SamplesI16
 }
 
+// Close will cancel the context, and then wait for the cleanup routine to
+// close out any resources it's holding on to.
 func (ct *CyclicTx) Close() error {
 	ct.cancel()
 	ct.wg.Wait()
 	return nil
 }
 
+// Powerup will turn on the transmit power.
 func (ct *CyclicTx) Powerup() error {
 	return ct.sdr.altVoltage1.WriteBool("powerdown", false)
 }
 
+// Powerdown will turn off the transmit power.
 func (ct *CyclicTx) Powerdown() error {
 	return ct.sdr.altVoltage1.WriteBool("powerdown", true)
 }
 
+// Push will update the PlutoSDR with the buffer provided when the CyclicTx
+// was created.
 func (ct *CyclicTx) Push() error {
 	_, err := ct.ibuf.CopyToBufferFromUnsafe(
 		*ct.sdr.tx.txi,
@@ -71,7 +78,8 @@ func (ct *CyclicTx) Push() error {
 	return nil
 }
 
-// StartCyclicTx implements the sdr.Sdr interface.
+// StartCyclicTx allows for the creation of a cyclic transmit buffer, and to
+// manage the updating of that buffer.
 func (s *Sdr) StartCyclicTx(buf sdr.SamplesI16) (*CyclicTx, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
