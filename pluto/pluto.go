@@ -249,7 +249,7 @@ func (s *Sdr) SetSampleRate(sps uint) error {
 
 // GetSampleRate implements the sdr.Sdr interface.
 func (s *Sdr) GetSampleRate() (uint, error) {
-	return 0, sdr.ErrNotSupported
+	return s.samplesPerSecond, nil
 }
 
 // SampleFormat implements the sdr.Sdr interface.
