@@ -63,7 +63,16 @@ func (ct *CyclicTx) Powerdown() error {
 // Push will update the PlutoSDR with the buffer provided when the CyclicTx
 // was created.
 func (ct *CyclicTx) Push() error {
-	_, err := ct.ibuf.CopyToBufferFromUnsafe(
+	if ct.ibuf != nil {
+		ct.ibuf.Close()
+	}
+
+	ibuf, err := ct.sdr.tx.dac.CreateCyclicBuffer(ct.buf.Length())
+	if err != nil {
+		return err
+	}
+
+	_, err = ibuf.CopyToBufferFromUnsafe(
 		*ct.sdr.tx.txi,
 		unsafe.Pointer(&ct.buf[0]),
 		ct.buf.Size(),
@@ -72,9 +81,11 @@ func (ct *CyclicTx) Push() error {
 		return err
 	}
 
-	if _, err := ct.ibuf.Push(); err != nil {
+	if _, err := ibuf.Push(); err != nil {
 		return err
 	}
+
+	ct.ibuf = ibuf
 	return nil
 }
 
@@ -89,30 +100,27 @@ func (s *Sdr) StartCyclicTx(buf sdr.SamplesI16) (*CyclicTx, error) {
 	tx.txi.Enable()
 	tx.txq.Enable()
 
-	ibuf, err := tx.dac.CreateCyclicBuffer(buf.Length())
-	if err != nil {
-		tx.txi.Disable()
-		tx.txq.Disable()
-		return nil, err
-	}
-
 	ct := &CyclicTx{
 		wg:     wg,
 		ctx:    ctx,
 		cancel: cancel,
 		sdr:    s,
 		buf:    buf,
-		ibuf:   ibuf,
 	}
-	ct.Push()
+
+	if err := ct.Push(); err != nil {
+		tx.txi.Disable()
+		tx.txq.Disable()
+		return nil, err
+	}
 	ct.Powerup()
 
 	go func() {
 		defer wg.Done()
 		defer tx.txi.Disable()
 		defer tx.txq.Disable()
-		defer ibuf.Close()
-		defer ct.Powerup()
+		defer ct.ibuf.Close()
+		defer ct.Powerdown()
 		<-ctx.Done()
 	}()
 
