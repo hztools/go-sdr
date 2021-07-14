@@ -186,9 +186,24 @@ func (s *Sdr) Close() error {
 func (s *Sdr) SetSampleRate(rate uint) error {
 
 	var (
-		targetRate uint = rate
-		oversample uint = 0
+		targetRate uint    = rate
+		oversample uint    = 0
+		max        float64 = 640e6
+		frac               = max / (float64(rate) * 4)
 	)
+
+	switch {
+	case frac >= 32:
+		oversample = 32
+	case frac >= 16:
+		oversample = 16
+	case frac >= 8:
+		oversample = 8
+	case frac >= 4:
+		oversample = 4
+	default:
+		oversample = 2
+	}
 
 	if err := rvToErr(C.LMS_SetSampleRate(
 		s.devPtr(),
