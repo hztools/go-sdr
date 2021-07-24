@@ -45,7 +45,7 @@ type BuildInfo struct {
 	// by this compiled version of hz.tools/sdr
 	SampleFormats []sdr.SampleFormat
 
-	// RadioDrivers is a string seperated list of known radio drivers.
+	// RadioDrivers is a string separated list of known radio drivers.
 	RadioDrivers []string
 
 	// SIMD will return the compile-time SIMD support.

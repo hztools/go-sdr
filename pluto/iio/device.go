@@ -58,7 +58,7 @@ func (d Device) String() string {
 
 var (
 	// ErrOverrun will be returned if samples have been dropped on the
-	// recieve path.
+	// receive path.
 	ErrOverrun error = fmt.Errorf("iio: iq overrun")
 
 	// ErrUnderrun will be returned if the buffer ran out of samples while
