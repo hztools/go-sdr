@@ -39,11 +39,6 @@ import (
 	"hz.tools/sdr"
 )
 
-var (
-	// TODO(paultag): tune this properly
-	bufferCapacity int = 50
-)
-
 type callbackContext struct {
 	pipeReader sdr.PipeReader
 	pipeWriter sdr.PipeWriter
@@ -103,12 +98,12 @@ func (r Sdr) StartRx() (sdr.ReadCloser, error) {
 
 	go func(r Sdr, state unsafe.Pointer) {
 		defer pointer.Unref(state)
-		if err := rvToErr(C.rtlsdr_read_async(
+		err := rvToErr(C.rtlsdr_read_async(
 			r.handle,
 			C.rtlsdr_read_async_cb_t(C.rtlsdr_rx_callback),
 			state, 0, C.uint32_t(r.windowSize),
-		)); err != nil {
-		}
+		))
+		pipeReader.CloseWithError(err)
 	}(r, state)
 
 	return rx{
