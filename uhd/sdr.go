@@ -33,7 +33,8 @@ import (
 // Sdr is a UHD backed Software Defined Radio. This implements the sdr.Sdr
 // interface.
 type Sdr struct {
-	handle *C.uhd_usrp_handle
+	handle       *C.uhd_usrp_handle
+	sampleFormat sdr.SampleFormat
 
 	rxStreamer *C.uhd_rx_streamer_handle
 	rxChannel  int
@@ -56,7 +57,7 @@ func (s *Sdr) Close() error {
 // GetCenterFrequency implements the sdr.Sdr interface.
 func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
 	var freq C.double
-	if err := rvToError(C.uhd_usrp_get_rx_freq(*s.handle, C.ulong(s.rxChannel), &freq)); err != nil {
+	if err := rvToError(C.uhd_usrp_get_rx_freq(*s.handle, C.size_t(s.rxChannel), &freq)); err != nil {
 		return rf.Hz(0), err
 	}
 	return rf.Hz(freq), nil
@@ -79,43 +80,38 @@ func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
 	return rvToError(C.uhd_usrp_set_rx_freq(
 		*s.handle,
 		&tuneRequest,
-		C.ulong(s.rxChannel),
+		C.size_t(s.rxChannel),
 		&tuneResult,
 	))
 }
 
-func (s *Sdr) SetAutomaticGain(bool) error {
-	return sdr.ErrNotSupported
+// SetSampleRate implements the sdr.Sdr interface.
+func (s *Sdr) SetSampleRate(rate uint) error {
+	return rvToError(C.uhd_usrp_set_rx_rate(*s.handle, C.double(rate), C.size_t(s.rxChannel)))
 }
 
-func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
-	return nil, sdr.ErrNotSupported
-}
-
-func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
-	return 0, sdr.ErrNotSupported
-}
-
-func (s *Sdr) SetGain(sdr.GainStage, float32) error {
-	return sdr.ErrNotSupported
-}
-
-func (s *Sdr) SetSampleRate(uint) error {
-	return sdr.ErrNotSupported
-}
-
+// GetSampleRate implements the sdr.Sdr interface.
 func (s *Sdr) GetSampleRate() (uint, error) {
-	return 0, sdr.ErrNotSupported
+	// TODO(paultag): the sample rate is returned as a float. This isn't
+	// quite ideal, given that we treat it as a uint.
+	var rate C.double
+	if err := rvToError(C.uhd_usrp_get_rx_rate(*s.handle, C.size_t(s.rxChannel), &rate)); err != nil {
+		return 0, err
+	}
+	return uint(rate), nil
 }
 
+// SampleFormat implements the sdr.Sdr interface.
 func (s *Sdr) SampleFormat() sdr.SampleFormat {
-	return sdr.SampleFormatI16
+	return s.sampleFormat
 }
 
+// SetPPM implements the sdr.Sdr interface.
 func (s *Sdr) SetPPM(int) error {
 	return sdr.ErrNotSupported
 }
 
+// HardwareInfo implements the sdr.Sdr interface.
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return sdr.HardwareInfo{}
 }
@@ -148,9 +144,10 @@ func Open(opts Options) (*Sdr, error) {
 	}
 
 	return &Sdr{
-		handle:     &usrp,
-		rxStreamer: &rxStreamer,
-		rxChannel:  opts.RxChannel,
+		handle:       &usrp,
+		sampleFormat: sdr.SampleFormatI16,
+		rxStreamer:   &rxStreamer,
+		rxChannel:    opts.RxChannel,
 	}, nil
 }
 
