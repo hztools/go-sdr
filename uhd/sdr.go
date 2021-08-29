@@ -27,6 +27,7 @@ import "C"
 
 import (
 	"hz.tools/rf"
+	"hz.tools/sdr"
 )
 
 // Sdr is a UHD backed Software Defined Radio. This implements the sdr.Sdr
@@ -81,6 +82,42 @@ func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
 		C.ulong(s.rxChannel),
 		&tuneResult,
 	))
+}
+
+func (s *Sdr) SetAutomaticGain(bool) error {
+	return sdr.ErrNotSupported
+}
+
+func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
+	return nil, sdr.ErrNotSupported
+}
+
+func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
+	return 0, sdr.ErrNotSupported
+}
+
+func (s *Sdr) SetGain(sdr.GainStage, float32) error {
+	return sdr.ErrNotSupported
+}
+
+func (s *Sdr) SetSampleRate(uint) error {
+	return sdr.ErrNotSupported
+}
+
+func (s *Sdr) GetSampleRate() (uint, error) {
+	return 0, sdr.ErrNotSupported
+}
+
+func (s *Sdr) SampleFormat() sdr.SampleFormat {
+	return sdr.SampleFormatI16
+}
+
+func (s *Sdr) SetPPM(int) error {
+	return sdr.ErrNotSupported
+}
+
+func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
+	return sdr.HardwareInfo{}
 }
 
 // Options contains arguments used to configure the UHD Radio.
