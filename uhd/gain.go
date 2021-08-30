@@ -26,6 +26,8 @@ package uhd
 import "C"
 
 import (
+	"unsafe"
+
 	"hz.tools/sdr"
 )
 
@@ -106,12 +108,15 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 	}
 
 	for _, gainStageName := range rxGainStageNames {
-		if err := rvToError(C.uhd_usrp_get_rx_gain_range(
+		gsn := C.CString(gainStageName)
+		err := rvToError(C.uhd_usrp_get_rx_gain_range(
 			*s.handle,
-			C.CString(gainStageName),
+			gsn,
 			C.size_t(s.rxChannel),
 			gainRange,
-		)); err != nil {
+		))
+		C.free(unsafe.Pointer(gsn))
+		if err != nil {
 			return nil, err
 		}
 
@@ -119,7 +124,7 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 			return nil, err
 		}
 
-		if err := rvToError(C.uhd_meta_range_start(gainRange, &end)); err != nil {
+		if err := rvToError(C.uhd_meta_range_stop(gainRange, &end)); err != nil {
 			return nil, err
 		}
 
