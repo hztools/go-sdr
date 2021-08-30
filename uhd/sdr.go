@@ -40,6 +40,8 @@ type Sdr struct {
 	rxChannel  int
 
 	sampleRate uint
+
+	hi sdr.HardwareInfo
 }
 
 // Close will release all held handles.
@@ -113,7 +115,7 @@ func (s *Sdr) SetPPM(int) error {
 
 // HardwareInfo implements the sdr.Sdr interface.
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
-	return sdr.HardwareInfo{}
+	return s.hi
 }
 
 // Options contains arguments used to configure the UHD Radio.
@@ -132,6 +134,9 @@ func Open(opts Options) (*Sdr, error) {
 	var (
 		usrp       C.uhd_usrp_handle
 		rxStreamer C.uhd_rx_streamer_handle
+
+		buf  [256]C.char
+		blen = 256
 	)
 
 	if err := rvToError(C.uhd_usrp_make(&usrp, C.CString(opts.Args))); err != nil {
@@ -143,11 +148,31 @@ func Open(opts Options) (*Sdr, error) {
 		return nil, err
 	}
 
+	if err := rvToError(C.uhd_usrp_get_mboard_name(
+		usrp,
+		0,
+		&buf[0],
+		C.size_t(blen),
+	)); err != nil {
+		C.uhd_usrp_free(&usrp)
+		C.uhd_rx_streamer_free(&rxStreamer)
+		return nil, err
+	}
+
+	mboard := C.GoString(&buf[0])
+
+	hi := sdr.HardwareInfo{
+		Manufacturer: "Ettus Research", // TODO(paultag): Fix this too
+		Product:      mboard,
+		Serial:       "", // TODO(paultag): Do this
+	}
+
 	return &Sdr{
 		handle:       &usrp,
 		sampleFormat: sdr.SampleFormatI16,
 		rxStreamer:   &rxStreamer,
 		rxChannel:    opts.RxChannel,
+		hi:           hi,
 	}, nil
 }
 
