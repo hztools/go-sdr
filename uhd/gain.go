@@ -26,6 +26,7 @@ package uhd
 import "C"
 
 import (
+	"fmt"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -37,6 +38,7 @@ type rxGainStage struct {
 
 	minGain float32
 	maxGain float32
+	step    float32
 }
 
 func (g rxGainStage) Range() [2]float32 {
@@ -52,8 +54,12 @@ func (g rxGainStage) String() string {
 }
 
 // SetAutomaticGain implements the sdr.Sdr interface.
-func (s *Sdr) SetAutomaticGain(bool) error {
-	return sdr.ErrNotSupported
+func (s *Sdr) SetAutomaticGain(b bool) error {
+	return rvToError(C.uhd_usrp_set_rx_agc(
+		*s.handle,
+		C.bool(b),
+		C.size_t(s.rxChannel),
+	))
 }
 
 func getRxGainStageNames(handle *C.uhd_usrp_handle, channel C.size_t) ([]string, error) {
@@ -95,6 +101,7 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 		gainRange C.uhd_meta_range_handle
 		start     C.double
 		end       C.double
+		step      C.double
 	)
 
 	if err := rvToError(C.uhd_meta_range_make(&gainRange)); err != nil {
@@ -128,11 +135,16 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 			return nil, err
 		}
 
+		if err := rvToError(C.uhd_meta_range_step(gainRange, &step)); err != nil {
+			return nil, err
+		}
+
 		ret = append(ret, rxGainStage{
 			stageType: sdr.GainStageTypeRecieve,
 			name:      gainStageName,
 			minGain:   float32(start),
 			maxGain:   float32(end),
+			step:      float32(step),
 		})
 	}
 
@@ -145,8 +157,24 @@ func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
 }
 
 // SetGain implements the sdr.Sdr interface.
-func (s *Sdr) SetGain(sdr.GainStage, float32) error {
-	return sdr.ErrNotSupported
+func (s *Sdr) SetGain(gs sdr.GainStage, gain float32) error {
+	switch gs := gs.(type) {
+	case rxGainStage:
+		return gs.setGain(s, gain)
+	default:
+		return fmt.Errorf("uhd: unknown gain stage: %s", gs.String())
+	}
+}
+
+func (g rxGainStage) setGain(s *Sdr, gain float32) error {
+	gsn := C.CString(g.name)
+	defer C.free(unsafe.Pointer(gsn))
+	return rvToError(C.uhd_usrp_set_rx_gain(
+		*s.handle,
+		C.double(gain),
+		C.size_t(s.rxChannel),
+		gsn,
+	))
 }
 
 // vim: foldmethod=marker
