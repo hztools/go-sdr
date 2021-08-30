@@ -152,8 +152,31 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 }
 
 // GetGain implements the sdr.Sdr interface.
-func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
-	return 0, sdr.ErrNotSupported
+func (s *Sdr) GetGain(gs sdr.GainStage) (float32, error) {
+	switch gs := gs.(type) {
+	case rxGainStage:
+		return gs.getGain(s)
+	default:
+		return 0, fmt.Errorf("uhd: unknown gain stage: %s", gs.String())
+	}
+}
+
+func (g rxGainStage) getGain(s *Sdr) (float32, error) {
+	var (
+		gsn  = C.CString(g.name)
+		gain C.double
+	)
+	defer C.free(unsafe.Pointer(gsn))
+
+	if err := rvToError(C.uhd_usrp_get_rx_gain(
+		*s.handle,
+		C.size_t(s.rxChannel),
+		gsn,
+		&gain,
+	)); err != nil {
+		return 0, err
+	}
+	return float32(gain), nil
 }
 
 // SetGain implements the sdr.Sdr interface.
