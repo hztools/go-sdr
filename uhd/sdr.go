@@ -36,24 +36,66 @@ type Sdr struct {
 	handle       *C.uhd_usrp_handle
 	sampleFormat sdr.SampleFormat
 
-	rxStreamer *C.uhd_rx_streamer_handle
-	rxChannel  int
+	rxChannel int
 
 	sampleRate uint
 
 	hi sdr.HardwareInfo
 }
 
-// Close will release all held handles.
-func (s *Sdr) Close() error {
-	if err := rvToError(C.uhd_rx_streamer_free(s.rxStreamer)); err != nil {
-		return err
+// Options contains arguments used to configure the UHD Radio.
+type Options struct {
+	// Args is passed to uhd_usrp_make as device arguments.
+	Args string
+
+	// TODO(paultag): Flag RX/TX caps
+
+	// RxChannel is the channel to use for RX operations.
+	RxChannel int
+}
+
+// Open will connect to an USRP Radio.
+func Open(opts Options) (*Sdr, error) {
+	var (
+		usrp C.uhd_usrp_handle
+
+		buf  [256]C.char
+		blen = 256
+	)
+
+	if err := rvToError(C.uhd_usrp_make(&usrp, C.CString(opts.Args))); err != nil {
+		return nil, err
 	}
 
-	if err := rvToError(C.uhd_usrp_free(s.handle)); err != nil {
-		return err
+	if err := rvToError(C.uhd_usrp_get_mboard_name(
+		usrp,
+		0,
+		&buf[0],
+		C.size_t(blen),
+	)); err != nil {
+		C.uhd_usrp_free(&usrp)
+		return nil, err
 	}
-	return nil
+
+	mboard := C.GoString(&buf[0])
+
+	hi := sdr.HardwareInfo{
+		Manufacturer: "Ettus Research", // TODO(paultag): Fix this too
+		Product:      mboard,
+		Serial:       "", // TODO(paultag): Do this
+	}
+
+	return &Sdr{
+		handle:       &usrp,
+		sampleFormat: sdr.SampleFormatI16,
+		rxChannel:    opts.RxChannel,
+		hi:           hi,
+	}, nil
+}
+
+// Close will release all held handles.
+func (s *Sdr) Close() error {
+	return rvToError(C.uhd_usrp_free(s.handle))
 }
 
 // GetCenterFrequency implements the sdr.Sdr interface.
@@ -116,64 +158,6 @@ func (s *Sdr) SetPPM(int) error {
 // HardwareInfo implements the sdr.Sdr interface.
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return s.hi
-}
-
-// Options contains arguments used to configure the UHD Radio.
-type Options struct {
-	// Args is passed to uhd_usrp_make as device arguments.
-	Args string
-
-	// TODO(paultag): Flag RX/TX caps
-
-	// RxChannel is the channel to use for RX operations.
-	RxChannel int
-}
-
-// Open will connect to an USRP Radio.
-func Open(opts Options) (*Sdr, error) {
-	var (
-		usrp       C.uhd_usrp_handle
-		rxStreamer C.uhd_rx_streamer_handle
-
-		buf  [256]C.char
-		blen = 256
-	)
-
-	if err := rvToError(C.uhd_usrp_make(&usrp, C.CString(opts.Args))); err != nil {
-		return nil, err
-	}
-
-	if err := rvToError(C.uhd_rx_streamer_make(&rxStreamer)); err != nil {
-		C.uhd_usrp_free(&usrp)
-		return nil, err
-	}
-
-	if err := rvToError(C.uhd_usrp_get_mboard_name(
-		usrp,
-		0,
-		&buf[0],
-		C.size_t(blen),
-	)); err != nil {
-		C.uhd_usrp_free(&usrp)
-		C.uhd_rx_streamer_free(&rxStreamer)
-		return nil, err
-	}
-
-	mboard := C.GoString(&buf[0])
-
-	hi := sdr.HardwareInfo{
-		Manufacturer: "Ettus Research", // TODO(paultag): Fix this too
-		Product:      mboard,
-		Serial:       "", // TODO(paultag): Do this
-	}
-
-	return &Sdr{
-		handle:       &usrp,
-		sampleFormat: sdr.SampleFormatI16,
-		rxStreamer:   &rxStreamer,
-		rxChannel:    opts.RxChannel,
-		hi:           hi,
-	}, nil
 }
 
 // vim: foldmethod=marker
