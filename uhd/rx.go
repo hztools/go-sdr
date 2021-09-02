@@ -125,7 +125,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		}
 
 		for {
-			i += 1
+			i++
 			if rvToError(C.uhd_rx_streamer_recv(
 				rxStreamer, &ciq, ciqLen, &rxMetadata,
 				3.0, false, &n,
