@@ -28,7 +28,12 @@ import "C"
 import (
 	"hz.tools/rf"
 	"hz.tools/sdr"
+	"hz.tools/sdr/debug"
 )
+
+func init() {
+	debug.RegisterRadioDriver("hz.tools/sdr/uhd.Sdr")
+}
 
 // Sdr is a UHD backed Software Defined Radio. This implements the sdr.Sdr
 // interface.
