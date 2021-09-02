@@ -26,104 +26,139 @@ package uhd
 import "C"
 
 import (
+	"log"
 	"unsafe"
 
 	"hz.tools/sdr"
 )
 
-type readCloser struct {
-	writer sdr.PipeWriter
-	reader sdr.PipeReader
-	sdr    *Sdr
-	buf    sdr.SamplesI16
-}
-
-func (rc *readCloser) Read(iq sdr.Samples) (int, error) {
-	return rc.reader.Read(iq)
-}
-
-func (rc *readCloser) Close() error {
-	rc.writer.Close()
-	return nil
-}
-
-func (rc *readCloser) SampleRate() uint {
-	return rc.reader.SampleRate()
-}
-
-func (rc *readCloser) SampleFormat() sdr.SampleFormat {
-	return rc.reader.SampleFormat()
-}
-
 // StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	var (
-		args        C.uhd_stream_args_t
-		channelList []C.size_t = []C.size_t{C.size_t(s.rxChannel)}
-
-		rxStream C.uhd_rx_streamer_handle
-		rxMeta   C.uhd_rx_metadata_handle
+		rxStreamerArgs    C.uhd_stream_args_t
+		rxStreamer        C.uhd_rx_streamer_handle
+		rxMetadata        C.uhd_rx_metadata_handle
+		rxStreamerChanLen = C.size_t(1)
+		rxStreamerChans   = (*C.size_t)(C.malloc(C.size_t(unsafe.Sizeof(C.size_t(0) * rxStreamerChanLen))))
 
 		streamCmd C.uhd_stream_cmd_t
 	)
+	*rxStreamerChans = C.size_t(s.rxChannel)
+	rxStreamerArgsStr := C.CString("")
+	rxStreamFormat := C.CString("sc16")
 
-	sr, err := s.GetSampleRate()
-	if err != nil {
+	unallocRxC := func() {
+		C.free(unsafe.Pointer(rxStreamerChans))
+		C.free(unsafe.Pointer(rxStreamerArgsStr))
+		C.free(unsafe.Pointer(rxStreamFormat))
+	}
+
+	if err := rvToError(C.uhd_rx_streamer_make(&rxStreamer)); err != nil {
+		unallocRxC()
 		return nil, err
 	}
 
-	format := C.CString("sc16")
-	rxArgs := C.CString("")
-	defer C.free(unsafe.Pointer(format))
-	defer C.free(unsafe.Pointer(rxArgs))
-
-	args.cpu_format = format
-	args.otw_format = format
-	args.args = rxArgs
-	args.channel_list = &channelList[0]
-	args.n_channels = 1
-
-	streamCmd.stream_mode = C.UHD_STREAM_MODE_START_CONTINUOUS
-	streamCmd.stream_now = true
-
-	pipeReader, pipeWriter := sdr.Pipe(sr, sdr.SampleFormatI16)
-
-	if err := rvToError(C.uhd_rx_streamer_make(&rxStream)); err != nil {
+	if err := rvToError(C.uhd_rx_metadata_make(&rxMetadata)); err != nil {
+		unallocRxC()
+		C.uhd_rx_streamer_free(&rxStreamer)
 		return nil, err
 	}
 
-	if err := rvToError(C.uhd_rx_metadata_make(&rxMeta)); err != nil {
-		C.uhd_rx_streamer_free(&rxStream)
-		return nil, err
+	unallocRxUhd := func() {
+		C.uhd_rx_streamer_free(&rxStreamer)
+		C.uhd_rx_metadata_free(&rxMetadata)
 	}
+
+	rxStreamerArgs.otw_format = rxStreamFormat
+	rxStreamerArgs.cpu_format = rxStreamFormat
+	rxStreamerArgs.args = rxStreamerArgsStr
+	rxStreamerArgs.channel_list = rxStreamerChans
+	rxStreamerArgs.n_channels = C.int(rxStreamerChanLen)
 
 	if err := rvToError(C.uhd_usrp_get_rx_stream(
 		*s.handle,
-		&args,
-		rxStream,
+		&rxStreamerArgs,
+		rxStreamer,
 	)); err != nil {
-		C.uhd_rx_streamer_free(&rxStream)
-		C.uhd_rx_metadata_free(&rxMeta)
+		unallocRxC()
+		unallocRxUhd()
 		return nil, err
 	}
 
-	// var (
-	// 	cBuf    *C.float
-	// 	cBufLen int = 1024 * 32 * 32
-	// )
+	sr, err := s.GetSampleRate()
+	if err != nil {
+		unallocRxC()
+		unallocRxUhd()
+		return nil, err
+	}
+	pipeReader, pipeWriter := sdr.Pipe(sr, sdr.SampleFormatI16)
 
-	// cBuf = (*C.float)(C.malloc(C.size_t(cBufLen) * 2 * C.size_t(unsafe.Sizeof(C.float(0)))))
+	var (
+		iqLength = 1024 * 32 * 16
+		iqSize   = iqLength * sdr.SampleFormatI16.Size()
+		iqs      = make([]sdr.SamplesI16, 16)
+		ciqSize  = C.size_t(iqSize)
+		ciqLen   = C.size_t(iqLength)
+		ciq      = C.malloc(C.size_t(ciqSize))
+	)
 
-	// buf := C.GoBytes(unsafe.Pointer(cBuf), C.int(cBufLen))
-	// samples := make(sdr.SamplesU8, len(buf)/2)
-
-	// copy(sdr.MustUnsafeSamplesAsBytes(samples), buf)
+	for i := range iqs {
+		iqs[i] = make(sdr.SamplesI16, iqLength)
+	}
 
 	go func() {
+		defer unallocRxC()
+		defer unallocRxUhd()
 		defer pipeWriter.Close()
-		defer C.uhd_rx_streamer_free(&rxStream)
-		defer C.uhd_rx_metadata_free(&rxMeta)
+		defer C.free(unsafe.Pointer(ciq))
 
+		var (
+			n       C.size_t
+			i       int
+			errCode C.uhd_rx_metadata_error_code_t
+		)
+
+		streamCmd.stream_mode = C.UHD_STREAM_MODE_START_CONTINUOUS
+		streamCmd.stream_now = true
+		if err := rvToError(C.uhd_rx_streamer_issue_stream_cmd(rxStreamer, &streamCmd)); err != nil {
+			pipeWriter.CloseWithError(err)
+		}
+
+		for {
+			i += 1
+			if rvToError(C.uhd_rx_streamer_recv(
+				rxStreamer, &ciq, ciqLen, &rxMetadata,
+				3.0, false, &n,
+			)); err != nil {
+				pipeWriter.CloseWithError(err)
+				return
+			}
+
+			if rvToError(C.uhd_rx_metadata_error_code(rxMetadata, &errCode)); err != nil {
+				pipeWriter.CloseWithError(err)
+				return
+			}
+
+			if errCode != C.UHD_RX_METADATA_ERROR_CODE_NONE {
+				log.Printf("RX Error: %#v", errCode)
+				pipeWriter.Close()
+				return
+			}
+
+			iq := iqs[i%len(iqs)]
+			ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
+			copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
+
+			go func(iq sdr.SamplesI16, n int) {
+				iq = iq[:n]
+
+				_, err := pipeWriter.Write(iq)
+				if err != nil {
+					pipeWriter.CloseWithError(err)
+					return
+				}
+			}(iq, int(n))
+		}
 	}()
 
 	return pipeReader, nil

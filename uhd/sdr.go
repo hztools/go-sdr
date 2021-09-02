@@ -105,7 +105,6 @@ func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
 		return rf.Hz(0), err
 	}
 	return rf.Hz(freq), nil
-
 }
 
 // SetCenterFrequency implements the sdr.Sdr interface.
