@@ -26,11 +26,35 @@ package uhd
 import "C"
 
 import (
+	"context"
 	"log"
 	"unsafe"
 
 	"hz.tools/sdr"
 )
+
+type readCloser struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	reader sdr.PipeReader
+}
+
+func (rc *readCloser) Read(iq sdr.Samples) (int, error) {
+	return rc.reader.Read(iq)
+}
+
+func (rc *readCloser) Close() error {
+	rc.cancel()
+	return rc.reader.Close()
+}
+
+func (rc *readCloser) SampleRate() uint {
+	return rc.reader.SampleRate()
+}
+
+func (rc *readCloser) SampleFormat() sdr.SampleFormat {
+	return rc.reader.SampleFormat()
+}
 
 // StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
@@ -43,6 +67,9 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 
 		streamCmd C.uhd_stream_cmd_t
 	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
 	*rxStreamerChans = C.size_t(s.rxChannel)
 	rxStreamerArgsStr := C.CString("")
 	rxStreamFormat := C.CString("sc16")
@@ -91,7 +118,8 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		unallocRxUhd()
 		return nil, err
 	}
-	pipeReader, pipeWriter := sdr.Pipe(sr, sdr.SampleFormatI16)
+
+	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, sdr.SampleFormatI16)
 
 	var (
 		iqLength = 1024 * 32 * 16
@@ -111,6 +139,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		defer unallocRxUhd()
 		defer pipeWriter.Close()
 		defer C.free(unsafe.Pointer(ciq))
+		defer cancel()
 
 		var (
 			n       C.size_t
@@ -124,8 +153,19 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 			pipeWriter.CloseWithError(err)
 		}
 
+		go func() {
+			<-ctx.Done()
+			streamCmd.stream_mode = C.UHD_STREAM_MODE_STOP_CONTINUOUS
+			streamCmd.stream_now = false
+			C.uhd_rx_streamer_issue_stream_cmd(rxStreamer, &streamCmd)
+		}()
+
 		for {
 			i++
+			if err := ctx.Err(); err != nil {
+				return
+			}
+
 			if rvToError(C.uhd_rx_streamer_recv(
 				rxStreamer, &ciq, ciqLen, &rxMetadata,
 				3.0, false, &n,
@@ -151,7 +191,6 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 
 			go func(iq sdr.SamplesI16, n int) {
 				iq = iq[:n]
-
 				_, err := pipeWriter.Write(iq)
 				if err != nil {
 					pipeWriter.CloseWithError(err)
@@ -161,7 +200,11 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		}
 	}()
 
-	return pipeReader, nil
+	return &readCloser{
+		ctx:    ctx,
+		cancel: cancel,
+		reader: pipeReader,
+	}, nil
 }
 
 // vim: foldmethod=marker
