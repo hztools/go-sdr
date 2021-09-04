@@ -28,6 +28,7 @@ import "C"
 import (
 	"context"
 	"log"
+	"sync"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -124,20 +125,18 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	var (
 		iqLength = 1024 * 32
 		iqSize   = iqLength * sdr.SampleFormatI16.Size()
-		iqs      = make([]sdr.SamplesI16, 16)
+		iq       = make(sdr.SamplesI16, iqLength)
 		ciqSize  = C.size_t(iqSize)
 		ciqLen   = C.size_t(iqLength)
 		ciq      = C.malloc(C.size_t(ciqSize))
 	)
 
-	for i := range iqs {
-		iqs[i] = make(sdr.SamplesI16, iqLength)
-	}
-
 	go func() {
 		defer pipeWriter.Close()
-		defer C.free(unsafe.Pointer(ciq))
 		defer cancel()
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		defer wg.Done()
 
 		var (
 			n       C.size_t
@@ -154,12 +153,15 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		go func() {
 			defer unallocRxC()
 			defer unallocRxUhd()
+			defer C.free(unsafe.Pointer(ciq))
 
 			<-ctx.Done()
 
 			streamCmd.stream_mode = C.UHD_STREAM_MODE_STOP_CONTINUOUS
 			streamCmd.stream_now = false
 			C.uhd_rx_streamer_issue_stream_cmd(rxStreamer, &streamCmd)
+
+			wg.Wait()
 		}()
 
 		for {
@@ -187,11 +189,10 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 				return
 			}
 
-			iq := iqs[i%len(iqs)]
 			ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
 			copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
 
-			iq = iq[:n]
+			iq := iq[:n]
 			_, err := pipeWriter.Write(iq)
 			if err != nil {
 				pipeWriter.CloseWithError(err)
