@@ -122,7 +122,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, sdr.SampleFormatI16)
 
 	var (
-		iqLength = 1024 * 32 * 16
+		iqLength = 1024 * 32
 		iqSize   = iqLength * sdr.SampleFormatI16.Size()
 		iqs      = make([]sdr.SamplesI16, 16)
 		ciqSize  = C.size_t(iqSize)
@@ -135,8 +135,6 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	}
 
 	go func() {
-		defer unallocRxC()
-		defer unallocRxUhd()
 		defer pipeWriter.Close()
 		defer C.free(unsafe.Pointer(ciq))
 		defer cancel()
@@ -154,7 +152,11 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		}
 
 		go func() {
+			defer unallocRxC()
+			defer unallocRxUhd()
+
 			<-ctx.Done()
+
 			streamCmd.stream_mode = C.UHD_STREAM_MODE_STOP_CONTINUOUS
 			streamCmd.stream_now = false
 			C.uhd_rx_streamer_issue_stream_cmd(rxStreamer, &streamCmd)
@@ -189,14 +191,12 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 			ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
 			copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
 
-			go func(iq sdr.SamplesI16, n int) {
-				iq = iq[:n]
-				_, err := pipeWriter.Write(iq)
-				if err != nil {
-					pipeWriter.CloseWithError(err)
-					return
-				}
-			}(iq, int(n))
+			iq = iq[:n]
+			_, err := pipeWriter.Write(iq)
+			if err != nil {
+				pipeWriter.CloseWithError(err)
+				return
+			}
 		}
 	}()
 
