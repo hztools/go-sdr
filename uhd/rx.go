@@ -39,17 +39,17 @@ type uhdRxMetadataError int
 func (u uhdRxMetadataError) Error() string {
 	switch u {
 	case ErrRxMetadataTimeout:
-		return "Ettus RX Metadata: Timeout"
+		return "UHD RX Metadata: Timeout"
 	case ErrRxMetadataLateCommand:
-		return "Ettus RX Metadata: Late Command"
+		return "UHD RX Metadata: Late Command"
 	case ErrRxMetadataBrokenChain:
-		return "Ettus RX Metadata: Broken Chain"
+		return "UHD RX Metadata: Broken Chain"
 	case ErrRxMetadataOverflow:
-		return "Ettus RX Metadata: Overflow"
+		return "UHD RX Metadata: Overflow"
 	case ErrRxMetadataAlignment:
-		return "Ettus RX Metadata: Alignment Error"
+		return "UHD RX Metadata: Alignment Error"
 	case ErrRxMetadataBadPacket:
-		return "Ettus RX Metadata: Bad Packet"
+		return "UHD RX Metadata: Bad Packet"
 	default:
 		return "UNKNOWN"
 	}

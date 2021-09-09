@@ -87,41 +87,41 @@ var (
 func (u uhdError) Error() string {
 	switch u {
 	case ErrInvalidDevice:
-		return "Ettus: Invalid Device"
+		return "UHD: Invalid Device"
 	case ErrIndex:
-		return "Ettus: Index Error"
+		return "UHD: Index Error"
 	case ErrKey:
-		return "Ettus: Key Error"
+		return "UHD: Key Error"
 	case ErrNotImplemented:
-		return "Ettus: Not Implemented"
+		return "UHD: Not Implemented"
 	case ErrUSB:
-		return "Ettus: USB Error"
+		return "UHD: USB Error"
 	case ErrIO:
-		return "Ettus: I/O Error"
+		return "UHD: I/O Error"
 	case ErrOS:
-		return "Ettus: OS Error"
+		return "UHD: OS Error"
 	case ErrAssertion:
-		return "Ettus: Assertion Invalid"
+		return "UHD: Assertion Invalid"
 	case ErrLookup:
-		return "Ettus: Lookup Error"
+		return "UHD: Lookup Error"
 	case ErrType:
-		return "Ettus: Type Error"
+		return "UHD: Type Error"
 	case ErrValue:
-		return "Ettus: Value Error"
+		return "UHD: Value Error"
 	case ErrRuntime:
-		return "Ettus: Runtime Error"
+		return "UHD: Runtime Error"
 	case ErrEnvironment:
-		return "Ettus: Environment Error"
+		return "UHD: Environment Error"
 	case ErrSystem:
-		return "Ettus: System Error"
+		return "UHD: System Error"
 	case ErrExcept:
-		return "Ettus: Exception"
+		return "UHD: Exception"
 	case ErrBoostException:
-		return "Ettus: boost::Exception"
+		return "UHD: boost::Exception"
 	case ErrStdException:
-		return "Ettus: std::Exception"
+		return "UHD: std::Exception"
 	case ErrUnknown:
-		return "Ettus: Unknown"
+		return "UHD: Unknown"
 	default:
 		return "UNKNOWN"
 	}
