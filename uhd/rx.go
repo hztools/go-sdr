@@ -27,34 +27,179 @@ import "C"
 
 import (
 	"context"
-	"log"
 	"sync"
 	"unsafe"
 
 	"hz.tools/sdr"
 )
 
+type uhdRxMetadataError int
+
+// Error implements the error type.
+func (u uhdRxMetadataError) Error() string {
+	switch u {
+	case ErrRxMetadataTimeout:
+		return "Ettus RX Metadata: Timeout"
+	case ErrRxMetadataLateCommand:
+		return "Ettus RX Metadata: Late Command"
+	case ErrRxMetadataBrokenChain:
+		return "Ettus RX Metadata: Broken Chain"
+	case ErrRxMetadataOverflow:
+		return "Ettus RX Metadata: Overflow"
+	case ErrRxMetadataAlignment:
+		return "Ettus RX Metadata: Alignment Error"
+	case ErrRxMetadataBadPacket:
+		return "Ettus RX Metadata: Bad Packet"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+var (
+	// ErrRxMetadataTimeout will be returned if there's an RX Metadata
+	// error condition indicating a timeout.
+	ErrRxMetadataTimeout uhdRxMetadataError = 0x01
+
+	// ErrRxMetadataLateCommand will be returned if there's an RX Metadata
+	// error condition indicating late command.
+	ErrRxMetadataLateCommand uhdRxMetadataError = 0x02
+
+	// ErrRxMetadataBrokenChain will be returned if there's an RX Metadata
+	// error condition indicating a broken chain.
+	ErrRxMetadataBrokenChain uhdRxMetadataError = 0x04
+
+	// ErrRxMetadataOverflow will be returned if there's an RX Metadata
+	// error condition indicating an overflow.
+	ErrRxMetadataOverflow uhdRxMetadataError = 0x08
+
+	// ErrRxMetadataAlignment will be returned if there's an RX Metadata
+	// error condition indicating a problem with alignment.
+	ErrRxMetadataAlignment uhdRxMetadataError = 0x0C
+
+	// ErrRxMetadataBadPacket will be returned if there's an RX Metadata
+	// error condition indicating a bad packet.
+	ErrRxMetadataBadPacket uhdRxMetadataError = 0x0F
+)
+
+// readCloser contains all the allocated structs to be used by the reader
+// goroutine and close function.
+//
+// Most of this stuff isn't stuff that really belongs in here, but the
+// allocation lifecycle needs to be tied to this struct.
 type readCloser struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+	wg     sync.WaitGroup
+
 	reader sdr.PipeReader
+	writer sdr.PipeWriter
+
+	rxStreamerArgs C.uhd_stream_args_t
+	rxStreamer     C.uhd_rx_streamer_handle
+	rxMetadata     C.uhd_rx_metadata_handle
 }
 
+// Read implements the sdr.Reader interface
 func (rc *readCloser) Read(iq sdr.Samples) (int, error) {
 	return rc.reader.Read(iq)
 }
 
-func (rc *readCloser) Close() error {
-	rc.cancel()
-	return rc.reader.Close()
-}
-
+// SampleRate implements the sdr.Reader interface
 func (rc *readCloser) SampleRate() uint {
 	return rc.reader.SampleRate()
 }
 
+// SampleFormat implements the sdr.Reader interface
 func (rc *readCloser) SampleFormat() sdr.SampleFormat {
 	return rc.reader.SampleFormat()
+}
+
+// Close implements the sdr.ReadCloser interface
+func (rc *readCloser) Close() error {
+	var streamCmd C.uhd_stream_cmd_t
+
+	rc.cancel()
+	rc.reader.Close()
+
+	streamCmd.stream_mode = C.UHD_STREAM_MODE_STOP_CONTINUOUS
+	streamCmd.stream_now = false
+	C.uhd_rx_streamer_issue_stream_cmd(rc.rxStreamer, &streamCmd)
+
+	// Wait until the STOP command has gone through and we're sure the
+	// goroutine is stopped. This means that we can free the resources below,
+	// otherwise we risk a SEGV.
+	rc.wg.Wait()
+
+	C.uhd_rx_streamer_free(&rc.rxStreamer)
+	C.uhd_rx_metadata_free(&rc.rxMetadata)
+
+	// TODO(paultag): Literally any error checking at all :)
+
+	return nil
+}
+
+// run is a goroutine to handle copying IQ data from the UHD device
+// to the Pipe contained inside the readCloser.
+func (rc *readCloser) run() {
+	defer rc.writer.Close()
+	defer rc.cancel()
+	defer rc.wg.Done()
+
+	var (
+		n         C.size_t
+		i         int
+		errCode   C.uhd_rx_metadata_error_code_t
+		streamCmd C.uhd_stream_cmd_t
+		err       error
+
+		iqLength = 1024 * 32 // TODO(paultag): Set IQ length based on the UHD device.
+		iqSize   = iqLength * sdr.SampleFormatI16.Size()
+		iq       = make(sdr.SamplesI16, iqLength)
+		ciqSize  = C.size_t(iqSize)
+		ciqLen   = C.size_t(iqLength)
+		ciq      = C.malloc(C.size_t(ciqSize))
+	)
+
+	streamCmd.stream_mode = C.UHD_STREAM_MODE_START_CONTINUOUS
+	streamCmd.stream_now = true
+	if err := rvToError(C.uhd_rx_streamer_issue_stream_cmd(rc.rxStreamer, &streamCmd)); err != nil {
+		rc.writer.CloseWithError(err)
+	}
+
+	for {
+		i++
+		if err := rc.ctx.Err(); err != nil {
+			return
+		}
+
+		if rvToError(C.uhd_rx_streamer_recv(
+			rc.rxStreamer, &ciq, ciqLen, &rc.rxMetadata,
+			3.0, false, &n,
+		)); err != nil {
+			rc.writer.CloseWithError(err)
+			return
+		}
+
+		if rvToError(C.uhd_rx_metadata_error_code(rc.rxMetadata, &errCode)); err != nil {
+			rc.writer.CloseWithError(err)
+			return
+		}
+
+		if errCode != C.UHD_RX_METADATA_ERROR_CODE_NONE {
+			rc.writer.CloseWithError(uhdRxMetadataError(errCode))
+			return
+		}
+
+		ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
+		copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
+
+		iq := iq[:n]
+		_, err := rc.writer.Write(iq)
+		if err != nil {
+			rc.writer.CloseWithError(err)
+			return
+		}
+	}
 }
 
 // StartRx implements the sdr.Sdr interface.
@@ -65,36 +210,32 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		rxMetadata        C.uhd_rx_metadata_handle
 		rxStreamerChanLen = C.size_t(1)
 		rxStreamerChans   = (*C.size_t)(C.malloc(C.size_t(unsafe.Sizeof(C.size_t(0) * rxStreamerChanLen))))
-
-		streamCmd C.uhd_stream_cmd_t
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	*rxStreamerChans = C.size_t(s.rxChannel)
 	rxStreamerArgsStr := C.CString("")
-	rxStreamFormat := C.CString("sc16")
+	rxStreamFormat := C.CString("sc16") // TODO(paultag): dynamic SampleFormat
 
-	unallocRxC := func() {
-		C.free(unsafe.Pointer(rxStreamerChans))
-		C.free(unsafe.Pointer(rxStreamerArgsStr))
-		C.free(unsafe.Pointer(rxStreamFormat))
-	}
+	// TODO(paultag): Is it safe to free these even though they were passed
+	// into a constructor for the rx streamer?
+	//
+	// It's my assumption that they're copied in if they're used outside the
+	// constructor; but that needs to be validated. This doesn't obviously crash,
+	// and this makes the readCloser significantly easier to maintain, and
+	// the error cases in the constructor here a lot easier too.
+	defer C.free(unsafe.Pointer(rxStreamerChans))
+	defer C.free(unsafe.Pointer(rxStreamerArgsStr))
+	defer C.free(unsafe.Pointer(rxStreamFormat))
 
 	if err := rvToError(C.uhd_rx_streamer_make(&rxStreamer)); err != nil {
-		unallocRxC()
 		return nil, err
 	}
 
 	if err := rvToError(C.uhd_rx_metadata_make(&rxMetadata)); err != nil {
-		unallocRxC()
 		C.uhd_rx_streamer_free(&rxStreamer)
 		return nil, err
-	}
-
-	unallocRxUhd := func() {
-		C.uhd_rx_streamer_free(&rxStreamer)
-		C.uhd_rx_metadata_free(&rxMetadata)
 	}
 
 	rxStreamerArgs.otw_format = rxStreamFormat
@@ -108,104 +249,34 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		&rxStreamerArgs,
 		rxStreamer,
 	)); err != nil {
-		unallocRxC()
-		unallocRxUhd()
+		C.uhd_rx_streamer_free(&rxStreamer)
+		C.uhd_rx_metadata_free(&rxMetadata)
 		return nil, err
 	}
 
 	sr, err := s.GetSampleRate()
 	if err != nil {
-		unallocRxC()
-		unallocRxUhd()
+		C.uhd_rx_streamer_free(&rxStreamer)
+		C.uhd_rx_metadata_free(&rxMetadata)
 		return nil, err
 	}
 
+	// TODO(paultag): dynamic SampleFormat
 	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, sdr.SampleFormatI16)
 
-	var (
-		iqLength = 1024 * 32
-		iqSize   = iqLength * sdr.SampleFormatI16.Size()
-		iq       = make(sdr.SamplesI16, iqLength)
-		ciqSize  = C.size_t(iqSize)
-		ciqLen   = C.size_t(iqLength)
-		ciq      = C.malloc(C.size_t(ciqSize))
-	)
-
-	go func() {
-		defer pipeWriter.Close()
-		defer cancel()
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		defer wg.Done()
-
-		var (
-			n       C.size_t
-			i       int
-			errCode C.uhd_rx_metadata_error_code_t
-		)
-
-		streamCmd.stream_mode = C.UHD_STREAM_MODE_START_CONTINUOUS
-		streamCmd.stream_now = true
-		if err := rvToError(C.uhd_rx_streamer_issue_stream_cmd(rxStreamer, &streamCmd)); err != nil {
-			pipeWriter.CloseWithError(err)
-		}
-
-		go func() {
-			defer unallocRxC()
-			defer unallocRxUhd()
-			defer C.free(unsafe.Pointer(ciq))
-
-			<-ctx.Done()
-
-			streamCmd.stream_mode = C.UHD_STREAM_MODE_STOP_CONTINUOUS
-			streamCmd.stream_now = false
-			C.uhd_rx_streamer_issue_stream_cmd(rxStreamer, &streamCmd)
-
-			wg.Wait()
-		}()
-
-		for {
-			i++
-			if err := ctx.Err(); err != nil {
-				return
-			}
-
-			if rvToError(C.uhd_rx_streamer_recv(
-				rxStreamer, &ciq, ciqLen, &rxMetadata,
-				3.0, false, &n,
-			)); err != nil {
-				pipeWriter.CloseWithError(err)
-				return
-			}
-
-			if rvToError(C.uhd_rx_metadata_error_code(rxMetadata, &errCode)); err != nil {
-				pipeWriter.CloseWithError(err)
-				return
-			}
-
-			if errCode != C.UHD_RX_METADATA_ERROR_CODE_NONE {
-				log.Printf("RX Error: %#v", errCode)
-				pipeWriter.Close()
-				return
-			}
-
-			ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
-			copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
-
-			iq := iq[:n]
-			_, err := pipeWriter.Write(iq)
-			if err != nil {
-				pipeWriter.CloseWithError(err)
-				return
-			}
-		}
-	}()
-
-	return &readCloser{
+	rc := &readCloser{
+		wg:     sync.WaitGroup{},
 		ctx:    ctx,
 		cancel: cancel,
 		reader: pipeReader,
-	}, nil
+		writer: pipeWriter,
+
+		rxStreamer: rxStreamer,
+		rxMetadata: rxMetadata,
+	}
+	rc.wg.Add(1)
+	go rc.run()
+	return rc, nil
 }
 
 // vim: foldmethod=marker
