@@ -267,6 +267,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		wg:     sync.WaitGroup{},
 		ctx:    ctx,
 		cancel: cancel,
+
 		reader: pipeReader,
 		writer: pipeWriter,
 
