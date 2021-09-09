@@ -94,9 +94,8 @@ type readCloser struct {
 	reader sdr.PipeReader
 	writer sdr.PipeWriter
 
-	rxStreamerArgs C.uhd_stream_args_t
-	rxStreamer     C.uhd_rx_streamer_handle
-	rxMetadata     C.uhd_rx_metadata_handle
+	rxStreamer C.uhd_rx_streamer_handle
+	rxMetadata C.uhd_rx_metadata_handle
 }
 
 // Read implements the sdr.Reader interface
