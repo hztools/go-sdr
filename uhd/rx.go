@@ -27,6 +27,7 @@ import "C"
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"unsafe"
 
@@ -91,8 +92,9 @@ type readCloser struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	reader sdr.PipeReader
-	writer sdr.PipeWriter
+	reader       sdr.PipeReader
+	writer       sdr.PipeWriter
+	sampleFormat sdr.SampleFormat
 
 	rxStreamer C.uhd_rx_streamer_handle
 	rxMetadata C.uhd_rx_metadata_handle
@@ -110,7 +112,7 @@ func (rc *readCloser) SampleRate() uint {
 
 // SampleFormat implements the sdr.Reader interface
 func (rc *readCloser) SampleFormat() sdr.SampleFormat {
-	return rc.reader.SampleFormat()
+	return rc.sampleFormat
 }
 
 // Close implements the sdr.ReadCloser interface
@@ -152,12 +154,17 @@ func (rc *readCloser) run() {
 		err       error
 
 		iqLength = 1024 * 32 // TODO(paultag): Set IQ length based on the UHD device.
-		iqSize   = iqLength * sdr.SampleFormatI16.Size()
-		iq       = make(sdr.SamplesI16, iqLength)
+		iqSize   = iqLength * rc.sampleFormat.Size()
 		ciqSize  = C.size_t(iqSize)
 		ciqLen   = C.size_t(iqLength)
 		ciq      = C.malloc(C.size_t(ciqSize))
 	)
+
+	iq, err := sdr.MakeSamples(rc.sampleFormat, iqLength)
+	if err != nil {
+		rc.writer.CloseWithError(err)
+		return
+	}
 
 	streamCmd.stream_mode = C.UHD_STREAM_MODE_START_CONTINUOUS
 	streamCmd.stream_now = true
@@ -192,7 +199,7 @@ func (rc *readCloser) run() {
 		ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
 		copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
 
-		iq := iq[:n]
+		iq := iq.Slice(0, int(n))
 		_, err := rc.writer.Write(iq)
 		if err != nil {
 			rc.writer.CloseWithError(err)
@@ -203,6 +210,19 @@ func (rc *readCloser) run() {
 
 // StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
+
+	// Before we get down the road of allocating anything, let's check
+	// to ensure that we have a supported SampleFormat.
+	var format string
+	switch s.sampleFormat {
+	case sdr.SampleFormatI16:
+		format = "sc16"
+	case sdr.SampleFormatC64:
+		format = "fc32"
+	default:
+		return nil, fmt.Errorf("uhd: StartRx: unsupported SampleFormat provided")
+	}
+
 	var (
 		rxStreamerArgs    C.uhd_stream_args_t
 		rxStreamer        C.uhd_rx_streamer_handle
@@ -215,7 +235,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 
 	*rxStreamerChans = C.size_t(s.rxChannel)
 	rxStreamerArgsStr := C.CString("")
-	rxStreamFormat := C.CString("sc16") // TODO(paultag): dynamic SampleFormat
+	rxStreamFormat := C.CString(format)
 
 	// TODO(paultag): Is it safe to free these even though they were passed
 	// into a constructor for the rx streamer?
@@ -261,15 +281,16 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	}
 
 	// TODO(paultag): dynamic SampleFormat
-	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, sdr.SampleFormatI16)
+	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, s.sampleFormat)
 
 	rc := &readCloser{
 		wg:     sync.WaitGroup{},
 		ctx:    ctx,
 		cancel: cancel,
 
-		reader: pipeReader,
-		writer: pipeWriter,
+		sampleFormat: s.sampleFormat,
+		reader:       pipeReader,
+		writer:       pipeWriter,
 
 		rxStreamer: rxStreamer,
 		rxMetadata: rxMetadata,

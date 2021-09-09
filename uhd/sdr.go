@@ -57,6 +57,14 @@ type Options struct {
 
 	// RxChannel is the channel to use for RX operations.
 	RxChannel int
+
+	// SampleFormat to be used internally.
+	//
+	// Currently supported types:
+	//   - sdr.SampleFormatI16
+	//   - sdr.SampleFormatC64
+	//
+	SampleFormat sdr.SampleFormat
 }
 
 // Open will connect to an USRP Radio.
@@ -70,6 +78,10 @@ func Open(opts Options) (*Sdr, error) {
 
 	if err := rvToError(C.uhd_usrp_make(&usrp, C.CString(opts.Args))); err != nil {
 		return nil, err
+	}
+
+	if opts.SampleFormat == 0 {
+		opts.SampleFormat = sdr.SampleFormatI16
 	}
 
 	if err := rvToError(C.uhd_usrp_get_mboard_name(
@@ -92,7 +104,7 @@ func Open(opts Options) (*Sdr, error) {
 
 	return &Sdr{
 		handle:       &usrp,
-		sampleFormat: sdr.SampleFormatI16,
+		sampleFormat: opts.SampleFormat,
 		rxChannel:    opts.RxChannel,
 		hi:           hi,
 	}, nil
