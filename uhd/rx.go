@@ -146,6 +146,13 @@ func (rc *readCloser) run() {
 	defer rc.cancel()
 	defer rc.wg.Done()
 
+	var cIqLength C.size_t
+
+	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rc.rxStreamer, &cIqLength)); err != nil {
+		rc.writer.CloseWithError(err)
+		return
+	}
+
 	var (
 		n         C.size_t
 		i         int
@@ -153,7 +160,7 @@ func (rc *readCloser) run() {
 		streamCmd C.uhd_stream_cmd_t
 		err       error
 
-		iqLength = 1024 * 32 // TODO(paultag): Set IQ length based on the UHD device.
+		iqLength = int(cIqLength)
 		iqSize   = iqLength * rc.sampleFormat.Size()
 		ciqSize  = C.size_t(iqSize)
 		ciqLen   = C.size_t(iqLength)
