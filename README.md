@@ -15,6 +15,6 @@ IQ samples.
 | [HackRF](hackrf/README.md)             | i8       | RX/TX  | Good  |
 | [PlutoSDR](pluto/README.md)            | i16      | RX/TX  | Good  |
 | [rtl kerberos](rtl/kerberos/README.md) | u8       | RX     | Good  |
-| [lime](lime/README.md)                 | i16      | RX/TX  | Exp   |
-| [uhd](uhd/README.md)                   | i16      | RX     | Exp   |
+| [lime](lime/README.md)                 | i16/c64  | RX/TX  | Exp   |
+| [uhd](uhd/README.md)                   | i16/c64  | RX     | Exp   |
 
