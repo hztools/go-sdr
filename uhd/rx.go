@@ -88,6 +88,7 @@ var (
 // Most of this stuff isn't stuff that really belongs in here, but the
 // allocation lifecycle needs to be tied to this struct.
 type readCloser struct {
+	closed bool
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -117,6 +118,13 @@ func (rc *readCloser) SampleFormat() sdr.SampleFormat {
 
 // Close implements the sdr.ReadCloser interface
 func (rc *readCloser) Close() error {
+	if rc.closed {
+		// Avoid double-free'ing or issuing a stream command if we've been
+		// called before. This is really a bug, but we wanna be fairly
+		// defensive here.
+		return nil
+	}
+
 	var streamCmd C.uhd_stream_cmd_t
 
 	rc.cancel()
@@ -136,6 +144,7 @@ func (rc *readCloser) Close() error {
 
 	// TODO(paultag): Literally any error checking at all :)
 
+	rc.closed = true
 	return nil
 }
 
