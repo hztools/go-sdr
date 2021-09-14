@@ -5,8 +5,8 @@ monitor any transmissions very carefully to ensure that you do not violate
 local laws.
 
 | | |
-|-------------|-----|
-| Format Type | I16 |
-| Receiver    |  ✓  |
-| Transmitter |  ✗  |
+|-------------|---------|
+| Format Type | I16/C64 |
+| Receiver    |  ✓      |
+| Transmitter |  ✗      |
 
