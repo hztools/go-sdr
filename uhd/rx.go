@@ -155,9 +155,9 @@ func (rc *readCloser) run() {
 	defer rc.cancel()
 	defer rc.wg.Done()
 
-	var cIqLength C.size_t
+	var ciqLen C.size_t
 
-	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rc.rxStreamer, &cIqLength)); err != nil {
+	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rc.rxStreamer, &ciqLen)); err != nil {
 		rc.writer.CloseWithError(err)
 		return
 	}
@@ -169,10 +169,9 @@ func (rc *readCloser) run() {
 		streamCmd C.uhd_stream_cmd_t
 		err       error
 
-		iqLength = int(cIqLength)
+		iqLength = int(ciqLen)
 		iqSize   = iqLength * rc.sampleFormat.Size()
 		ciqSize  = C.size_t(iqSize)
-		ciqLen   = C.size_t(iqLength)
 		ciq      = C.malloc(C.size_t(ciqSize))
 	)
 
