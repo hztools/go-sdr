@@ -8,5 +8,5 @@ local laws.
 |-------------|---------|
 | Format Type | I16/C64 |
 | Receiver    |  ✓      |
-| Transmitter |  ✗      |
+| Transmitter |  ✓      |
 

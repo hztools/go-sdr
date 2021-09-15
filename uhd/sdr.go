@@ -42,6 +42,7 @@ type Sdr struct {
 	sampleFormat sdr.SampleFormat
 
 	rxChannel int
+	txChannel int
 
 	sampleRate uint
 
@@ -57,6 +58,9 @@ type Options struct {
 
 	// RxChannel is the channel to use for RX operations.
 	RxChannel int
+
+	// TxChannel is the channel to use for TX operations.
+	TxChannel int
 
 	// SampleFormat to be used internally.
 	//
@@ -106,6 +110,7 @@ func Open(opts Options) (*Sdr, error) {
 		handle:       &usrp,
 		sampleFormat: opts.SampleFormat,
 		rxChannel:    opts.RxChannel,
+		txChannel:    opts.TxChannel,
 		hi:           hi,
 	}, nil
 }
@@ -135,7 +140,14 @@ func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
 	tuneRequest.rf_freq_policy = C.UHD_TUNE_REQUEST_POLICY_AUTO
 	tuneRequest.dsp_freq_policy = C.UHD_TUNE_REQUEST_POLICY_AUTO
 
-	// TODO(paultag): set tx freq
+	if err := rvToError(C.uhd_usrp_set_tx_freq(
+		*s.handle,
+		&tuneRequest,
+		C.size_t(s.txChannel),
+		&tuneResult,
+	)); err != nil {
+		return err
+	}
 
 	return rvToError(C.uhd_usrp_set_rx_freq(
 		*s.handle,
@@ -147,6 +159,9 @@ func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
 
 // SetSampleRate implements the sdr.Sdr interface.
 func (s *Sdr) SetSampleRate(rate uint) error {
+	if err := rvToError(C.uhd_usrp_set_tx_rate(*s.handle, C.double(rate), C.size_t(s.txChannel))); err != nil {
+		return err
+	}
 	return rvToError(C.uhd_usrp_set_rx_rate(*s.handle, C.double(rate), C.size_t(s.rxChannel)))
 }
 
