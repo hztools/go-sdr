@@ -29,6 +29,8 @@ import (
 	"fmt"
 	"syscall"
 	"unsafe"
+
+	"hz.tools/sdr/internal/yikes"
 )
 
 // Buffer wraps an iio_buffer, which allows for reading samples from and writing
@@ -54,16 +56,6 @@ func (b Buffer) Step() uintptr {
 	return uintptr(C.iio_buffer_step(b.handle))
 }
 
-// do some deeply unsafe things with buffers.
-func unsafeBytes(base uintptr, totalBytes int) []byte {
-	var unsafeBuf = struct {
-		base uintptr
-		len  int
-		cap  int
-	}{base, totalBytes, totalBytes}
-	return *(*[]byte)(unsafe.Pointer(&unsafeBuf))
-}
-
 // CopyToBufferFromUnsafe will copy data in a very unsafe and deeply bad way to a given
 // pointer and size in bytes.
 func (b Buffer) CopyToBufferFromUnsafe(chn Channel, ptr unsafe.Pointer, size int) (int, error) {
@@ -78,8 +70,8 @@ func (b Buffer) CopyToBufferFromUnsafe(chn Channel, ptr unsafe.Pointer, size int
 		return 0, nil
 	}
 
-	bufMemory := unsafeBytes(base, totalBytes)
-	targetMemory := unsafeBytes(uintptr(ptr), size)
+	bufMemory := yikes.GoBytes(base, totalBytes)
+	targetMemory := yikes.GoBytes(uintptr(ptr), size)
 
 	i := copy(bufMemory, targetMemory)
 	return i, nil
@@ -99,8 +91,8 @@ func (b Buffer) CopyToUnsafeFromBuffer(chn Channel, ptr unsafe.Pointer, size int
 		return 0, nil
 	}
 
-	bufMemory := unsafeBytes(base, totalBytes)
-	targetMemory := unsafeBytes(uintptr(ptr), size)
+	bufMemory := yikes.GoBytes(base, totalBytes)
+	targetMemory := yikes.GoBytes(uintptr(ptr), size)
 
 	i := copy(targetMemory, bufMemory)
 	return i, nil

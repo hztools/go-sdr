@@ -30,19 +30,8 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/internal/yikes"
 )
-
-func goBytesButReally(
-	base uintptr,
-	size int,
-) []byte {
-	var b = struct {
-		base uintptr
-		len  int
-		cap  int
-	}{base, size, size}
-	return *(*[]byte)(unsafe.Pointer(&b))
-}
 
 // StartTx implements the sdr.Transmitter interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
@@ -96,7 +85,7 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		return nil, err
 	}
 	txBufferBytes := sdr.MustUnsafeSamplesAsBytes(txBuffer)
-	txBufferCBytes := goBytesButReally(
+	txBufferCBytes := yikes.GoBytes(
 		uintptr(unsafe.Pointer(txBufferC)),
 		txBufferSizeC,
 	)

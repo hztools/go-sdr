@@ -32,6 +32,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/internal/yikes"
 )
 
 // writeCloser contains all the allocated structs to be used by the writeer
@@ -138,7 +139,7 @@ func (rc *writeCloser) run() {
 		}
 		cn = C.size_t(n)
 
-		ciqGB := goBytesButReally(uintptr(unsafe.Pointer(ciq)), iqSize)
+		ciqGB := yikes.GoBytes(uintptr(unsafe.Pointer(ciq)), iqSize)
 		copy(ciqGB, sdr.MustUnsafeSamplesAsBytes(iq))
 
 		if rvToError(C.uhd_tx_streamer_send(
@@ -149,18 +150,6 @@ func (rc *writeCloser) run() {
 			return
 		}
 	}
-}
-
-func goBytesButReally(
-	base uintptr,
-	size int,
-) []byte {
-	var b = struct {
-		base uintptr
-		len  int
-		cap  int
-	}{base, size, size}
-	return *(*[]byte)(unsafe.Pointer(&b))
 }
 
 // StartTx implements the sdr.Sdr interface.

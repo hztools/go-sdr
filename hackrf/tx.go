@@ -35,23 +35,12 @@ import (
 	"github.com/mattn/go-pointer"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/internal/yikes"
 )
 
 type txCallbackState struct {
 	pipeReader sdr.PipeReader
 	pipeWriter sdr.PipeWriter
-}
-
-func goBytesButReally(
-	base uintptr,
-	size int,
-) []byte {
-	var b = struct {
-		base uintptr
-		len  int
-		cap  int
-	}{base, size, size}
-	return *(*[]byte)(unsafe.Pointer(&b))
 }
 
 //export hackrfTxCallback
@@ -67,7 +56,7 @@ func hackrfTxCallback(transfer *C.hackrf_transfer) int {
 		log.Printf("hackrf: tx: bufSize is misaligned")
 		bufSize--
 	}
-	buf := goBytesButReally(uintptr(unsafe.Pointer(transfer.buffer)), bufSize)
+	buf := yikes.GoBytes(uintptr(unsafe.Pointer(transfer.buffer)), bufSize)
 	bufIQLength := bufSize / sdr.SampleFormatI8.Size()
 
 	// Now, let's grab some fresh bytes from the ole' pipe
