@@ -158,6 +158,8 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 	// to ensure that we have a supported SampleFormat.
 	var format string
 	switch s.sampleFormat {
+	case sdr.SampleFormatI8:
+		format = "sc8"
 	case sdr.SampleFormatI16:
 		format = "sc16"
 	case sdr.SampleFormatC64:

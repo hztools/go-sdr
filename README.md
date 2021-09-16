@@ -9,12 +9,12 @@ design here is taken from the Go io package. A new set of interfaces are
 required in order to provide a set of tools to work with reading and writing
 IQ samples.
 
-| SDR                                    | Format   | RX/TX  | State |
-|----------------------------------------|----------|--------|-------|
-| [rtl](rtl/README.md)                   | u8       | RX     | Good  |
-| [HackRF](hackrf/README.md)             | i8       | RX/TX  | Good  |
-| [PlutoSDR](pluto/README.md)            | i16      | RX/TX  | Good  |
-| [rtl kerberos](rtl/kerberos/README.md) | u8       | RX     | Good  |
-| [lime](lime/README.md)                 | i16/c64  | RX/TX  | Exp   |
-| [uhd](uhd/README.md)                   | i16/c64  | RX/TX  | Exp   |
+| SDR                                    | Format     | RX/TX  | State |
+|----------------------------------------|------------|--------|-------|
+| [rtl](rtl/README.md)                   | u8         | RX     | Good  |
+| [HackRF](hackrf/README.md)             | i8         | RX/TX  | Good  |
+| [PlutoSDR](pluto/README.md)            | i16        | RX/TX  | Good  |
+| [rtl kerberos](rtl/kerberos/README.md) | u8         | RX     | Good  |
+| [lime](lime/README.md)                 | i16/c64    | RX/TX  | Exp   |
+| [uhd](uhd/README.md)                   | i16/c64/i8 | RX/TX  | Exp   |
 
