@@ -60,6 +60,16 @@ type BufPipe struct {
 
 	pipeReader sdr.PipeReader
 	pipeWriter sdr.PipeWriter
+
+	blocking bool
+}
+
+// SetBlocking will control the behavior when the capcity of the buffer is
+// full. If SetBlocking is set to true (default is false), the write will
+// hang until the buffer has room again. If blocking is set to false,
+// ErrBufferOverrun will be returned.
+func (p *BufPipe) SetBlocking(blocking bool) {
+	p.blocking = blocking
 }
 
 // SampleFormat implements the sdr.ReadWriter interface.
@@ -126,12 +136,23 @@ func (p *BufPipe) Write(s1 sdr.Samples) (int, error) {
 		return 0, err
 	}
 
-	select {
-	case p.buf <- s2:
-		return i, nil
-	default:
-		p.CloseWithError(ErrBufferOverrun)
-		return 0, ErrBufferOverrun
+	if p.blocking {
+		select {
+		case <-p.ctx.Done():
+			return 0, p.ctx.Err()
+		case p.buf <- s2:
+			return i, nil
+		}
+	} else {
+		select {
+		case <-p.ctx.Done():
+			return 0, p.ctx.Err()
+		case p.buf <- s2:
+			return i, nil
+		default:
+			p.CloseWithError(ErrBufferOverrun)
+			return 0, ErrBufferOverrun
+		}
 	}
 }
 

@@ -65,6 +65,7 @@ type Options struct {
 	// SampleFormat to be used internally.
 	//
 	// Currently supported types:
+	//   - sdr.SampleFormatI8
 	//   - sdr.SampleFormatI16
 	//   - sdr.SampleFormatC64
 	//

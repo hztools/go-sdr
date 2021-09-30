@@ -33,6 +33,7 @@ import (
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/internal/yikes"
+	"hz.tools/sdr/stream"
 )
 
 // writeCloser contains all the allocated structs to be used by the writeer
@@ -46,8 +47,7 @@ type writeCloser struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	reader       sdr.PipeReader
-	writer       sdr.PipeWriter
+	pipe         *stream.BufPipe
 	sampleFormat sdr.SampleFormat
 
 	txStreamer C.uhd_tx_streamer_handle
@@ -55,57 +55,57 @@ type writeCloser struct {
 }
 
 // Write implements the sdr.Writer interface
-func (rc *writeCloser) Write(iq sdr.Samples) (int, error) {
-	return rc.writer.Write(iq)
+func (wc *writeCloser) Write(iq sdr.Samples) (int, error) {
+	return wc.pipe.Write(iq)
 }
 
 // SampleRate implements the sdr.Writer interface
-func (rc *writeCloser) SampleRate() uint {
-	return rc.writer.SampleRate()
+func (wc *writeCloser) SampleRate() uint {
+	return wc.pipe.SampleRate()
 }
 
 // SampleFormat implements the sdr.Writer interface
-func (rc *writeCloser) SampleFormat() sdr.SampleFormat {
-	return rc.sampleFormat
+func (wc *writeCloser) SampleFormat() sdr.SampleFormat {
+	return wc.sampleFormat
 }
 
 // Close implements the sdr.WriteCloser interface
-func (rc *writeCloser) Close() error {
-	if rc.closed {
+func (wc *writeCloser) Close() error {
+	if wc.closed {
 		// Avoid double-free'ing or issuing a stream command if we've been
 		// called before. This is really a bug, but we wanna be fairly
 		// defensive here.
 		return nil
 	}
 
-	rc.cancel()
-	rc.writer.Close()
+	wc.cancel()
+	wc.pipe.Close()
 
 	// Wait until the STOP command has gone through and we're sure the
-	// goroutine is stopped. This means that we can free the resources below,
+	// goroutine is stopped. This means that we can free the resouwces below,
 	// otherwise we risk a SEGV.
-	rc.wg.Wait()
+	wc.wg.Wait()
 
-	C.uhd_tx_streamer_free(&rc.txStreamer)
-	C.uhd_tx_metadata_free(&rc.txMetadata)
+	C.uhd_tx_streamer_free(&wc.txStreamer)
+	C.uhd_tx_metadata_free(&wc.txMetadata)
 
 	// TODO(paultag): Literally any error checking at all :)
 
-	rc.closed = true
+	wc.closed = true
 	return nil
 }
 
 // run is a goroutine to handle copying IQ data from the UHD device
 // to the Pipe contained inside the writeCloser.
-func (rc *writeCloser) run() {
-	defer rc.writer.Close()
-	defer rc.cancel()
-	defer rc.wg.Done()
+func (wc *writeCloser) run() {
+	defer wc.pipe.Close()
+	defer wc.cancel()
+	defer wc.wg.Done()
 
 	var ciqLen C.size_t
 
-	if err := rvToError(C.uhd_tx_streamer_max_num_samps(rc.txStreamer, &ciqLen)); err != nil {
-		rc.writer.CloseWithError(err)
+	if err := rvToError(C.uhd_tx_streamer_max_num_samps(wc.txStreamer, &ciqLen)); err != nil {
+		wc.pipe.CloseWithError(err)
 		return
 	}
 
@@ -115,26 +115,26 @@ func (rc *writeCloser) run() {
 		err error
 
 		iqLength = int(ciqLen)
-		iqSize   = iqLength * rc.sampleFormat.Size()
+		iqSize   = iqLength * wc.sampleFormat.Size()
 		ciqSize  = C.size_t(iqSize)
 		ciq      = C.malloc(C.size_t(ciqSize))
 	)
 
-	iq, err := sdr.MakeSamples(rc.sampleFormat, iqLength)
+	iq, err := sdr.MakeSamples(wc.sampleFormat, iqLength)
 	if err != nil {
-		rc.writer.CloseWithError(err)
+		wc.pipe.CloseWithError(err)
 		return
 	}
 
 	for {
 		i++
-		if err := rc.ctx.Err(); err != nil {
+		if err := wc.ctx.Err(); err != nil {
 			return
 		}
 
-		n, err := sdr.ReadFull(rc.reader, iq)
+		n, err := sdr.ReadFull(wc.pipe, iq)
 		if err != nil {
-			rc.writer.CloseWithError(err)
+			wc.pipe.CloseWithError(err)
 			return
 		}
 		cn = C.size_t(n)
@@ -143,10 +143,10 @@ func (rc *writeCloser) run() {
 		copy(ciqGB, sdr.MustUnsafeSamplesAsBytes(iq))
 
 		if rvToError(C.uhd_tx_streamer_send(
-			rc.txStreamer, &ciq, ciqLen, &rc.txMetadata,
+			wc.txStreamer, &ciq, ciqLen, &wc.txMetadata,
 			0.1, &cn,
 		)); err != nil {
-			rc.writer.CloseWithError(err)
+			wc.pipe.CloseWithError(err)
 			return
 		}
 	}
@@ -225,24 +225,32 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		return nil, err
 	}
 
-	// TODO(paultag): dynamic SampleFormat
-	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, s.sampleFormat)
+	// TODO(paultag): Dynamic capacity here.
+	bp, err := stream.NewBufPipeWithContext(ctx, 10, sr, s.sampleFormat)
+	if err != nil {
+		C.uhd_tx_streamer_free(&txStreamer)
+		C.uhd_tx_metadata_free(&txMetadata)
+		return nil, err
+	}
 
-	rc := &writeCloser{
+	// Here we want to set blocking, since _we_ are the time critical aspect
+	// here.
+	bp.SetBlocking(true)
+
+	wc := &writeCloser{
 		wg:     sync.WaitGroup{},
 		ctx:    ctx,
 		cancel: cancel,
 
 		sampleFormat: s.sampleFormat,
-		reader:       pipeReader,
-		writer:       pipeWriter,
+		pipe:         bp,
 
 		txStreamer: txStreamer,
 		txMetadata: txMetadata,
 	}
-	rc.wg.Add(1)
-	go rc.run()
-	return rc, nil
+	wc.wg.Add(1)
+	go wc.run()
+	return wc, nil
 }
 
 // vim: foldmethod=marker
