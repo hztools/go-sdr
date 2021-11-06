@@ -29,10 +29,9 @@ import (
 )
 
 type shiftReader struct {
-	inc   float64
-	ts    float64
-	shift float64
 	r     sdr.Reader
+	shift rf.Hz
+	fn    func(rf.Hz, sdr.SamplesC64)
 }
 
 func (sr *shiftReader) SampleFormat() sdr.SampleFormat {
@@ -59,17 +58,29 @@ func (sr *shiftReader) Read(s sdr.Samples) (int, error) {
 	// TODO(paultag): Fix this to be safe when the above format checks
 	// grow.
 	sC64 := s.Slice(0, n).(sdr.SamplesC64)
-	tau := math.Pi * 2
-
-	for j := range sC64 {
-		sr.ts += sr.inc
-		if sr.ts > tau {
-			sr.ts -= tau
-		}
-		sC64[j] = sC64[j] * complex64(cmplx.Exp(complex(0, tau*sr.shift*sr.ts)))
-	}
-
+	sr.fn(sr.shift, sC64)
 	return n, nil
+}
+
+// ShiftBuffer will return a function that will track phase to shift consecutive
+// buffers.
+func ShiftBuffer(sampleRate uint) func(rf.Hz, sdr.SamplesC64) {
+	var (
+		ts  float64
+		inc float64 = (1 / float64(sampleRate))
+		tau         = math.Pi * 2
+	)
+
+	return func(freq rf.Hz, buf sdr.SamplesC64) {
+		shift := float64(freq)
+		for j := range buf {
+			ts += inc
+			if ts > tau {
+				ts -= tau
+			}
+			buf[j] = buf[j] * complex64(cmplx.Exp(complex(0, tau*shift*ts)))
+		}
+	}
 }
 
 // ShiftReader will shift the iq samples by the target frequency. So a carrier
@@ -83,10 +94,9 @@ func ShiftReader(r sdr.Reader, shift rf.Hz) (sdr.Reader, error) {
 	}
 
 	return &shiftReader{
-		ts:    0,
-		inc:   (1 / float64(r.SampleRate())),
-		shift: float64(shift),
 		r:     r,
+		shift: shift,
+		fn:    ShiftBuffer(r.SampleRate()),
 	}, nil
 }
 
