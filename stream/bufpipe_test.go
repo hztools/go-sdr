@@ -181,4 +181,40 @@ func TestBufPipeParts(t *testing.T) {
 	assert.Equal(t, complex64(20+10i), buf[512-128])
 }
 
+func TestBufPipeClose(t *testing.T) {
+	pipe, err := stream.NewBufPipe(1, 0, sdr.SampleFormatC64)
+	assert.NoError(t, err)
+	wb := make(sdr.SamplesC64, 1024)
+	i, err := pipe.Write(wb)
+	assert.NoError(t, pipe.Close())
+	assert.NoError(t, err)
+	assert.Equal(t, 1024, i)
+
+	i, err = sdr.ReadFull(pipe, wb)
+	assert.NoError(t, err)
+	assert.Equal(t, 1024, i)
+
+	// Additional writes fail
+	_, err = pipe.Write(wb)
+	assert.Error(t, err)
+}
+
+func TestBufPipeCloseWait(t *testing.T) {
+	pipe, err := stream.NewBufPipe(1, 0, sdr.SampleFormatC64)
+	assert.NoError(t, err)
+	wb := make(sdr.SamplesC64, 1024)
+	i, err := pipe.Write(wb)
+	assert.NoError(t, pipe.Close())
+	assert.NoError(t, err)
+	assert.Equal(t, 1024, i)
+
+	go func() {
+		i, err = sdr.ReadFull(pipe, wb)
+		assert.NoError(t, err)
+		assert.Equal(t, 1024, i)
+	}()
+
+	pipe.Wait()
+}
+
 // vim: foldmethod=marker

@@ -54,6 +54,7 @@ type BufPipe struct {
 	cancel context.CancelFunc
 	err    error
 	buf    chan sdr.Samples
+	closed bool
 
 	sampleRate   uint
 	sampleFormat sdr.SampleFormat
@@ -98,9 +99,15 @@ func (p *BufPipe) Read(s sdr.Samples) (int, error) {
 }
 
 func (p *BufPipe) do() {
+	defer p.cancel()
+
 	for {
 		select {
-		case s1 := <-p.buf:
+		case s1, ok := <-p.buf:
+			if !ok {
+				p.err = sdr.ErrPipeClosed
+				return
+			}
 			_, err := p.pipeWriter.Write(s1)
 			if err != nil {
 				// If we caught an error and we don't have an error
@@ -122,6 +129,10 @@ func (p *BufPipe) do() {
 
 // Write implements the sdr.Writer interface.
 func (p *BufPipe) Write(s1 sdr.Samples) (int, error) {
+	if p.closed {
+		return 0, sdr.ErrPipeClosed
+	}
+
 	if p.err != nil {
 		return 0, p.err
 	}
@@ -164,10 +175,19 @@ func (p *BufPipe) CloseWithError(err error) error {
 	return nil
 }
 
+// Done will close when the pipe is exhausted.
+func (p *BufPipe) Done() <-chan struct{} {
+	return p.ctx.Done()
+}
+
 // Close will cancel the Pipe's context, terminating the goroutine spawned,
 // and closing the context of any children objects.
 func (p *BufPipe) Close() error {
-	p.cancel()
+	if p.closed {
+		return nil
+	}
+	p.closed = true
+	close(p.buf)
 	return nil
 }
 
