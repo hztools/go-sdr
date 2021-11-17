@@ -120,10 +120,11 @@ func (wc *writeCloser) run() error {
 			return err
 		}
 
-		_, err := sdr.ReadFull(wc.reader, buf)
+		n, err := wc.reader.Read(buf)
 		if err != nil {
 			return err
 		}
+		buf := buf[:n]
 
 		_, err = ibuf.CopyToBufferFromUnsafe(
 			*tx.txi,
@@ -134,7 +135,7 @@ func (wc *writeCloser) run() error {
 			return err
 		}
 
-		if _, err := ibuf.Push(); err != nil {
+		if _, err := ibuf.PushPartial(buf.Length()); err != nil {
 			return err
 		}
 	}
