@@ -98,6 +98,16 @@ func (b Buffer) CopyToUnsafeFromBuffer(chn Channel, ptr unsafe.Pointer, size int
 	return i, nil
 }
 
+// PushPartial will push the data written to the Buffer (from start to end) to the
+// Device.
+func (b Buffer) PushPartial(length int) (int, error) {
+	i := C.iio_buffer_push_partial(b.handle, C.size_t(length))
+	if i < 0 {
+		return 0, syscall.Errno(-i)
+	}
+	return int(i), nil
+}
+
 // Push will push the data written to the Buffer (from start to end) to the
 // Device.
 func (b Buffer) Push() (int, error) {
