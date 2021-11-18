@@ -62,24 +62,29 @@ func hackrfTxCallback(transfer *C.hackrf_transfer) int {
 	// Now, let's grab some fresh bytes from the ole' pipe
 	samples := make(sdr.SamplesI8, bufIQLength)
 
-	_, err := sdr.ReadFull(state.pipeReader, samples)
-	if err != nil {
-		log.Printf("hackrf: tx: failed to ReadFull")
+	n, err := sdr.ReadFull(state.pipeReader, samples)
+
+	// Here we're going to continue even if there's an error so that we ensure
+	// we transmit /everything/ we can.
+	if n == 0 && err != nil {
+		log.Printf("hackrf: tx: failed to ReadFull: %s", err)
 		return -1
 	}
 
-	if copy(buf, sdr.MustUnsafeSamplesAsBytes(samples)) != bufSize {
-		log.Printf("hackrf: tx: copy() didn't move the whole window over")
-		return -1
+	if n != samples.Length() {
+		for i := n; i < samples.Length(); i++ {
+			// The buffer is trash, let's overwrite with zeros.
+			samples[i] = [2]int8{0, 0}
+		}
 	}
 
+	copy(buf, sdr.MustUnsafeSamplesAsBytes(samples))
 	return 0
 }
 
 // StartTx implements the sdr.Sdr interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 	if s.amp {
-		log.Printf("Setting Amp again")
 		if err := ampGain(newSteppedGain(
 			"Amp",
 			sdr.GainStageTypeAmp,
@@ -117,7 +122,12 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		}
 
 		defer pointer.Unref(state)
+
 		pipeWriter.Close()
+		for C.hackrf_is_streaming(s.dev) == C.HACKRF_TRUE {
+			// yield control back? not ideal.
+		}
+
 		err := rvToErr(C.hackrf_stop_tx(s.dev))
 		closed = true
 		return err
