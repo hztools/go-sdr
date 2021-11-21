@@ -22,7 +22,6 @@ package stream
 
 import (
 	"math"
-	"math/cmplx"
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
@@ -78,15 +77,9 @@ func ShiftBuffer(sampleRate uint) func(rf.Hz, sdr.SamplesC64) {
 			if ts > tau {
 				ts -= tau
 			}
-			// TODO(paultag): Can this change to
-			//
-			// s, c := math.Sincos(tau*shift*ts)
-			// complex64(c, s)
-			//
-			// Given that we always set real to 1, and math.Exp(0) is 1
-			// (and this will never be NaN or Inf).
-			//
-			buf[j] = buf[j] * complex64(cmplx.Exp(complex(0, tau*shift*ts)))
+
+			im, rl := math.Sincos(tau * shift * ts)
+			buf[j] = buf[j] * complex64(complex(rl, im))
 		}
 	}
 }

@@ -1,7 +1,5 @@
 
 
- - Is it right to remove cmplx.Exp from stream/shifter.go ?
-
  - StartRx / StartTx channel param
    - For Coherent applications, selecting the channel would be handy.
 
