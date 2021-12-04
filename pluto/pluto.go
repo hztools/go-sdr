@@ -67,13 +67,37 @@ type Sdr struct {
 	samplesPerSecond uint
 }
 
-// Open will establish a connection to a PlutoSDR, and return a handle to
+// Open will create a PlutoSDR handle with the default set of
+// options.
+//
+// The endpoint string is the URI that would be passed to the iio* tools,
+// such as ip:192.168.2.1, or ip:pluto3.hz.tools
+func Open(endpoint string) (*Sdr, error) {
+	return OpenWithOptions(endpoint, Options{
+		RxBufferLength: 4096 * 32,
+		TxBufferLength: 4096 * 32 * 10,
+	})
+}
+
+// Options are the tunable knobs that control the behavior of the PlutoSDR
+// driver.
+type Options struct {
+	// RxBufferLength defines the size of the buffer that is used to copy
+	// samples into in the process of copying data out of the PlutoSDR.
+	RxBufferLength int
+
+	// TxBufferLength defines the size of the buffer that will be used to
+	// copy samples into the process of writing data out of the PlutoSDR.
+	TxBufferLength int
+}
+
+// OpenWithOptions will establish a connection to a PlutoSDR, and return a handle to
 // interact with that device. The endpoint string is the URI that would be
 // passed to the iio* tools, such as ip:192.168.2.1, or ip:pluto3.hz.tools
-func Open(endpoint string) (*Sdr, error) {
+func OpenWithOptions(endpoint string, opts Options) (*Sdr, error) {
 	var (
-		rxWindowSize int = 4096 * 32
-		txWindowSize int = 4096 * 32 * 10
+		rxWindowSize int = opts.RxBufferLength
+		txWindowSize int = opts.TxBufferLength
 	)
 
 	ictx, err := iio.Open(endpoint)
@@ -144,8 +168,7 @@ func Open(endpoint string) (*Sdr, error) {
 	return s, nil
 }
 
-// SetLoopback will set BIST Loopback to send TX data to the RX port, to do
-// things like determine the phase offset between RX and TX.
+// SetLoopback will set BIST Loopback to send TX data to the RX port.
 func (s *Sdr) SetLoopback(b bool) error {
 	// s.phy
 	// loopback
