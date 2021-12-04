@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE. }}}
 
-GO := $(shell which go)
+GO := $(shell command -v go)
 
 SUPPORTED_BUILTAGS = \
 	sdr.nosimd \
