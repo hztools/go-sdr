@@ -35,6 +35,10 @@ import (
 // samples in complex64, or vice-versa (read from a complex64 capture and
 // process as if it was an rtl-sdr).
 func ConvertReader(in sdr.Reader, to sdr.SampleFormat) (sdr.Reader, error) {
+
+	// TODO(paultag): Add a ConvertReaderWithLength helper to control the
+	// InputBufferLength and OutputBufferLength.
+
 	return ReadTransformer(in, ReadTransformerConfig{
 		InputBufferLength:  32 * 1024,
 		OutputBufferLength: 32 * 1024,
@@ -55,6 +59,10 @@ func ConvertWriter(
 	out sdr.Writer,
 	inputFormat sdr.SampleFormat,
 ) (sdr.Writer, error) {
+
+	// TODO(paultag): Add a ConvertWriterWithLength helper to control the
+	// bufSize
+
 	bufSize := 32 * 1024
 	buf, err := sdr.MakeSamples(out.SampleFormat(), bufSize)
 	if err != nil {

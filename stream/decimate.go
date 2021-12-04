@@ -34,6 +34,9 @@ import (
 func DecimateReader(in sdr.Reader, factor uint) (sdr.Reader, error) {
 	var offset = 0
 
+	// TODO(paultag): Add a DecimateReaderWithLength helper to control the
+	// InputBufferLength and OutputBufferLength.
+
 	return ReadTransformer(in, ReadTransformerConfig{
 		InputBufferLength:  32 * 1024,
 		OutputBufferLength: 32 * 1024,

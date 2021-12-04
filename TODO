@@ -16,3 +16,6 @@
    - RTL-SDR tuner info
    - LimeSDR info, versions
    - HackRF info, versions
+
+ - Address TODOs in stream ReadTransformer implementations that allocate a fixed
+   buffer length.
