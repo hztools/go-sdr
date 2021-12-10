@@ -26,25 +26,19 @@ import (
 	"hz.tools/sdr"
 )
 
-// Convolve will preform plan a convolution of two time-series IQ samples,
-// returning a function to repeatedly convolve the two provided IQ buffers.
-// The output of the convolution will be written to the dst Samples. The
-// dst argument may safely be one of iq1 or iq2.
-//
-// Under the hood this will use the provided FFT Planner to multiply the
-// samples in the frequency domain, which winds up a lot faster than having
-// to preform the convolution in the time domain.
-func Convolve(
+// convolve
+func convolve(
 	planner Planner,
 	dst sdr.Samples,
 	iq1 sdr.Samples,
 	iq2 sdr.Samples,
+	op func(sdr.Samples, sdr.Samples, sdr.Samples, []complex64, []complex64) error,
 ) (func() error, error) {
 	if iq1.Length() != iq2.Length() || iq1.Length() != dst.Length() {
 		// TODO(paultag): This isn't strictly right, we should perhaps check that
 		// they're the same power of two and zero-pad but we're very lazy so
 		// let's make the user explicitly do that.
-		return nil, fmt.Errorf("sdr/fft.Convolve: Lengths do not match exactly")
+		return nil, fmt.Errorf("sdr/fft: IQ/Dest buffer lengths do not match exactly")
 	}
 
 	if iq1.Format() != iq2.Format() || iq1.Format() != dst.Format() {
@@ -84,14 +78,67 @@ func Convolve(
 		if err := planForward2.Transform(); err != nil {
 			return err
 		}
-		for i := range freq1 {
-			freq1[i] = freq1[i] * freq2[i]
+
+		if err := op(dst, iq1, iq2, freq1, freq2); err != nil {
+			return err
 		}
 		return planBackward.Transform()
 	}, nil
 }
 
-// ConvolveFreq will preform plan a convolution of frequency-domain complex
+// Convolve will plan a convolution of two time-series IQ samples,
+// returning a function to repeatedly convolve the two provided IQ buffers.
+// The output of the convolution will be written to the dst Samples. The
+// dst argument may safely be one of iq1 or iq2.
+//
+// Under the hood this will use the provided FFT Planner to multiply the
+// samples in the frequency domain, which winds up a lot faster than having
+// to preform the convolution in the time domain.
+func Convolve(
+	planner Planner,
+	dst sdr.Samples,
+	iq1 sdr.Samples,
+	iq2 sdr.Samples,
+) (func() error, error) {
+	return convolve(planner, dst, iq1, iq2,
+		func(dst sdr.Samples,
+			iq1 sdr.Samples, iq2 sdr.Samples,
+			freq1 []complex64, freq2 []complex64,
+		) error {
+			for i := range freq1 {
+				freq1[i] = freq1[i] * freq2[i]
+			}
+			return nil
+		},
+	)
+}
+
+// CrossCorrelate will plan a cross correlation in the frequency domain
+// between two iq buffers to determine what offset (if any) contain
+// a correlation with the exemplar.
+func CrossCorrelate(
+	planner Planner,
+	dst sdr.Samples,
+	iq1 sdr.Samples,
+	iq2 sdr.Samples,
+) (func() error, error) {
+	return convolve(planner, dst, iq1, iq2,
+		func(dst sdr.Samples,
+			iq1 sdr.Samples, iq2 sdr.Samples,
+			freq1 []complex64, freq2 []complex64,
+		) error {
+			for i := range freq1 {
+				freq1[i] = freq1[i] * complex(
+					real(freq2[i]),
+					-imag(freq2[i]),
+				)
+			}
+			return nil
+		},
+	)
+}
+
+// ConvolveFreq will plan a convolution of frequency-domain complex
 // numbers against time-series iq data in the frequency domain,
 // returning a function to repeatedly convolve the two provided IQ buffers.
 // The output of the convolution will be written to the dst Samples. The
