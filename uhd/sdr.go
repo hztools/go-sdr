@@ -101,6 +101,7 @@ func Open(opts Options) (*Sdr, error) {
 
 	mboard := C.GoString(&buf[0])
 
+	// TODO(paultag): Use get_usrp_rx_info on chan 0 to get the Serial
 	hi := sdr.HardwareInfo{
 		Manufacturer: "Ettus Research", // TODO(paultag): Fix this too
 		Product:      mboard,

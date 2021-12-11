@@ -29,6 +29,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -152,8 +153,28 @@ func (wc *writeCloser) run() {
 	}
 }
 
+// StartTxAt will start TX at the provided Duration offset.
+func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
+	opts := startTxOpts{}
+	opts.Timing.Set = true
+	opts.Timing.Offset = d
+	return s.startTx(opts)
+}
+
 // StartTx implements the sdr.Sdr interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
+	opts := startTxOpts{}
+	return s.startTx(opts)
+}
+
+type startTxOpts struct {
+	Timing struct {
+		Set    bool
+		Offset time.Duration
+	}
+}
+
+func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 	// Before we get down the road of allocating anything, let's check
 	// to ensure that we have a supported SampleFormat.
 	var format string
@@ -197,7 +218,10 @@ func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 		return nil, err
 	}
 
-	if err := rvToError(C.uhd_tx_metadata_make(&txMetadata, false, 0, 0.1, true, false)); err != nil {
+	var hasTimeSpec = C.bool(opts.Timing.Set)
+	secs, frac := splitDuration(opts.Timing.Offset)
+
+	if err := rvToError(C.uhd_tx_metadata_make(&txMetadata, hasTimeSpec, secs, frac, true, false)); err != nil {
 		C.uhd_tx_streamer_free(&txStreamer)
 		return nil, err
 	}
