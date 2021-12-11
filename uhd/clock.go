@@ -27,6 +27,7 @@ import "C"
 
 import (
 	"time"
+	"unsafe"
 )
 
 // SetTimeNextPPS will set the time at the next PPS pulse.
@@ -90,13 +91,23 @@ func (s *Sdr) GetTimeNow() (time.Duration, error) {
 	return newDuration(secs, frac), nil
 }
 
+// SetTimeSource will set the clock ref for the USRP.
+func (s *Sdr) SetTimeSource(what string) error {
+	cWhat := C.CString(what)
+	defer C.free(unsafe.Pointer(cWhat))
+	return rvToError(C.uhd_usrp_set_time_source(
+		*s.handle,
+		cWhat,
+		0,
+	))
+}
+
 // TODO:
 //
 //  - uhd_usrp_set_time_unknown_pps
 //
 //  - uhd_usrp_get_time_last_pps
 //
-//  - uhd_usrp_set_time_source
 //  - uhd_usrp_get_time_source
 //  - uhd_usrp_get_time_synchronized
 //
