@@ -29,6 +29,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -99,6 +100,11 @@ type readCloser struct {
 
 	rxStreamer C.uhd_rx_streamer_handle
 	rxMetadata C.uhd_rx_metadata_handle
+
+	timing struct {
+		Set    bool
+		Offset time.Duration
+	}
 }
 
 // Read implements the sdr.Reader interface
@@ -181,8 +187,14 @@ func (rc *readCloser) run() {
 		return
 	}
 
+	var hasTimeSpec = C.bool(rc.timing.Set)
+	secs, frac := splitDuration(rc.timing.Offset)
+
 	streamCmd.stream_mode = C.UHD_STREAM_MODE_START_CONTINUOUS
-	streamCmd.stream_now = true
+	streamCmd.stream_now = !hasTimeSpec
+	streamCmd.time_spec_full_secs = secs
+	streamCmd.time_spec_frac_secs = frac
+
 	if err := rvToError(C.uhd_rx_streamer_issue_stream_cmd(rc.rxStreamer, &streamCmd)); err != nil {
 		rc.writer.CloseWithError(err)
 	}
@@ -223,8 +235,28 @@ func (rc *readCloser) run() {
 	}
 }
 
-// StartRx implements the sdr.Sdr interface.
+type startRxOpts struct {
+	Timing struct {
+		Set    bool
+		Offset time.Duration
+	}
+}
+
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
+	opts := startRxOpts{}
+	return s.startRx(opts)
+}
+
+// StartRxAt will StartRx at the specific time offset.
+func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
+	opts := startRxOpts{}
+	opts.Timing.Set = true
+	opts.Timing.Offset = d
+	return s.startRx(opts)
+}
+
+// StartRx implements the sdr.Sdr interface.
+func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 
 	// Before we get down the road of allocating anything, let's check
 	// to ensure that we have a supported SampleFormat.
@@ -312,6 +344,8 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		rxStreamer: rxStreamer,
 		rxMetadata: rxMetadata,
 	}
+	rc.timing.Set = opts.Timing.Set
+	rc.timing.Offset = opts.Timing.Offset
 	rc.wg.Add(1)
 	go rc.run()
 	return rc, nil
