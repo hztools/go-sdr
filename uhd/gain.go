@@ -56,10 +56,12 @@ func (g gainStage) String() string {
 
 type rxGainStage struct {
 	gainStage
+	channel int
 }
 
 type txGainStage struct {
 	gainStage
+	channel int
 }
 
 // SetAutomaticGain implements the sdr.Sdr interface.
@@ -130,7 +132,12 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 	}
 	defer C.uhd_meta_range_free(&gainRange)
 
-	rxGainStageNames, err := getRxGainStageNames(s.handle, C.size_t(s.rxChannel))
+	var (
+		rxChannel = s.rxChannel
+		txChannel = s.txChannel
+	)
+
+	rxGainStageNames, err := getRxGainStageNames(s.handle, C.size_t(rxChannel))
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +147,7 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 		err := rvToError(C.uhd_usrp_get_rx_gain_range(
 			*s.handle,
 			gsn,
-			C.size_t(s.rxChannel),
+			C.size_t(rxChannel),
 			gainRange,
 		))
 		C.free(unsafe.Pointer(gsn))
@@ -160,17 +167,20 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 			return nil, err
 		}
 
-		ret = append(ret, rxGainStage{gainStage{
-			stageType: sdr.GainStageTypeRecieve,
-			prefix:    "RX",
-			name:      gainStageName,
-			minGain:   float32(start),
-			maxGain:   float32(end),
-			step:      float32(step),
-		}})
+		ret = append(ret, rxGainStage{
+			channel: rxChannel,
+			gainStage: gainStage{
+				stageType: sdr.GainStageTypeRecieve,
+				prefix:    fmt.Sprintf("RX%d", rxChannel),
+				name:      gainStageName,
+				minGain:   float32(start),
+				maxGain:   float32(end),
+				step:      float32(step),
+			},
+		})
 	}
 
-	txGainStageNames, err := getTxGainStageNames(s.handle, C.size_t(s.txChannel))
+	txGainStageNames, err := getTxGainStageNames(s.handle, C.size_t(txChannel))
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +190,7 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 		err := rvToError(C.uhd_usrp_get_tx_gain_range(
 			*s.handle,
 			gsn,
-			C.size_t(s.txChannel),
+			C.size_t(txChannel),
 			gainRange,
 		))
 		C.free(unsafe.Pointer(gsn))
@@ -200,14 +210,17 @@ func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
 			return nil, err
 		}
 
-		ret = append(ret, txGainStage{gainStage{
-			stageType: sdr.GainStageTypeTransmit,
-			prefix:    "TX",
-			name:      gainStageName,
-			minGain:   float32(start),
-			maxGain:   float32(end),
-			step:      float32(step),
-		}})
+		ret = append(ret, txGainStage{
+			channel: txChannel,
+			gainStage: gainStage{
+				stageType: sdr.GainStageTypeTransmit,
+				prefix:    fmt.Sprintf("TX%d", txChannel),
+				name:      gainStageName,
+				minGain:   float32(start),
+				maxGain:   float32(end),
+				step:      float32(step),
+			},
+		})
 	}
 
 	return ret, nil
@@ -234,7 +247,7 @@ func (g rxGainStage) getGain(s *Sdr) (float32, error) {
 
 	if err := rvToError(C.uhd_usrp_get_rx_gain(
 		*s.handle,
-		C.size_t(s.rxChannel),
+		C.size_t(g.channel),
 		gsn,
 		&gain,
 	)); err != nil {
@@ -252,7 +265,7 @@ func (g txGainStage) getGain(s *Sdr) (float32, error) {
 
 	if err := rvToError(C.uhd_usrp_get_tx_gain(
 		*s.handle,
-		C.size_t(s.txChannel),
+		C.size_t(g.channel),
 		gsn,
 		&gain,
 	)); err != nil {
@@ -279,7 +292,7 @@ func (g txGainStage) setGain(s *Sdr, gain float32) error {
 	return rvToError(C.uhd_usrp_set_tx_gain(
 		*s.handle,
 		C.double(gain),
-		C.size_t(s.txChannel),
+		C.size_t(g.channel),
 		gsn,
 	))
 }
@@ -290,7 +303,7 @@ func (g rxGainStage) setGain(s *Sdr, gain float32) error {
 	return rvToError(C.uhd_usrp_set_rx_gain(
 		*s.handle,
 		C.double(gain),
-		C.size_t(s.rxChannel),
+		C.size_t(g.channel),
 		gsn,
 	))
 }
