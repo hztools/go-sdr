@@ -71,7 +71,7 @@ func (s *Sdr) SetAutomaticGain(b bool) error {
 	))
 }
 
-func getStringVector(handle *C.uhd_usrp_handle, fn func(*C.uhd_string_vector_handle) error) ([]string, error) {
+func getStringVector(fn func(*C.uhd_string_vector_handle) error) ([]string, error) {
 	var (
 		ret   []string
 		names C.uhd_string_vector_handle
@@ -104,13 +104,13 @@ func getStringVector(handle *C.uhd_usrp_handle, fn func(*C.uhd_string_vector_han
 }
 
 func getTxGainStageNames(handle *C.uhd_usrp_handle, channel C.size_t) ([]string, error) {
-	return getStringVector(handle, func(names *C.uhd_string_vector_handle) error {
+	return getStringVector(func(names *C.uhd_string_vector_handle) error {
 		return rvToError(C.uhd_usrp_get_tx_gain_names(*handle, channel, names))
 	})
 }
 
 func getRxGainStageNames(handle *C.uhd_usrp_handle, channel C.size_t) ([]string, error) {
-	return getStringVector(handle, func(names *C.uhd_string_vector_handle) error {
+	return getStringVector(func(names *C.uhd_string_vector_handle) error {
 		return rvToError(C.uhd_usrp_get_rx_gain_names(*handle, channel, names))
 	})
 }

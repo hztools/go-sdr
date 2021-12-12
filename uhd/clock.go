@@ -102,12 +102,18 @@ func (s *Sdr) SetTimeSource(what string) error {
 	))
 }
 
+// GetTimeSources will return the time sources that can be passed to
+// SetTimeSource.
+func (s *Sdr) GetTimeSources() ([]string, error) {
+	return getStringVector(func(names *C.uhd_string_vector_handle) error {
+		return rvToError(C.uhd_usrp_get_time_sources(*s.handle, 0, names))
+	})
+}
+
 // TODO:
 //
 //  - uhd_usrp_set_time_unknown_pps
-//
 //  - uhd_usrp_get_time_last_pps
-//
 //  - uhd_usrp_get_time_source
 //  - uhd_usrp_get_time_synchronized
 //
