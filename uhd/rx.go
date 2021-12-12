@@ -242,6 +242,7 @@ type startRxOpts struct {
 	}
 }
 
+// StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	opts := startRxOpts{}
 	return s.startRx(opts)
@@ -255,7 +256,6 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 	return s.startRx(opts)
 }
 
-// StartRx implements the sdr.Sdr interface.
 func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 
 	// Before we get down the road of allocating anything, let's check
