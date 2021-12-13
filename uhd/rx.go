@@ -236,7 +236,8 @@ func (rc *readCloser) run() {
 }
 
 type startRxOpts struct {
-	Timing struct {
+	RxChannel int
+	Timing    struct {
 		Set    bool
 		Offset time.Duration
 	}
@@ -248,7 +249,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
 	}
 
-	opts := startRxOpts{}
+	opts := startRxOpts{RxChannel: s.rxChannels[0]}
 	return s.startRx(opts)
 }
 
@@ -258,7 +259,7 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
 	}
 
-	opts := startRxOpts{}
+	opts := startRxOpts{RxChannel: s.rxChannels[0]}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
 	return s.startRx(opts)
@@ -284,17 +285,12 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 		rxStreamerArgs    C.uhd_stream_args_t
 		rxStreamer        C.uhd_rx_streamer_handle
 		rxMetadata        C.uhd_rx_metadata_handle
-		rxStreamerChanLen = C.size_t(len(s.rxChannels))
+		rxStreamerChanLen = C.size_t(1)
 		rxStreamerChans   = (*C.size_t)(C.malloc(C.size_t(unsafe.Sizeof(C.size_t(0) * rxStreamerChanLen))))
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	rxStreamerChansGo := (*[1 << 30]C.size_t)(unsafe.Pointer(rxStreamerChans))[:len(s.rxChannels)]
-
-	for i, rxChannel := range s.rxChannels {
-		rxStreamerChansGo[i] = C.size_t(rxChannel)
-	}
+	*rxStreamerChans = C.size_t(opts.RxChannel)
 
 	rxStreamerArgsStr := C.CString("")
 	rxStreamFormat := C.CString(format)
