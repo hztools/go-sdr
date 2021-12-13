@@ -244,12 +244,20 @@ type startRxOpts struct {
 
 // StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
+	if len(s.rxChannels) != 1 {
+		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
+	}
+
 	opts := startRxOpts{}
 	return s.startRx(opts)
 }
 
 // StartRxAt will StartRx at the specific time offset.
 func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
+	if len(s.rxChannels) != 1 {
+		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
+	}
+
 	opts := startRxOpts{}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -276,13 +284,18 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 		rxStreamerArgs    C.uhd_stream_args_t
 		rxStreamer        C.uhd_rx_streamer_handle
 		rxMetadata        C.uhd_rx_metadata_handle
-		rxStreamerChanLen = C.size_t(1)
+		rxStreamerChanLen = C.size_t(len(s.rxChannels))
 		rxStreamerChans   = (*C.size_t)(C.malloc(C.size_t(unsafe.Sizeof(C.size_t(0) * rxStreamerChanLen))))
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	*rxStreamerChans = C.size_t(s.rxChannel)
+	rxStreamerChansGo := (*[1 << 30]C.size_t)(unsafe.Pointer(rxStreamerChans))[:len(s.rxChannels)]
+
+	for i, rxChannel := range s.rxChannels {
+		rxStreamerChansGo[i] = C.size_t(rxChannel)
+	}
+
 	rxStreamerArgsStr := C.CString("")
 	rxStreamFormat := C.CString(format)
 
