@@ -54,7 +54,7 @@ func (rs Readers) Wrap(fn func(Reader) Reader) Readers {
 type ReadClosers []ReadCloser
 
 // Readers will return the ReadClosers as a Reader slice.
-func (rcs ReadClosers) Readers() []Reader {
+func (rcs ReadClosers) Readers() Readers {
 	ret := make(Readers, len(rcs))
 	for i := range rcs {
 		ret[i] = rcs[i]
