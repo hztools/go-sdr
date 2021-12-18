@@ -83,19 +83,18 @@ var (
 	ErrRxMetadataBadPacket uhdRxMetadataError = 0x0F
 )
 
-// readCloser contains all the allocated structs to be used by the reader
+// readStreamer contains all the allocated structs to be used by the reader
 // goroutine and close function.
 //
 // Most of this stuff isn't stuff that really belongs in here, but the
 // allocation lifecycle needs to be tied to this struct.
-type readCloser struct {
+type readStreamer struct {
 	closed bool
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	reader       sdr.PipeReader
-	writer       sdr.PipeWriter
+	writers      pipeWriters
 	sampleFormat sdr.SampleFormat
 
 	rxStreamer C.uhd_rx_streamer_handle
@@ -107,23 +106,30 @@ type readCloser struct {
 	}
 }
 
-// Read implements the sdr.Reader interface
-func (rc *readCloser) Read(iq sdr.Samples) (int, error) {
-	return rc.reader.Read(iq)
+type pipeWriters []sdr.PipeWriter
+
+func (pr pipeWriters) CloseWithError(e error) error {
+	var ret error
+	for _, el := range pr {
+		if err := el.CloseWithError(e); err != nil {
+			ret = err
+		}
+	}
+	return ret
 }
 
-// SampleRate implements the sdr.Reader interface
-func (rc *readCloser) SampleRate() uint {
-	return rc.reader.SampleRate()
-}
-
-// SampleFormat implements the sdr.Reader interface
-func (rc *readCloser) SampleFormat() sdr.SampleFormat {
-	return rc.sampleFormat
+func (pr pipeWriters) Close() error {
+	var ret error
+	for _, el := range pr {
+		if err := el.Close(); err != nil {
+			ret = err
+		}
+	}
+	return ret
 }
 
 // Close implements the sdr.ReadCloser interface
-func (rc *readCloser) Close() error {
+func (rc *readStreamer) Close() error {
 	if rc.closed {
 		// Avoid double-free'ing or issuing a stream command if we've been
 		// called before. This is really a bug, but we wanna be fairly
@@ -134,7 +140,7 @@ func (rc *readCloser) Close() error {
 	var streamCmd C.uhd_stream_cmd_t
 
 	rc.cancel()
-	rc.reader.Close()
+	rc.writers.Close()
 
 	streamCmd.stream_mode = C.UHD_STREAM_MODE_STOP_CONTINUOUS
 	streamCmd.stream_now = false
@@ -155,17 +161,21 @@ func (rc *readCloser) Close() error {
 }
 
 // run is a goroutine to handle copying IQ data from the UHD device
-// to the Pipe contained inside the readCloser.
-func (rc *readCloser) run() {
-	defer rc.writer.Close()
+// to the Pipe contained inside the readStreamer.
+func (rc *readStreamer) run() {
+	defer rc.writers.Close()
 	defer rc.cancel()
 	defer rc.wg.Done()
 
 	var ciqLen C.size_t
-
 	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rc.rxStreamer, &ciqLen)); err != nil {
-		rc.writer.CloseWithError(err)
+		rc.writers.CloseWithError(err)
 		return
+	}
+
+	var channels = len(rc.writers)
+	if channels > 32 {
+		panic("UHD: too many rx channels set")
 	}
 
 	var (
@@ -178,13 +188,17 @@ func (rc *readCloser) run() {
 		iqLength = int(ciqLen)
 		iqSize   = iqLength * rc.sampleFormat.Size()
 		ciqSize  = C.size_t(iqSize)
-		ciq      = C.malloc(C.size_t(ciqSize))
-	)
 
-	iq, err := sdr.MakeSamples(rc.sampleFormat, iqLength)
-	if err != nil {
-		rc.writer.CloseWithError(err)
-		return
+		cIQBuffers = make([]unsafe.Pointer, channels)
+		iqBuffers  = make([]sdr.Samples, channels)
+	)
+	for i := 0; i < len(rc.writers); i++ {
+		cIQBuffers[i] = C.malloc(C.size_t(ciqSize))
+		iqBuffers[i], err = sdr.MakeSamples(rc.sampleFormat, iqLength)
+		if err != nil {
+			rc.writers.CloseWithError(err)
+			return
+		}
 	}
 
 	var hasTimeSpec = C.bool(rc.timing.Set)
@@ -196,7 +210,7 @@ func (rc *readCloser) run() {
 	streamCmd.time_spec_frac_secs = frac
 
 	if err := rvToError(C.uhd_rx_streamer_issue_stream_cmd(rc.rxStreamer, &streamCmd)); err != nil {
-		rc.writer.CloseWithError(err)
+		rc.writers.CloseWithError(err)
 	}
 
 	for {
@@ -206,38 +220,43 @@ func (rc *readCloser) run() {
 		}
 
 		if rvToError(C.uhd_rx_streamer_recv(
-			rc.rxStreamer, &ciq, ciqLen, &rc.rxMetadata,
+			rc.rxStreamer, &cIQBuffers[0], ciqLen, &rc.rxMetadata,
 			3.0, false, &n,
 		)); err != nil {
-			rc.writer.CloseWithError(err)
+			rc.writers.CloseWithError(err)
 			return
 		}
 
 		if rvToError(C.uhd_rx_metadata_error_code(rc.rxMetadata, &errCode)); err != nil {
-			rc.writer.CloseWithError(err)
+			rc.writers.CloseWithError(err)
 			return
 		}
 
 		if errCode != C.UHD_RX_METADATA_ERROR_CODE_NONE {
-			rc.writer.CloseWithError(uhdRxMetadataError(errCode))
+			rc.writers.CloseWithError(uhdRxMetadataError(errCode))
 			return
 		}
 
-		ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
-		copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
+		for i := 0; i < channels; i++ {
+			ciq := cIQBuffers[i]
+			iq := iqBuffers[i]
+			writer := rc.writers[i]
 
-		iq := iq.Slice(0, int(n))
-		_, err := rc.writer.Write(iq)
-		if err != nil {
-			rc.writer.CloseWithError(err)
-			return
+			ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
+			copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
+			iq = iq.Slice(0, int(n))
+			_, err := writer.Write(iq)
+			if err != nil {
+				rc.writers.CloseWithError(err)
+				return
+			}
 		}
 	}
 }
 
 type startRxOpts struct {
-	RxChannel int
-	Timing    struct {
+	RxChannels []int
+	Timing     struct {
 		Set    bool
 		Offset time.Duration
 	}
@@ -249,8 +268,12 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
 	}
 
-	opts := startRxOpts{RxChannel: s.rxChannels[0]}
-	return s.startRx(opts)
+	opts := startRxOpts{RxChannels: s.rxChannels}
+	rcs, err := s.startRx(opts)
+	if err != nil {
+		return nil, err
+	}
+	return rcs[0], nil
 }
 
 // StartRxAt will StartRx at the specific time offset.
@@ -259,14 +282,26 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
 	}
 
-	opts := startRxOpts{RxChannel: s.rxChannels[0]}
+	opts := startRxOpts{RxChannels: s.rxChannels}
+	opts.Timing.Set = true
+	opts.Timing.Offset = d
+	rcs, err := s.startRx(opts)
+	if err != nil {
+		return nil, err
+	}
+	return rcs[0], nil
+}
+
+// StartCoherentRxAt will start a coherent RX operation, sync'd at the
+// provided offset.
+func (s *Sdr) StartCoherentRxAt(d time.Duration) (sdr.ReadClosers, error) {
+	opts := startRxOpts{RxChannels: s.rxChannels}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
 	return s.startRx(opts)
 }
 
-func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
-
+func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 	// Before we get down the road of allocating anything, let's check
 	// to ensure that we have a supported SampleFormat.
 	var format string
@@ -281,16 +316,24 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: StartRx: unsupported SampleFormat provided")
 	}
 
+	channels := len(opts.RxChannels)
+	if channels > 32 {
+		return nil, fmt.Errorf("uhd: wow, that's a lot of channels; this breaks some internals, please fix")
+	}
+
 	var (
 		rxStreamerArgs    C.uhd_stream_args_t
 		rxStreamer        C.uhd_rx_streamer_handle
 		rxMetadata        C.uhd_rx_metadata_handle
-		rxStreamerChanLen = C.size_t(1)
-		rxStreamerChans   = (*C.size_t)(C.malloc(C.size_t(unsafe.Sizeof(C.size_t(0) * rxStreamerChanLen))))
+		rxStreamerChanLen = C.size_t(channels)
+		rxStreamerChans   = (*C.size_t)(C.malloc(C.size_t(unsafe.Sizeof(C.size_t(0)) * uintptr(channels))))
+		rxStreamerGoChans = (*[1 << 30]C.size_t)(unsafe.Pointer(rxStreamerChans))[:channels:channels]
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	*rxStreamerChans = C.size_t(opts.RxChannel)
+	for i, c := range opts.RxChannels {
+		rxStreamerGoChans[i] = C.size_t(c)
+	}
 
 	rxStreamerArgsStr := C.CString("")
 	rxStreamFormat := C.CString(format)
@@ -300,7 +343,7 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 	//
 	// It's my assumption that they're copied in if they're used outside the
 	// constructor; but that needs to be validated. This doesn't obviously crash,
-	// and this makes the readCloser significantly easier to maintain, and
+	// and this makes the readStreamer significantly easier to maintain, and
 	// the error cases in the constructor here a lot easier too.
 	defer C.free(unsafe.Pointer(rxStreamerChans))
 	defer C.free(unsafe.Pointer(rxStreamerArgsStr))
@@ -338,17 +381,20 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 		return nil, err
 	}
 
-	// TODO(paultag): dynamic SampleFormat
-	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sr, s.sampleFormat)
+	writers := make([]sdr.PipeWriter, len(opts.RxChannels))
+	readers := make(sdr.ReadClosers, len(opts.RxChannels))
 
-	rc := &readCloser{
+	for i := range opts.RxChannels {
+		readers[i], writers[i] = sdr.PipeWithContext(ctx, sr, s.sampleFormat)
+	}
+
+	rc := &readStreamer{
 		wg:     sync.WaitGroup{},
 		ctx:    ctx,
 		cancel: cancel,
 
 		sampleFormat: s.sampleFormat,
-		reader:       pipeReader,
-		writer:       pipeWriter,
+		writers:      writers,
 
 		rxStreamer: rxStreamer,
 		rxMetadata: rxMetadata,
@@ -357,7 +403,7 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadCloser, error) {
 	rc.timing.Offset = opts.Timing.Offset
 	rc.wg.Add(1)
 	go rc.run()
-	return rc, nil
+	return readers, nil
 }
 
 // vim: foldmethod=marker
