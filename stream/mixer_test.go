@@ -31,7 +31,7 @@ import (
 	"hz.tools/sdr/stream"
 )
 
-func TestMixReader(t *testing.T) {
+func TestAddReader(t *testing.T) {
 	pipeReader1, pipeWriter1 := sdr.Pipe(10000, sdr.SampleFormatC64)
 	pipeReader2, pipeWriter2 := sdr.Pipe(10000, sdr.SampleFormatC64)
 	pipeReader3, pipeWriter3 := sdr.Pipe(10000, sdr.SampleFormatC64)
@@ -61,7 +61,7 @@ func TestMixReader(t *testing.T) {
 
 	outBuf := make(sdr.SamplesC64, 1000)
 
-	mix, err := stream.Mix(pipeReader1, pipeReader2, pipeReader3)
+	mix, err := stream.Add(pipeReader1, pipeReader2, pipeReader3)
 	assert.NoError(t, err)
 
 	_, err = sdr.ReadFull(mix, outBuf)
@@ -74,9 +74,9 @@ func TestMixReader(t *testing.T) {
 	wg.Wait()
 }
 
-func BenchmarkMixComplex2(b *testing.B) {
+func BenchmarkAddComplex2(b *testing.B) {
 	pipeReader, _ := sdr.Pipe(10000, sdr.SampleFormatC64)
-	mixReader, err := stream.Mix(pipeReader, pipeReader, pipeReader)
+	mixReader, err := stream.Add(pipeReader, pipeReader, pipeReader)
 	if err != nil {
 		panic(err)
 	}
@@ -86,14 +86,14 @@ func BenchmarkMixComplex2(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mixReader.(interface {
-			MixC64(sdr.SamplesC64, ...sdr.SamplesC64)
-		}).MixC64(buf, buf)
+			AddC64(sdr.SamplesC64, ...sdr.SamplesC64)
+		}).AddC64(buf, buf)
 	}
 }
 
-func BenchmarkMixComplex4(b *testing.B) {
+func BenchmarkAddComplex4(b *testing.B) {
 	pipeReader, _ := sdr.Pipe(10000, sdr.SampleFormatC64)
-	mixReader, err := stream.Mix(pipeReader, pipeReader, pipeReader)
+	mixReader, err := stream.Add(pipeReader, pipeReader, pipeReader)
 	if err != nil {
 		panic(err)
 	}
@@ -103,14 +103,14 @@ func BenchmarkMixComplex4(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mixReader.(interface {
-			MixC64(sdr.SamplesC64, ...sdr.SamplesC64)
-		}).MixC64(buf, buf, buf, buf)
+			AddC64(sdr.SamplesC64, ...sdr.SamplesC64)
+		}).AddC64(buf, buf, buf, buf)
 	}
 }
 
-func BenchmarkMixComplex16(b *testing.B) {
+func BenchmarkAddComplex16(b *testing.B) {
 	pipeReader, _ := sdr.Pipe(10000, sdr.SampleFormatC64)
-	mixReader, err := stream.Mix(pipeReader, pipeReader, pipeReader)
+	mixReader, err := stream.Add(pipeReader, pipeReader, pipeReader)
 	if err != nil {
 		panic(err)
 	}
@@ -120,8 +120,8 @@ func BenchmarkMixComplex16(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mixReader.(interface {
-			MixC64(sdr.SamplesC64, ...sdr.SamplesC64)
-		}).MixC64(
+			AddC64(sdr.SamplesC64, ...sdr.SamplesC64)
+		}).AddC64(
 			buf, buf, buf, buf,
 			buf, buf, buf, buf,
 			buf, buf, buf, buf,

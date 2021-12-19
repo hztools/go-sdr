@@ -27,7 +27,7 @@ import (
 	"hz.tools/sdr/internal/simd"
 )
 
-// Mix will take any number of Readers, and mix all those Readers into a single
+// Add will take any number of Readers, and mix all those Readers into a single
 // Reader. This is likely not generally useful for generating data to transmit,
 // but could be very useful for testing.
 //
@@ -38,11 +38,11 @@ import (
 // clipping and clipping is bad. If you're adding two waveforms, be absoluely
 // sure you've adjusted the gain correctly on the readers with the stream.Gain
 // reader.
-func Mix(readers ...sdr.Reader) (sdr.Reader, error) {
+func Add(readers ...sdr.Reader) (sdr.Reader, error) {
 
 	switch len(readers) {
 	case 0:
-		return nil, fmt.Errorf("stream.Mix: No readers passed")
+		return nil, fmt.Errorf("stream.Add: No readers passed")
 	case 1:
 		return readers[0], nil
 	}
@@ -58,11 +58,11 @@ func Mix(readers ...sdr.Reader) (sdr.Reader, error) {
 
 	for _, reader := range readers {
 		if reader.SampleFormat() != sampleFormat {
-			return nil, fmt.Errorf("stream.Mix: Readers are not all the same format")
+			return nil, fmt.Errorf("stream.Add: Readers are not all the same format")
 		}
 
 		if reader.SampleRate() != sampleRate {
-			return nil, fmt.Errorf("stream.Mix: Readers are not all the same rate")
+			return nil, fmt.Errorf("stream.Add: Readers are not all the same rate")
 		}
 	}
 
@@ -88,7 +88,7 @@ func (mr *mixerReader) SampleRate() uint {
 	return mr.sampleRate
 }
 
-func (mr *mixerReader) MixC64(out sdr.SamplesC64, buffers ...sdr.SamplesC64) {
+func (mr *mixerReader) AddC64(out sdr.SamplesC64, buffers ...sdr.SamplesC64) {
 	for _, buf := range buffers {
 		simd.AddComplex(out, buf, out)
 	}
@@ -134,7 +134,7 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 		samples[si] = complex(0, 0)
 	}
 
-	mr.MixC64(samples, buffers...)
+	mr.AddC64(samples, buffers...)
 
 	return len(samples), nil
 }

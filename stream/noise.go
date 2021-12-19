@@ -126,7 +126,7 @@ func Noise(nc NoiseConfig) sdr.Reader {
 func NoisyReader(nc NoiseConfig, r sdr.Reader, snr float32) (sdr.Reader, error) {
 	nc.SampleRate = r.SampleRate()
 	nr := Gain(Noise(nc), 1.0-snr)
-	return Mix(Gain(r, snr), nr)
+	return Add(Gain(r, snr), nr)
 }
 
 // vim: foldmethod=marker
