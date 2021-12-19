@@ -74,6 +74,66 @@ func TestAddReader(t *testing.T) {
 	wg.Wait()
 }
 
+func TestAddReaderI8(t *testing.T) {
+	pipeReader1, pipeWriter1 := sdr.Pipe(0, sdr.SampleFormatI8)
+	pipeReader2, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatI8)
+	out := make(sdr.SamplesI8, 1024*32)
+	in := make(sdr.SamplesI8, 1024*32)
+	for i := range in {
+		in[i] = [2]int8{10, 10}
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter1.Write(in)
+		assert.NoError(t, err)
+	}()
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter2.Write(in)
+		assert.NoError(t, err)
+	}()
+	mix, err := stream.Add(pipeReader1, pipeReader2)
+	assert.NoError(t, err)
+	_, err = sdr.ReadFull(mix, out)
+	assert.NoError(t, err)
+	for i := range out {
+		assert.Equal(t, [2]int8{20, 20}, out[i])
+	}
+	wg.Wait()
+}
+
+func TestAddReaderI16(t *testing.T) {
+	pipeReader1, pipeWriter1 := sdr.Pipe(0, sdr.SampleFormatI16)
+	pipeReader2, pipeWriter2 := sdr.Pipe(0, sdr.SampleFormatI16)
+	out := make(sdr.SamplesI16, 1024*32)
+	in := make(sdr.SamplesI16, 1024*32)
+	for i := range in {
+		in[i] = [2]int16{10, 10}
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter1.Write(in)
+		assert.NoError(t, err)
+	}()
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter2.Write(in)
+		assert.NoError(t, err)
+	}()
+	mix, err := stream.Add(pipeReader1, pipeReader2)
+	assert.NoError(t, err)
+	_, err = sdr.ReadFull(mix, out)
+	assert.NoError(t, err)
+	for i := range out {
+		assert.Equal(t, [2]int16{20, 20}, out[i])
+	}
+	wg.Wait()
+}
+
 func BenchmarkAddComplex2(b *testing.B) {
 	pipeReader, _ := sdr.Pipe(10000, sdr.SampleFormatC64)
 	mixReader, err := stream.Add(pipeReader, pipeReader, pipeReader)

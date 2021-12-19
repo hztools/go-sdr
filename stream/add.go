@@ -52,7 +52,11 @@ func Add(readers ...sdr.Reader) (sdr.Reader, error) {
 		sampleRate   = readers[0].SampleRate()
 	)
 
-	if sampleFormat != sdr.SampleFormatC64 {
+	switch sampleFormat {
+	case sdr.SampleFormatC64:
+	case sdr.SampleFormatI16:
+	case sdr.SampleFormatI8:
+	default:
 		return nil, sdr.ErrSampleFormatUnknown
 	}
 
@@ -88,9 +92,29 @@ func (mr *mixerReader) SampleRate() uint {
 	return mr.sampleRate
 }
 
-func (mr *mixerReader) AddC64(out sdr.SamplesC64, buffers ...sdr.SamplesC64) {
+func (mr *mixerReader) AddI8(out sdr.SamplesI8, buffers ...sdr.Samples) {
+	for _, bufS := range buffers {
+		buf := bufS.(sdr.SamplesI8)
+		for idx, sample := range buf {
+			out[idx][0] += sample[0]
+			out[idx][1] += sample[1]
+		}
+	}
+}
+
+func (mr *mixerReader) AddI16(out sdr.SamplesI16, buffers ...sdr.Samples) {
+	for _, bufS := range buffers {
+		buf := bufS.(sdr.SamplesI16)
+		for idx, sample := range buf {
+			out[idx][0] += sample[0]
+			out[idx][1] += sample[1]
+		}
+	}
+}
+
+func (mr *mixerReader) AddC64(out sdr.SamplesC64, buffers ...sdr.Samples) {
 	for _, buf := range buffers {
-		simd.AddComplex(out, buf, out)
+		simd.AddComplex(out, buf.(sdr.SamplesC64), out)
 	}
 }
 
@@ -101,18 +125,26 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 		return 0, mr.err
 	}
 
-	if s.Format() != sdr.SampleFormatC64 {
+	switch s.Format() {
+	case sdr.SampleFormatC64:
+	case sdr.SampleFormatI16:
+	case sdr.SampleFormatI8:
+	default:
 		return 0, sdr.ErrSampleFormatUnknown
 	}
 
-	samples := s.(sdr.SamplesC64)
-	samplesLength := samples.Length()
-
-	buffers := make([]sdr.SamplesC64, len(mr.readers))
+	buffers := make([]sdr.Samples, len(mr.readers))
 
 	for i, reader := range mr.readers {
-		buffers[i] = make(sdr.SamplesC64, samplesLength)
-		_, err := sdr.ReadFull(reader, buffers[i])
+		var err error
+		buffers[i], err = sdr.MakeSamples(s.Format(), s.Length())
+		// See note below on error handling.
+		if err != nil {
+			mr.err = err
+			return 0, err
+		}
+
+		_, err = sdr.ReadFull(reader, buffers[i])
 		// here we know the number of phasors read must match the buffer
 		// length, or we get an error. as a result, we can avoid storing
 		// the number of samples read.
@@ -127,16 +159,32 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 		}
 	}
 
-	// now let's mix the samples.
-	//
-	// in the future this should allow for gain whilst mixing too.
-	for si := range samples {
-		samples[si] = complex(0, 0)
+	switch samples := s.(type) {
+	case sdr.SamplesC64:
+		for si := range samples {
+			samples[si] = complex(0, 0)
+		}
+		mr.AddC64(samples, buffers...)
+		return len(samples), nil
+	case sdr.SamplesI16:
+		for si := range samples {
+			samples[si] = [2]int16{0, 0}
+		}
+		mr.AddI16(samples, buffers...)
+		return len(samples), nil
+	case sdr.SamplesI8:
+		for si := range samples {
+			samples[si] = [2]int8{0, 0}
+		}
+		mr.AddI8(samples, buffers...)
+		return len(samples), nil
+	default:
+		// Egads this is bad. I have no earthly idea how we've wound up
+		// in this state sensibly. I have half a mind to throw a panic, but
+		// maybe this isn't a practical concern. I'm going to live to regret
+		// that thought...
+		return 0, sdr.ErrSampleFormatUnknown
 	}
-
-	mr.AddC64(samples, buffers...)
-
-	return len(samples), nil
 }
 
 //
