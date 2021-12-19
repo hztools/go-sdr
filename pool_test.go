@@ -28,39 +28,6 @@ import (
 	"hz.tools/sdr"
 )
 
-func TestSamplesPool(t *testing.T) {
-	pool, err := sdr.NewSamplesPool(sdr.SampleFormatC64, 1024*32)
-	assert.NoError(t, err)
-	assert.NotNil(t, pool)
-
-	buf := pool.Get()
-	assert.NotNil(t, buf)
-	assert.Equal(t, 1024*32, buf.Length())
-	buf.(sdr.SamplesC64)[0] = 1 + 1i
-
-	buf1 := pool.Get()
-	assert.NotNil(t, buf1)
-	assert.Equal(t, 1024*32, buf1.Length())
-	buf1.(sdr.SamplesC64)[0] = 2 + 2i
-
-	// TODO(paultag): This behavior is not actually something we can depend
-	// on, but I have no other way to check allocations. I'm going to hope
-	// that this behavior doens't change, and since we only use this for
-	// testing it's maybe better.
-
-	// Do *NOT* copy this for real code, or depend on ordering. The worst that
-	// happens here is a test failure. The worst that happens in real life is
-	// an FCC fine :)
-
-	pool.Put(buf)
-	buf = pool.Get()
-	assert.Equal(t, complex64(1+1i), buf.(sdr.SamplesC64)[0])
-
-	pool.Put(buf1)
-	buf1 = pool.Get()
-	assert.Equal(t, complex64(2+2i), buf1.(sdr.SamplesC64)[0])
-}
-
 func TestSamplesPoolTypes(t *testing.T) {
 	for _, sampleFormat := range []sdr.SampleFormat{
 		sdr.SampleFormatC64,
@@ -75,6 +42,7 @@ func TestSamplesPoolTypes(t *testing.T) {
 			buf := pool.Get()
 			assert.NotNil(t, buf)
 			assert.Equal(t, 1024*32, buf.Length())
+			pool.Put(buf)
 		})
 	}
 }
