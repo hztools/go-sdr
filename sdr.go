@@ -78,10 +78,6 @@ type Sdr interface {
 	// SampleFormat enum.
 	SampleFormat() SampleFormat
 
-	// SetPPM will set the error in parts-per-million. This is used to adjust
-	// for clock skew.
-	SetPPM(int) error
-
 	// HardwareInfo will return information about the connected SDR.
 	HardwareInfo() HardwareInfo
 }

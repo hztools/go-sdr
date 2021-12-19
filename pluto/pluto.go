@@ -280,9 +280,4 @@ func (s *Sdr) SampleFormat() sdr.SampleFormat {
 	return sdr.SampleFormatI16
 }
 
-// SetPPM implements the sdr.Sdr interface.
-func (s *Sdr) SetPPM(int) error {
-	return sdr.ErrNotSupported
-}
-
 // vim: foldmethod=marker

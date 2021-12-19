@@ -185,11 +185,6 @@ func (c *Client) SetAutomaticGain(yn bool) error {
 	})
 }
 
-// SetPPM implements the sdr.Sdr interface
-func (c *Client) SetPPM(int) error {
-	return sdr.ErrNotSupported
-}
-
 // SetSampleRate implements the sdr.Sdr interface
 func (c *Client) SetSampleRate(rate uint) error {
 	err := c.SendCommand(Request{

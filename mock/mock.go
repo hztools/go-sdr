@@ -145,11 +145,6 @@ func (m *mockSdr) SampleFormat() sdr.SampleFormat {
 	return m.config.SampleFormat
 }
 
-// SetPPM implements the sdr.Sdr interface.
-func (m *mockSdr) SetPPM(int) error {
-	return sdr.ErrNotSupported
-}
-
 // StartRx implements the sdr.Sdr interface.
 func (m *mockSdr) StartRx() (sdr.ReadCloser, error) {
 	if m.config.Rx == nil {

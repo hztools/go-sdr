@@ -212,11 +212,6 @@ func (s *Sdr) SampleFormat() sdr.SampleFormat {
 	return s.sampleFormat
 }
 
-// SetPPM implements the sdr.Sdr interface.
-func (s *Sdr) SetPPM(int) error {
-	return sdr.ErrNotSupported
-}
-
 // HardwareInfo implements the sdr.Sdr interface.
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return s.hi
