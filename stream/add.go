@@ -70,29 +70,29 @@ func Add(readers ...sdr.Reader) (sdr.Reader, error) {
 		}
 	}
 
-	return &mixerReader{
+	return &addReader{
 		sampleFormat: sampleFormat,
 		sampleRate:   sampleRate,
 		readers:      readers,
 	}, nil
 }
 
-type mixerReader struct {
+type addReader struct {
 	sampleFormat sdr.SampleFormat
 	sampleRate   uint
 	readers      []sdr.Reader
 	err          error
 }
 
-func (mr *mixerReader) SampleFormat() sdr.SampleFormat {
-	return mr.sampleFormat
+func (ar *addReader) SampleFormat() sdr.SampleFormat {
+	return ar.sampleFormat
 }
 
-func (mr *mixerReader) SampleRate() uint {
-	return mr.sampleRate
+func (ar *addReader) SampleRate() uint {
+	return ar.sampleRate
 }
 
-func (mr *mixerReader) AddI8(out sdr.SamplesI8, buffers ...sdr.Samples) {
+func (ar *addReader) AddI8(out sdr.SamplesI8, buffers ...sdr.Samples) {
 	for _, bufS := range buffers {
 		buf := bufS.(sdr.SamplesI8)
 		for idx, sample := range buf {
@@ -102,7 +102,7 @@ func (mr *mixerReader) AddI8(out sdr.SamplesI8, buffers ...sdr.Samples) {
 	}
 }
 
-func (mr *mixerReader) AddI16(out sdr.SamplesI16, buffers ...sdr.Samples) {
+func (ar *addReader) AddI16(out sdr.SamplesI16, buffers ...sdr.Samples) {
 	for _, bufS := range buffers {
 		buf := bufS.(sdr.SamplesI16)
 		for idx, sample := range buf {
@@ -112,17 +112,17 @@ func (mr *mixerReader) AddI16(out sdr.SamplesI16, buffers ...sdr.Samples) {
 	}
 }
 
-func (mr *mixerReader) AddC64(out sdr.SamplesC64, buffers ...sdr.Samples) {
+func (ar *addReader) AddC64(out sdr.SamplesC64, buffers ...sdr.Samples) {
 	for _, buf := range buffers {
 		simd.AddComplex(out, buf.(sdr.SamplesC64), out)
 	}
 }
 
-func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
+func (ar *addReader) Read(s sdr.Samples) (int, error) {
 	// TODO(paultag): SIMD moderate hanging fruit
 
-	if mr.err != nil {
-		return 0, mr.err
+	if ar.err != nil {
+		return 0, ar.err
 	}
 
 	switch s.Format() {
@@ -133,14 +133,14 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 		return 0, sdr.ErrSampleFormatUnknown
 	}
 
-	buffers := make([]sdr.Samples, len(mr.readers))
+	buffers := make([]sdr.Samples, len(ar.readers))
 
-	for i, reader := range mr.readers {
+	for i, reader := range ar.readers {
 		var err error
 		buffers[i], err = sdr.MakeSamples(s.Format(), s.Length())
 		// See note below on error handling.
 		if err != nil {
-			mr.err = err
+			ar.err = err
 			return 0, err
 		}
 
@@ -150,7 +150,7 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 		// the number of samples read.
 
 		if err != nil {
-			mr.err = err
+			ar.err = err
 			// TODO(paultag): This should likely not be 0, perhaps we need
 			// to take the number read from any buffer? Max read from any?
 			// Least read from any? This is going to cause alignment
@@ -164,19 +164,19 @@ func (mr *mixerReader) Read(s sdr.Samples) (int, error) {
 		for si := range samples {
 			samples[si] = complex(0, 0)
 		}
-		mr.AddC64(samples, buffers...)
+		ar.AddC64(samples, buffers...)
 		return len(samples), nil
 	case sdr.SamplesI16:
 		for si := range samples {
 			samples[si] = [2]int16{0, 0}
 		}
-		mr.AddI16(samples, buffers...)
+		ar.AddI16(samples, buffers...)
 		return len(samples), nil
 	case sdr.SamplesI8:
 		for si := range samples {
 			samples[si] = [2]int8{0, 0}
 		}
-		mr.AddI8(samples, buffers...)
+		ar.AddI8(samples, buffers...)
 		return len(samples), nil
 	default:
 		// Egads this is bad. I have no earthly idea how we've wound up
