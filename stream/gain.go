@@ -37,8 +37,6 @@ type gain struct {
 }
 
 func (g *gain) Scale(s sdr.Samples) error {
-	// TODO(paultag): SIMD low hanging fruit
-
 	switch s := s.(type) {
 	case sdr.SamplesC64:
 		simd.ScaleComplex(g.v, s)
