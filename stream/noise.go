@@ -129,4 +129,16 @@ func NoisyReader(nc NoiseConfig, r sdr.Reader, snr float32) (sdr.Reader, error) 
 	return Add(Gain(r, snr), nr)
 }
 
+//
+func clampRealToRange(v, min, max float32) float32 {
+	switch {
+	case v < min:
+		return min
+	case v > max:
+		return max
+	default:
+		return v
+	}
+}
+
 // vim: foldmethod=marker

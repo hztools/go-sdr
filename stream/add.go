@@ -187,24 +187,4 @@ func (ar *addReader) Read(s sdr.Samples) (int, error) {
 	}
 }
 
-//
-func clampRealToRange(v, min, max float32) float32 {
-	switch {
-	case v < min:
-		return min
-	case v > max:
-		return max
-	default:
-		return v
-	}
-}
-
-//
-func clampSampleToRange(iq complex64, min, max float32) complex64 {
-	return complex(
-		clampRealToRange(real(iq), min, max),
-		clampRealToRange(imag(iq), min, max),
-	)
-}
-
 // vim: foldmethod=marker
