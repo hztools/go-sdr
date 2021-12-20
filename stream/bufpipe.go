@@ -142,6 +142,8 @@ func (p *BufPipe) Write(s1 sdr.Samples) (int, error) {
 	}
 
 	// TODO(paultag): Dupe may not be needed?
+	// TODO(paultag): If Dupe is needed, how's about using a SamplesPool
+	//                to re-use buffers in the bufpipe.
 	s2, i, err := dupe(s1)
 	if err != nil {
 		return 0, err
