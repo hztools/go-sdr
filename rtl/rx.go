@@ -23,7 +23,7 @@ package rtl
 // #cgo pkg-config: librtlsdr
 //
 // #include <stdint.h>
-// #include <malloc.h>
+// #include <stdlib.h>
 //
 // #include <rtl-sdr.h>
 //

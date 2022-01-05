@@ -23,7 +23,7 @@ package iio
 // #cgo pkg-config: libiio
 //
 // #include <iio.h>
-// #include <malloc.h>
+// #include <stdlib.h>
 import "C"
 
 import (
