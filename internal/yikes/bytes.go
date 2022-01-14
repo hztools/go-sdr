@@ -22,6 +22,8 @@ package yikes
 
 import (
 	"unsafe"
+
+	"hz.tools/sdr"
 )
 
 // GoBytes works like C.GoBytes, but it allows for mutating the C byte array
@@ -38,6 +40,34 @@ func GoBytes(
 		cap  int
 	}{base, size, size}
 	return *(*[]byte)(unsafe.Pointer(&b))
+}
+
+// Samples will convert a pointer and a length into a Samples buffer of the
+// provided underlying type.
+//
+// This is literally the worst. please, for the love of god, do not use this
+// unless you absolutely have to.
+func Samples(base uintptr, length int, sampleFormat sdr.SampleFormat) (sdr.Samples, error) {
+	// Similar to above, we're going to allocate a slice header here,
+	// and set it to the size of the underlying type.
+	var b = struct {
+		base uintptr
+		len  int
+		cap  int
+	}{base, length, length}
+
+	switch sampleFormat {
+	case sdr.SampleFormatC64:
+		return *(*sdr.SamplesC64)(unsafe.Pointer(&b)), nil
+	case sdr.SampleFormatI16:
+		return *(*sdr.SamplesI16)(unsafe.Pointer(&b)), nil
+	case sdr.SampleFormatI8:
+		return *(*sdr.SamplesI8)(unsafe.Pointer(&b)), nil
+	case sdr.SampleFormatU8:
+		return *(*sdr.SamplesU8)(unsafe.Pointer(&b)), nil
+	default:
+		return nil, sdr.ErrSampleFormatUnknown
+	}
 }
 
 // vim: foldmethod=marker
