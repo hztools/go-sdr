@@ -42,6 +42,7 @@ import (
 type callbackContext struct {
 	pipeReader sdr.PipeReader
 	pipeWriter sdr.PipeWriter
+	pool       *sdr.SamplesPool
 }
 
 //export rtlsdrRxCallback
@@ -49,17 +50,20 @@ func rtlsdrRxCallback(cBuf *C.char, cBufLen C.uint32_t, ptr unsafe.Pointer) {
 	context := pointer.Restore(ptr).(*callbackContext)
 
 	buf := C.GoBytes(unsafe.Pointer(cBuf), C.int(cBufLen))
-	samples := make(sdr.SamplesU8, len(buf)/2)
+	samples := context.pool.Get().(sdr.SamplesU8)
+	defer context.pool.Put(samples)
 
-	copy(sdr.MustUnsafeSamplesAsBytes(samples), buf)
+	n := copy(sdr.MustUnsafeSamplesAsBytes(samples), buf)
+	// n here is in bytes; but since we have two bytes for each sample,
+	// we need to cut it in half to deal with the number of samples
+	// actually written to the buffer.
+	samples = samples[:n/2]
 
-	i, err := context.pipeWriter.Write(samples)
+	_, err := context.pipeWriter.Write(samples)
 	if err != nil {
+		// TODO(paultag): Set an error condition and crater the rx path
+		// on this one I think.
 		log.Println(err)
-	}
-
-	if i != len(samples) {
-		log.Println("short write")
 	}
 }
 
@@ -89,9 +93,20 @@ func (r Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, err
 	}
 
+	var windowSize uint = 16 * 32 * 512
+	if r.windowSize != 0 {
+		windowSize = r.windowSize
+	}
+
+	pool, err := sdr.NewSamplesPool(sdr.SampleFormatU8, int(windowSize/2))
+	if err != nil {
+		return nil, err
+	}
+
 	cc := &callbackContext{
 		pipeReader: pipeReader,
 		pipeWriter: pipeWriter,
+		pool:       pool,
 	}
 
 	state := pointer.Save(cc)
@@ -101,7 +116,7 @@ func (r Sdr) StartRx() (sdr.ReadCloser, error) {
 		err := rvToErr(C.rtlsdr_read_async(
 			r.handle,
 			C.rtlsdr_read_async_cb_t(C.rtlsdr_rx_callback),
-			state, 0, C.uint32_t(r.windowSize),
+			state, 0, C.uint32_t(windowSize),
 		))
 		pipeReader.CloseWithError(err)
 	}(r, state)
