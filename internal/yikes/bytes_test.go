@@ -38,6 +38,7 @@ func TestSamplesC64(t *testing.T) {
 	buf2, err := yikes.Samples(base, l, sdr.SampleFormatC64)
 	assert.NoError(t, err)
 	assert.Equal(t, complex64(1+1i), buf2.(sdr.SamplesC64)[2])
+	assert.Equal(t, len(buf), len(buf2.(sdr.SamplesC64)))
 }
 
 func TestSamplesUnknown(t *testing.T) {
