@@ -33,6 +33,8 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
+	"hz.tools/sdr/internal/yikes"
+	"hz.tools/sdr/stream"
 )
 
 type uhdRxMetadataError int
@@ -106,7 +108,7 @@ type readStreamer struct {
 	}
 }
 
-type pipeWriters []sdr.PipeWriter
+type pipeWriters []*stream.BufPipe
 
 func (pr pipeWriters) CloseWithError(e error) error {
 	var ret error
@@ -190,15 +192,9 @@ func (rc *readStreamer) run() {
 		ciqSize  = C.size_t(iqSize)
 
 		cIQBuffers = make([]unsafe.Pointer, channels)
-		iqBuffers  = make([]sdr.Samples, channels)
 	)
 	for i := 0; i < len(rc.writers); i++ {
 		cIQBuffers[i] = C.malloc(C.size_t(ciqSize))
-		iqBuffers[i], err = sdr.MakeSamples(rc.sampleFormat, iqLength)
-		if err != nil {
-			rc.writers.CloseWithError(err)
-			return
-		}
 	}
 
 	var hasTimeSpec = C.bool(rc.timing.Set)
@@ -239,13 +235,14 @@ func (rc *readStreamer) run() {
 
 		for i := 0; i < channels; i++ {
 			ciq := cIQBuffers[i]
-			iq := iqBuffers[i]
 			writer := rc.writers[i]
-
-			ciqGB := C.GoBytes(unsafe.Pointer(ciq), C.int(ciqSize))
-			copy(sdr.MustUnsafeSamplesAsBytes(iq), ciqGB)
+			iq, err := yikes.Samples(uintptr(ciq), iqLength, rc.sampleFormat)
+			if err != nil {
+				rc.writers.CloseWithError(uhdRxMetadataError(errCode))
+				return
+			}
 			iq = iq.Slice(0, int(n))
-			_, err := writer.Write(iq)
+			_, err = writer.Write(iq)
 			if err != nil {
 				rc.writers.CloseWithError(err)
 				return
@@ -381,11 +378,18 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		return nil, err
 	}
 
-	writers := make([]sdr.PipeWriter, len(opts.RxChannels))
+	pipes := make([]*stream.BufPipe, len(opts.RxChannels))
 	readers := make(sdr.ReadClosers, len(opts.RxChannels))
 
 	for i := range opts.RxChannels {
-		readers[i], writers[i] = sdr.PipeWithContext(ctx, sr, s.sampleFormat)
+		// TODO(paultag): 10 isn't right here.
+		pipe, err := stream.NewBufPipeWithContext(ctx, 10, sr, s.sampleFormat)
+		if err != nil {
+			return nil, err
+		}
+		pipe.SetBlocking(true)
+		pipes[i] = pipe
+		readers[i] = pipe
 	}
 
 	rc := &readStreamer{
@@ -394,7 +398,7 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		cancel: cancel,
 
 		sampleFormat: s.sampleFormat,
-		writers:      writers,
+		writers:      pipes,
 
 		rxStreamer: rxStreamer,
 		rxMetadata: rxMetadata,
