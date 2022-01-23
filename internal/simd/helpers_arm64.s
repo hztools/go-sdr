@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
+//go:build sdr.simdtest
 // +build sdr.simdtest
 
 #include "helpers_arm64.h"
