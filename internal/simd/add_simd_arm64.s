@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// +build arm64 !sdr.nosimd
+//go:build !sdr.nosimd
+// +build !sdr.nosimd
 
 #include "helpers_arm64.h"
 

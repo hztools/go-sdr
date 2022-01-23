@@ -146,7 +146,7 @@ func BenchmarkAddComplex2(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mixReader.(interface {
-			AddC64(sdr.SamplesC64, ...sdr.SamplesC64)
+			AddC64(sdr.SamplesC64, ...sdr.Samples)
 		}).AddC64(buf, buf)
 	}
 }
@@ -163,7 +163,7 @@ func BenchmarkAddComplex4(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mixReader.(interface {
-			AddC64(sdr.SamplesC64, ...sdr.SamplesC64)
+			AddC64(sdr.SamplesC64, ...sdr.Samples)
 		}).AddC64(buf, buf, buf, buf)
 	}
 }
@@ -180,7 +180,7 @@ func BenchmarkAddComplex16(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		mixReader.(interface {
-			AddC64(sdr.SamplesC64, ...sdr.SamplesC64)
+			AddC64(sdr.SamplesC64, ...sdr.Samples)
 		}).AddC64(
 			buf, buf, buf, buf,
 			buf, buf, buf, buf,

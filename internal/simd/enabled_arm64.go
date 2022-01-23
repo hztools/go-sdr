@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
+//go:build arm64 || !sdr.nosimd
 // +build arm64 !sdr.nosimd
 
 package simd

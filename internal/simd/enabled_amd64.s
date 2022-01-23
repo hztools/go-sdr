@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// +build amd64 !sdr.nosimd
+//go:build !sdr.nosimd
+// +build !sdr.nosimd
 
 // func mmxCPUSupport() bool
 TEXT ·mmxCPUSupport(SB), $0
