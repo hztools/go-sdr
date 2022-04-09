@@ -252,8 +252,9 @@ func (rc *readStreamer) run() {
 }
 
 type startRxOpts struct {
-	RxChannels []int
-	Timing     struct {
+	BufferLength int
+	RxChannels   []int
+	Timing       struct {
 		Set    bool
 		Offset time.Duration
 	}
@@ -265,7 +266,10 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
 	}
 
-	opts := startRxOpts{RxChannels: s.rxChannels}
+	opts := startRxOpts{
+		BufferLength: s.bufferLength,
+		RxChannels:   s.rxChannels,
+	}
 	rcs, err := s.startRx(opts)
 	if err != nil {
 		return nil, err
@@ -279,7 +283,10 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 		return nil, fmt.Errorf("uhd: rx: only one channel can be provided")
 	}
 
-	opts := startRxOpts{RxChannels: s.rxChannels}
+	opts := startRxOpts{
+		BufferLength: s.bufferLength,
+		RxChannels:   s.rxChannels,
+	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
 	rcs, err := s.startRx(opts)
@@ -292,7 +299,10 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 // StartCoherentRxAt will start a coherent RX operation, sync'd at the
 // provided offset.
 func (s *Sdr) StartCoherentRxAt(d time.Duration) (sdr.ReadClosers, error) {
-	opts := startRxOpts{RxChannels: s.rxChannels}
+	opts := startRxOpts{
+		BufferLength: s.bufferLength,
+		RxChannels:   s.rxChannels,
+	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
 	return s.startRx(opts)
@@ -378,12 +388,14 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		return nil, err
 	}
 
+	bufferLength := opts.BufferLength
+
 	pipes := make([]*stream.BufPipe, len(opts.RxChannels))
 	readers := make(sdr.ReadClosers, len(opts.RxChannels))
 
 	for i := range opts.RxChannels {
 		// TODO(paultag): 10 isn't right here.
-		pipe, err := stream.NewBufPipeWithContext(ctx, 10, sr, s.sampleFormat)
+		pipe, err := stream.NewBufPipeWithContext(ctx, bufferLength, sr, s.sampleFormat)
 		if err != nil {
 			return nil, err
 		}

@@ -46,7 +46,8 @@ type Sdr struct {
 	rxChannels []int
 	txChannel  int
 
-	sampleRate uint
+	sampleRate   uint
+	bufferLength int
 
 	hi sdr.HardwareInfo
 }
@@ -73,6 +74,17 @@ type Options struct {
 	//   - sdr.SampleFormatC64
 	//
 	SampleFormat sdr.SampleFormat
+
+	// BufferLength is used to set the capacity of the internal BufPipe
+	// to help avoid overruns. If set to 0, this will use a default value.
+	BufferLength int
+}
+
+func (opts Options) getBufferLength() int {
+	if opts.BufferLength == 0 {
+		return 10
+	}
+	return opts.BufferLength
 }
 
 // Open will connect to an USRP Radio.
@@ -125,6 +137,7 @@ func Open(opts Options) (*Sdr, error) {
 		rxChannels:   rxChannels,
 		txChannel:    opts.TxChannel,
 		hi:           hi,
+		bufferLength: opts.getBufferLength(),
 	}, nil
 }
 

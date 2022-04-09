@@ -155,7 +155,7 @@ func (wc *writeCloser) run() {
 
 // StartTxAt will start TX at the provided Duration offset.
 func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
-	opts := startTxOpts{}
+	opts := startTxOpts{BufferLength: s.bufferLength}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
 	return s.startTx(opts)
@@ -163,12 +163,13 @@ func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
 
 // StartTx implements the sdr.Sdr interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
-	opts := startTxOpts{}
+	opts := startTxOpts{BufferLength: s.bufferLength}
 	return s.startTx(opts)
 }
 
 type startTxOpts struct {
-	Timing struct {
+	BufferLength int
+	Timing       struct {
 		Set    bool
 		Offset time.Duration
 	}
@@ -249,8 +250,10 @@ func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 		return nil, err
 	}
 
+	bufferLength := opts.BufferLength
+
 	// TODO(paultag): Dynamic capacity here.
-	bp, err := stream.NewBufPipeWithContext(ctx, 10, sr, s.sampleFormat)
+	bp, err := stream.NewBufPipeWithContext(ctx, bufferLength, sr, s.sampleFormat)
 	if err != nil {
 		C.uhd_tx_streamer_free(&txStreamer)
 		C.uhd_tx_metadata_free(&txMetadata)
