@@ -66,6 +66,8 @@ func (sw *standbyWriter) Write(s sdr.Samples) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		// TODO(paultag): Check SampleFormat against the Transmitter here
+		// too? Too much?
 		if sw.sampleRate != w.SampleRate() {
 			return 0, fmt.Errorf("StandbyWriter.Write: SampleRate mismatch")
 		}
