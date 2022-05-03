@@ -157,8 +157,8 @@ func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
 	return rf.Hz(freq), nil
 }
 
-// SetCenterFrequency implements the sdr.Sdr interface.
-func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
+// SetCenterFrequencyRX will set the RX specific frequency.
+func (s *Sdr) SetCenterFrequencyRX(freq rf.Hz) error {
 	var (
 		tuneRequest C.uhd_tune_request_t
 		tuneResult  C.uhd_tune_result_t
@@ -167,15 +167,6 @@ func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
 	tuneRequest.target_freq = C.double(freq)
 	tuneRequest.rf_freq_policy = C.UHD_TUNE_REQUEST_POLICY_AUTO
 	tuneRequest.dsp_freq_policy = C.UHD_TUNE_REQUEST_POLICY_AUTO
-
-	if err := rvToError(C.uhd_usrp_set_tx_freq(
-		*s.handle,
-		&tuneRequest,
-		C.size_t(s.txChannel),
-		&tuneResult,
-	)); err != nil {
-		return err
-	}
 
 	for _, rxChannel := range s.rxChannels {
 		if err := rvToError(C.uhd_usrp_set_rx_freq(
@@ -188,6 +179,33 @@ func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
 		}
 	}
 	return nil
+}
+
+// SetCenterFrequencyTX will set the TX specific frequency.
+func (s *Sdr) SetCenterFrequencyTX(freq rf.Hz) error {
+	var (
+		tuneRequest C.uhd_tune_request_t
+		tuneResult  C.uhd_tune_result_t
+	)
+
+	tuneRequest.target_freq = C.double(freq)
+	tuneRequest.rf_freq_policy = C.UHD_TUNE_REQUEST_POLICY_AUTO
+	tuneRequest.dsp_freq_policy = C.UHD_TUNE_REQUEST_POLICY_AUTO
+
+	return rvToError(C.uhd_usrp_set_tx_freq(
+		*s.handle,
+		&tuneRequest,
+		C.size_t(s.txChannel),
+		&tuneResult,
+	))
+}
+
+// SetCenterFrequency implements the sdr.Sdr interface.
+func (s *Sdr) SetCenterFrequency(freq rf.Hz) error {
+	if err := s.SetCenterFrequencyRX(freq); err != nil {
+		return err
+	}
+	return s.SetCenterFrequencyTX(freq)
 }
 
 // SetSampleRate implements the sdr.Sdr interface.
