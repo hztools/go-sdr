@@ -23,6 +23,7 @@ package stream
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"hz.tools/sdr"
 )
@@ -52,6 +53,8 @@ func dupe(s1 sdr.Samples) (sdr.Samples, int, error) {
 type BufPipe struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+	lock   *sync.Mutex
+
 	err    error
 	buf    chan sdr.Samples
 	closed bool
@@ -70,6 +73,9 @@ type BufPipe struct {
 // hang until the buffer has room again. If blocking is set to false,
 // ErrBufferOverrun will be returned.
 func (p *BufPipe) SetBlocking(blocking bool) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	p.blocking = blocking
 }
 
@@ -85,6 +91,9 @@ func (p *BufPipe) SampleRate() uint {
 
 // Read implements the sdr.ReadWriter interface.
 func (p *BufPipe) Read(s sdr.Samples) (int, error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	if p.err != nil {
 		// TODO(paultag): Should this exhaust the queue until the end,
 		// and then return that? Not sure.
@@ -105,7 +114,9 @@ func (p *BufPipe) do() {
 		select {
 		case s1, ok := <-p.buf:
 			if !ok {
+				p.lock.Lock()
 				p.err = sdr.ErrPipeClosed
+				p.lock.Unlock()
 				return
 			}
 			_, err := p.pipeWriter.Write(s1)
@@ -115,10 +126,12 @@ func (p *BufPipe) do() {
 				// go ahead and set the error condition and bail.
 				//
 				// TODO(paultag): This is not threadsafe.
+				p.lock.Lock()
 				if p.err == nil {
 					p.err = err
 					p.CloseWithError(err)
 				}
+				p.lock.Unlock()
 				return
 			}
 		case <-p.ctx.Done():
@@ -185,6 +198,9 @@ func (p *BufPipe) Done() <-chan struct{} {
 // Close will cancel the Pipe's context, terminating the goroutine spawned,
 // and closing the context of any children objects.
 func (p *BufPipe) Close() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	if p.closed {
 		return nil
 	}
@@ -213,8 +229,10 @@ func NewBufPipeWithContext(ctx context.Context, capacity int, sampleRate uint, s
 	pipe := &BufPipe{
 		ctx:    ctx,
 		cancel: cancel,
-		err:    nil,
-		buf:    buf,
+
+		lock: &sync.Mutex{},
+		err:  nil,
+		buf:  buf,
 
 		sampleRate:   sampleRate,
 		sampleFormat: sampleFormat,
