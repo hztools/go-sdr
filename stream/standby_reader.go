@@ -76,6 +76,19 @@ func (sr *standbyReader) Read(s sdr.Samples) (int, error) {
 	return sr.r.Read(s)
 }
 
+// StandbyReader is a reusable ReadCloser which wraps an sdr.Receiver
+// When IQ data is read from the Reader, it will StartRx, and read samples
+// to the new underlying ReadCloser from StartRx. When "Close" is called,
+// the underlying ReadCloser will be closed, but the StandbyReader remains
+// usable.
+//
+// This enables easier management of the Receiver; less work needs to go
+// into management of the state of the Receiver. Beware, this doesn't mean
+// *no* management, just easier management.
+//
+// The underlying sdr.ReadCloser's SampleFormat is the SampleFormat returned
+// by the Receiver, and the SampleRate is the SampleRate as read at the
+// time on construction - and must not change.
 func StandbyReader(rx sdr.Receiver) (sdr.ReadCloser, error) {
 	sr, err := rx.GetSampleRate()
 	if err != nil {
