@@ -79,8 +79,8 @@ func (wc *writeCloser) Close() error {
 		return nil
 	}
 
-	wc.cancel()
 	wc.pipe.Close()
+	wc.cancel()
 
 	// Wait until the STOP command has gone through and we're sure the
 	// goroutine is stopped. This means that we can free the resouwces below,
@@ -135,7 +135,7 @@ func (wc *writeCloser) run() {
 
 		n, err := sdr.ReadFull(wc.pipe, iq)
 		if err != nil {
-			wc.pipe.CloseWithError(err)
+			// wc.pipe.CloseWithError(err)
 			return
 		}
 		cn = C.size_t(n)
@@ -147,7 +147,7 @@ func (wc *writeCloser) run() {
 			wc.txStreamer, &ciq, ciqLen, &wc.txMetadata,
 			0.1, &cn,
 		)); err != nil {
-			wc.pipe.CloseWithError(err)
+			// wc.pipe.CloseWithError(err)
 			return
 		}
 	}
@@ -252,7 +252,6 @@ func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 
 	bufferLength := opts.BufferLength
 
-	// TODO(paultag): Dynamic capacity here.
 	bp, err := stream.NewBufPipeWithContext(ctx, bufferLength, sr, s.sampleFormat)
 	if err != nil {
 		C.uhd_tx_streamer_free(&txStreamer)
