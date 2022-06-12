@@ -154,7 +154,7 @@ func (s Server) serveConn(ctx context.Context, conn net.Conn) error {
 	}
 	defer dev.Close()
 
-	tuner := rtl.TunerUnknown
+	tuner := rtl.TunerE4000
 	tunerable, ok := dev.(Tunerable)
 	if ok {
 		tuner = tunerable.Tuner()
