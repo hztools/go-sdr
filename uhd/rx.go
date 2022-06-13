@@ -296,6 +296,15 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 	return rcs[0], nil
 }
 
+// StartCoherentRx will start a coherent RX operation. As a byproduct, this
+// will reset the clock.
+func (s *Sdr) StartCoherentRx() (sdr.ReadClosers, error) {
+	if err := s.SetTimeNow(time.Duration(0)); err != nil {
+		return nil, err
+	}
+	return s.StartCoherentRxAt(time.Second)
+}
+
 // StartCoherentRxAt will start a coherent RX operation, sync'd at the
 // provided offset.
 func (s *Sdr) StartCoherentRxAt(d time.Duration) (sdr.ReadClosers, error) {
