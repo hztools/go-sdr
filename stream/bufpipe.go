@@ -91,8 +91,8 @@ func (p *BufPipe) SampleRate() uint {
 
 // Read implements the sdr.ReadWriter interface.
 func (p *BufPipe) Read(s sdr.Samples) (int, error) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	// p.lock.Lock()
+	// defer p.lock.Unlock()
 
 	if p.err != nil {
 		// TODO(paultag): Should this exhaust the queue until the end,
@@ -205,6 +205,7 @@ func (p *BufPipe) Close() error {
 		return nil
 	}
 	p.closed = true
+	p.cancel()
 	close(p.buf)
 	return nil
 }
