@@ -29,6 +29,12 @@ type multiplyReader struct {
 	r sdr.Reader
 }
 
+// SetMultiplier is an undocumented API to update the complex value
+// after the construction of the Reader.
+func (mr *multiplyReader) SetMultiplier(m complex64) {
+	mr.m = m
+}
+
 func (mr *multiplyReader) SampleFormat() sdr.SampleFormat {
 	return mr.r.SampleFormat()
 }
