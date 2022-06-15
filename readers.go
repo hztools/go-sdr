@@ -23,6 +23,34 @@ package sdr
 // Readers represents a collection of Readers.
 type Readers []Reader
 
+// SampleRate returns the number of samples per second in the stream.
+func (rs Readers) SampleRate() uint {
+	if len(rs) == 0 {
+		return 0
+	}
+	ret := rs[0].SampleRate()
+	for _, r := range rs {
+		if r.SampleRate() != ret {
+			return 0
+		}
+	}
+	return ret
+}
+
+// SampleFormat returns the IQ Format of the Readers.
+func (rs Readers) SampleFormat() SampleFormat {
+	if len(rs) == 0 {
+		return SampleFormat(0)
+	}
+	ret := rs[0].SampleFormat()
+	for _, r := range rs {
+		if r.SampleFormat() != ret {
+			return SampleFormat(0)
+		}
+	}
+	return ret
+}
+
 // WrapErr will apply the function 'fn' to each Reader in this collection,
 // and return a new slice of those new Reader objects. If any error is
 // encountered, that error is returned.
@@ -52,6 +80,16 @@ func (rs Readers) Wrap(fn func(Reader) Reader) Readers {
 
 // ReadClosers is a collection of ReadCloser objects.
 type ReadClosers []ReadCloser
+
+// SampleRate returns the number of IQ samples per second.
+func (rcs ReadClosers) SampleRate() uint {
+	return rcs.Readers().SampleRate()
+}
+
+// SampleFormat returns the IQ format of the Readers.
+func (rcs ReadClosers) SampleFormat() SampleFormat {
+	return rcs.Readers().SampleFormat()
+}
 
 // Readers will return the ReadClosers as a Reader slice.
 func (rcs ReadClosers) Readers() Readers {
