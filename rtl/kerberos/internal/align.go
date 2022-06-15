@@ -101,7 +101,7 @@ func NewCrossCorrelater(planner fft.Planner, fftLength int) (*CrossCorrelater, e
 }
 
 // checkAlignment will cross-convolve each sdr.Reader against the 0th
-// reader, and return the alignment offets. Each offset is from the
+// reader, and return the alignment offsets. Each offset is from the
 // 0th buffer to the nth buffer. The 0th index will always be 0. It's
 // included to make indexing easier.
 func checkAlignment(planner fft.Planner, readers []sdr.Reader, bufs []sdr.SamplesC64) ([]int, error) {
@@ -165,7 +165,7 @@ func alignReaders(alignments []int, readers []sdr.Reader) (bool, error) {
 	//
 	// Algorithm:
 	//
-	//   - Determine what the max number is in the slice. If that nunber is
+	//   - Determine what the max number is in the slice. If that number is
 	//     greater than 0, consume that many records from the 0th reader.
 	//     Retry and mark not aligned.
 	//
@@ -216,7 +216,7 @@ func alignReaders(alignments []int, readers []sdr.Reader) (bool, error) {
 			continue
 		}
 
-		// all the numbers should be <= 0. we ned to consume that many samples
+		// all the numbers should be <= 0. we need to consume that many samples
 		// from each reader.
 
 		buf := make(sdr.SamplesC64, -alignment)

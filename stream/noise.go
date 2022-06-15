@@ -34,7 +34,7 @@ type NoiseConfig struct {
 
 	// SampleRate is a *required* param if any code will be consuming this
 	// reader. This will (unhelpfully!) default to 0, which is a massive
-	// consistancy issue. This value should be set to something sensible!
+	// consistency issue. This value should be set to something sensible!
 	SampleRate uint
 
 	// StandardDeviation will control how wide the Standard Deviation of values
@@ -88,7 +88,7 @@ func (nr *noiseReader) Read(s sdr.Samples) (int, error) {
 	return len(samples), nil
 }
 
-// Noise will generate a sdr.Reader of guassian noise. The params
+// Noise will generate a sdr.Reader of gaussian noise. The params
 // controlling the range and distribution of the noise are passed in via
 // NoiseConfig. If no values are set, "sensible" defaults are created.
 //

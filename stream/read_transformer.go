@@ -110,7 +110,7 @@ type ReadTransformerConfig struct {
 	//
 	// This must return the number of samples written to the output buffer.
 	// Any errors will be set on the underlying Reader, so that future calls to
-	// the Reader returned by the initial ReadTransformer call will retun that
+	// the Reader returned by the initial ReadTransformer call will return that
 	// error.
 	Proc func(in sdr.Samples, out sdr.Samples) (int, error)
 }

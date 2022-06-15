@@ -100,7 +100,7 @@ func Dial(network, address string) (*Client, error) {
 		// we only get the samples per second after it's set by the client.
 		//
 		// Since we're going to go ahead and wrap this with the readerConn
-		// below, we'll squirl away the sample rate in the parent object
+		// below, we'll squirrel away the sample rate in the parent object
 		// and return that dynamically.
 		reader: sdr.ByteReader(conn, binary.LittleEndian, 0, sdr.SampleFormatU8),
 	}, nil

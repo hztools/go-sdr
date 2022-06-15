@@ -99,7 +99,7 @@ func (d Device) CheckBuffer() error {
 	return nil
 }
 
-// WriteDebugInt64 will write a debug int64 chanel attribute to the backing device.
+// WriteDebugInt64 will write a debug int64 channel attribute to the backing device.
 func (d Device) WriteDebugInt64(name string, value int64) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))

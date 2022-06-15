@@ -56,7 +56,7 @@ func (c Channel) String() string {
 	return c.name
 }
 
-// ReadInt64 will write an int64 chanel attribute to the backing device.
+// ReadInt64 will write an int64 channel attribute to the backing device.
 func (c Channel) ReadInt64(name string) (int64, error) {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -75,7 +75,7 @@ func (c Channel) ReadInt64(name string) (int64, error) {
 	return int64(cValue), nil
 }
 
-// WriteInt64 will write an int64 chanel attribute to the backing device.
+// WriteInt64 will write an int64 channel attribute to the backing device.
 func (c Channel) WriteInt64(name string, value int64) error {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -91,7 +91,7 @@ func (c Channel) WriteInt64(name string, value int64) error {
 	return syscall.Errno(-errno)
 }
 
-// WriteFloat64 will write an float64 chanel attribute to the backing device.
+// WriteFloat64 will write an float64 channel attribute to the backing device.
 // (this is otherwise known as WriteDouble, but I've chosen the Go types here)
 func (c Channel) WriteFloat64(name string, value float64) error {
 	cName := C.CString(name)

@@ -203,7 +203,7 @@ func Pipe(samplesPerSecond uint, format SampleFormat) (PipeReader, PipeWriter) {
 
 // PipeWithContext will create a new sdr.Reader and sdr.Writer as returned by
 // the Pipe call, but with a custom Context. This is purely used for external
-// control fo the lifecycle of the Pipe.
+// control of the lifecycle of the Pipe.
 func PipeWithContext(
 	ctx context.Context,
 	samplesPerSecond uint,

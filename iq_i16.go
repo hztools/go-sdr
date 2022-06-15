@@ -44,7 +44,7 @@ import (
 //
 // If you are at the IO boundary with an SDR the correct format for this type is
 // MSB aligned data. As soon as you convert the byte stream into this type, be
-// sure it's immediately MSB aligned. If your SDR is giving you LSB algined data,
+// sure it's immediately MSB aligned. If your SDR is giving you LSB aligned data,
 // you may need to call ShiftLSBToMSBBits with the number of bits your data is
 // in (for instance, `12` for a 12 bit ADC) to MSB align.
 type SamplesI16 [][2]int16
@@ -92,7 +92,7 @@ func (s SamplesI16) Slice(start, end int) Samples {
 // max is no longer 2**16, the max is 2**12 or 2**14. Rather than make
 // multiple sdr.Sample types for each ADC bit count, the SDR code should
 // call ShiftLSBToMSBBits at the boundary to shift the data from LSB to MSB
-// algined to get full-range values.
+// aligned to get full-range values.
 //
 // The value `bits` is the number of bits the ADC sends. This will result in
 // a bitshift of 16 - bits. So, if you have a 12 bit ADC, and this is invoked,

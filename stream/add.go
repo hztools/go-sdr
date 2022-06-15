@@ -35,7 +35,7 @@ import (
 // an error will be returned.
 //
 // The samples, when added must not exceed +1 or go below -1. This causes
-// clipping and clipping is bad. If you're adding two waveforms, be absoluely
+// clipping and clipping is bad. If you're adding two waveforms, be absolutely
 // sure you've adjusted the gain correctly on the readers with the stream.Gain
 // reader.
 func Add(readers ...sdr.Reader) (sdr.Reader, error) {

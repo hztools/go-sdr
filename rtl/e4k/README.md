@@ -9,4 +9,4 @@ can make for a much more effective receive configuration.
 
 It is, however, a lot more complicated and not well supported in the rtl-sdr
 C library. This is a pure-go set of bindings to speak "E4K gain", to compute
-and decode what the gain of a specific confguration ought to be.
+and decode what the gain of a specific configuration ought to be.

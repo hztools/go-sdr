@@ -29,7 +29,7 @@ import (
 //
 // This type is very hard to process, since the 0 value is 127.5, which
 // is not representable, but it's *very* effective to send data over
-// a connection, since it's the most compact represntation.
+// a connection, since it's the most compact representation.
 //
 // This is the native format of the rtl-sdr.
 type SamplesU8 [][2]uint8

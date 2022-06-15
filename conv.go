@@ -63,29 +63,29 @@ func ConvertBuffer(dst, src Samples) (int, error) {
 
 	switch dst.Format() {
 	case SampleFormatU8:
-		convertable, ok := src.(interface{ ToU8(SamplesU8) (int, error) })
+		convertible, ok := src.(interface{ ToU8(SamplesU8) (int, error) })
 		if !ok {
 			return 0, ErrConversionNotImplemented
 		}
-		return convertable.ToU8(dst.(SamplesU8))
+		return convertible.ToU8(dst.(SamplesU8))
 	case SampleFormatI8:
-		convertable, ok := src.(interface{ ToI8(SamplesI8) (int, error) })
+		convertible, ok := src.(interface{ ToI8(SamplesI8) (int, error) })
 		if !ok {
 			return 0, ErrConversionNotImplemented
 		}
-		return convertable.ToI8(dst.(SamplesI8))
+		return convertible.ToI8(dst.(SamplesI8))
 	case SampleFormatI16:
-		convertable, ok := src.(interface{ ToI16(SamplesI16) (int, error) })
+		convertible, ok := src.(interface{ ToI16(SamplesI16) (int, error) })
 		if !ok {
 			return 0, ErrConversionNotImplemented
 		}
-		return convertable.ToI16(dst.(SamplesI16))
+		return convertible.ToI16(dst.(SamplesI16))
 	case SampleFormatC64:
-		convertable, ok := src.(interface{ ToC64(SamplesC64) (int, error) })
+		convertible, ok := src.(interface{ ToC64(SamplesC64) (int, error) })
 		if !ok {
 			return 0, ErrConversionNotImplemented
 		}
-		return convertable.ToC64(dst.(SamplesC64))
+		return convertible.ToC64(dst.(SamplesC64))
 	default:
 		// Someone added a new type on us
 		return 0, ErrSampleFormatUnknown

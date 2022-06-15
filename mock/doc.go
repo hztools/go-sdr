@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// Package mock contains a sdr.Sdr implementation that is sutable for testing.
+// Package mock contains a sdr.Sdr implementation that is suitable for testing.
 package mock
 
 // vim: foldmethod=marker

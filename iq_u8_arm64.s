@@ -53,7 +53,7 @@ u8_to_c64_loop:
 
     // Assuming USHLL{,2} SRC, DST, SHIFT
 
-    // TODO: Use float16 to preform mult, and mult with extend to target
+    // TODO: Use float16 to perform mult, and mult with extend to target
     // vectors
 
     WORD $0x2f08a410; // USHLL V0.B8 V16.H8, $0
@@ -78,7 +78,7 @@ u8_to_c64_loop:
     //
     // So, what we're doing here instead is multiplying by 1/127.5, (0 to 2)
     // and then adding -1 (-1 to 1). This means we can use the fused multiply-add
-    // (or FMLA -- VFMLA in Go terms) to preform this operation with one
+    // (or FMLA -- VFMLA in Go terms) to perform this operation with one
     // instruction.
     //
     // Strictly speaking this is a loss of some precision (since 1/127.5 is

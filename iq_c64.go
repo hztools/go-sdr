@@ -33,7 +33,7 @@ import (
 // values in a float array.
 //
 // This is the format that is most useful to process iq data in from a
-// mathmatical perspective, and is going to be the most common type to
+// mathematical perspective, and is going to be the most common type to
 // work with when writing signal processing code.
 type SamplesC64 []complex64
 

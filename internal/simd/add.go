@@ -29,7 +29,7 @@ import (
 //
 // The buffers *must* all be the same length, or an error will be returned.
 //
-// Buffer c may be set to one of a or b safely to preform an in-place addition.
+// Buffer c may be set to one of a or b safely to perform an in-place addition.
 func AddComplex(a, b, c []complex64) error {
 	if len(a) != len(b) || len(a) != len(c) {
 		return fmt.Errorf("simd.AddComplex: a, b, and c are not the same length")

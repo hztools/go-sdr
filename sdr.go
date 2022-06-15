@@ -58,7 +58,7 @@ type Sdr interface {
 	// SDR, sorted in order from the antenna backwards to the USB port.
 	GetGainStages() (GainStages, error)
 
-	// GetGain wil return the Gain set for the specific Gain stage.
+	// GetGain will return the Gain set for the specific Gain stage.
 	GetGain(GainStage) (float32, error)
 
 	// SetGain will set the Gain for a specific Gain stage.

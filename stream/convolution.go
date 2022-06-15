@@ -25,7 +25,7 @@ import (
 	"hz.tools/sdr/fft"
 )
 
-// ConvolutionReader will preform an fft against a window of samples,
+// ConvolutionReader will perform an fft against a window of samples,
 // and multiply those sampls in frequency-space against the provided window.
 //
 // This can do things like apply a filter, etc. The fun really is endless.

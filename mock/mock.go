@@ -180,7 +180,7 @@ func (m *mockSdr) StartTx() (sdr.WriteCloser, error) {
 
 // ThisRx will create a "StartRx" function for a mock.Sdr that simply returns
 // the provided ReadCloser. Multiple calls will return the same ReadCloser,
-// which means the Close method is likly to be called more than once. Caller
+// which means the Close method is likely to be called more than once. Caller
 // beware!
 func ThisRx(rx sdr.ReadCloser) func(sdr.Transceiver) (sdr.ReadCloser, error) {
 	return func(sdr.Transceiver) (sdr.ReadCloser, error) {
@@ -190,7 +190,7 @@ func ThisRx(rx sdr.ReadCloser) func(sdr.Transceiver) (sdr.ReadCloser, error) {
 
 // ThisTx will create a "StartTx" function for a mock.Sdr that simply returns
 // the provided WriteCloser. Multiple calls will return the same WriteCloser,
-// which means the Close method is likly to be called more than once. Caller
+// which means the Close method is likely to be called more than once. Caller
 // beware!
 func ThisTx(tx sdr.WriteCloser) func(sdr.Transceiver) (sdr.WriteCloser, error) {
 	return func(sdr.Transceiver) (sdr.WriteCloser, error) {

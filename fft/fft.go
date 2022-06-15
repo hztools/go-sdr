@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// Package fft contains a common interface to preform FFTs between frequency
+// Package fft contains a common interface to perform FFTs between frequency
 // and time-Series complex data.
 package fft
 
@@ -47,7 +47,7 @@ type Planner func(
 	direction Direction,
 ) (Plan, error)
 
-// Plan is used to preform an FFT over the IQ or Time Series data, writing
+// Plan is used to perform an FFT over the IQ or Time Series data, writing
 // to the specified target.
 type Plan interface {
 
@@ -58,7 +58,7 @@ type Plan interface {
 	Close() error
 }
 
-// TransformOnce will preform either a time-to-frequency or frequency-to-time
+// TransformOnce will perform either a time-to-frequency or frequency-to-time
 // domain transformation once. If this is called multiple times, significant
 // overhead can be reduced by using the Planner interface.
 func TransformOnce(

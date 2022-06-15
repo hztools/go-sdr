@@ -93,7 +93,7 @@ func convolve(
 //
 // Under the hood this will use the provided FFT Planner to multiply the
 // samples in the frequency domain, which winds up a lot faster than having
-// to preform the convolution in the time domain.
+// to perform the convolution in the time domain.
 func Convolve(
 	planner Planner,
 	dst sdr.Samples,
@@ -146,7 +146,7 @@ func CrossCorrelate(
 //
 // Under the hood this will use the provided FFT Planner to multiply the
 // samples in the frequency domain, which winds up a lot faster than having
-// to preform the convolution in the time domain.
+// to perform the convolution in the time domain.
 func ConvolveFreq(
 	planner Planner,
 	dst sdr.Samples,
@@ -191,7 +191,7 @@ func ConvolveFreq(
 	}, nil
 }
 
-// ConvolveOnce will preform a one-off convolution of two time series iq streams
+// ConvolveOnce will perform a one-off convolution of two time series iq streams
 // in the frequency domain, writing the results to the dst samples. The dst
 // argument may safely be one of iq1 or iq2.
 //

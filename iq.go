@@ -33,7 +33,7 @@ var (
 	// implemented.
 	ErrSampleFormatUnknown error = fmt.Errorf("sdr: iq sample format is not understood")
 
-	// ErrDstTooSmall will be returned when attempting to preform an operation
+	// ErrDstTooSmall will be returned when attempting to perform an operation
 	// and the target buffer is too small to use.
 	ErrDstTooSmall error = fmt.Errorf("sdr: destination sample buffer is too small")
 )

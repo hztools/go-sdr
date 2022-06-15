@@ -103,7 +103,7 @@ const (
 // flow through that stage.
 type GainStage interface {
 	// GainRange expresses the max and minimum values that this Gain stage
-	// can be set to. The value may be negitive in the case of attenuation,
+	// can be set to. The value may be negative in the case of attenuation,
 	// or positive in the case of amplification.
 	Range() [2]float32
 
@@ -111,7 +111,7 @@ type GainStage interface {
 	// of the chain from antenna to USB the gain stage exists within.
 	Type() GainStageType
 
-	// String will return a human readable name to be used when refrencing this
+	// String will return a human readable name to be used when referencing this
 	// stage to a user. This string should match the format "%s Gain Stage" in
 	// a sensible way, something like "IF", "LNA" or "Baseband" are all good
 	// examples.
