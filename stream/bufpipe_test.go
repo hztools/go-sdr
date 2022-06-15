@@ -186,13 +186,12 @@ func TestBufPipeClose(t *testing.T) {
 	assert.NoError(t, err)
 	wb := make(sdr.SamplesC64, 1024)
 	i, err := pipe.Write(wb)
-	assert.NoError(t, pipe.Close())
 	assert.NoError(t, err)
+	assert.NoError(t, pipe.Close())
 	assert.Equal(t, 1024, i)
 
-	i, err = sdr.ReadFull(pipe, wb)
-	assert.NoError(t, err)
-	assert.Equal(t, 1024, i)
+	_, err = sdr.ReadFull(pipe, wb)
+	assert.Error(t, err)
 
 	// Additional writes fail
 	_, err = pipe.Write(wb)
