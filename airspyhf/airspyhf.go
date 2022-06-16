@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	"hz.tools/rf"
 	"hz.tools/sdr"
 	"hz.tools/sdr/debug"
 )
@@ -145,12 +146,24 @@ func (s *Sdr) Version() (string, error) {
 type Sdr struct {
 	handle *C.airspyhf_device_t
 	info   sdr.HardwareInfo
+
+	centerFrequency rf.Hz
+	sampleRate      uint
+}
+
+// SetCenterFrequency implements the sdr.Sdr interface
+func (s *Sdr) SetCenterFrequency(cf rf.Hz) error {
+	if C.airspyhf_set_freq(s.handle, C.uint32_t(cf)) != C.AIRSPYHF_SUCCESS {
+		return fmt.Errorf("airspyhf.Sdr.SetCenterFrequency: Failed to set frequency")
+	}
+	s.centerFrequency = cf
+	return nil
 }
 
 // Close implements the sdr.Sdr interface.
 func (s *Sdr) Close() error {
 	if C.airspyhf_close(s.handle) != C.AIRSPYHF_SUCCESS {
-		return fmt.Errorf("airspy.Sdr.Close: Failed to close handle")
+		return fmt.Errorf("airspyhf.Sdr.Close: Failed to close handle")
 	}
 	return nil
 }
@@ -160,12 +173,12 @@ func (s *Sdr) Close() error {
 func (s *Sdr) GetSampleRates() ([]uint, error) {
 	var nsr C.uint32_t
 	if C.airspyhf_get_samplerates(s.handle, &nsr, 0) != C.AIRSPYHF_SUCCESS {
-		return nil, fmt.Errorf("airspy.Sdr.GetSampleRates: Can't enumerate number of SampleRates")
+		return nil, fmt.Errorf("airspyhf.Sdr.GetSampleRates: Can't enumerate number of SampleRates")
 	}
 
 	srs := make([]uint32, int(nsr))
 	if C.airspyhf_get_samplerates(s.handle, (*C.uint32_t)(unsafe.Pointer(&srs[0])), nsr) != C.AIRSPYHF_SUCCESS {
-		return nil, fmt.Errorf("airspy.Sdr.GetSampleRates: Can't enumerate SampleRates")
+		return nil, fmt.Errorf("airspyhf.Sdr.GetSampleRates: Can't enumerate SampleRates")
 	}
 
 	ret := make([]uint, len(srs))
@@ -179,6 +192,51 @@ func (s *Sdr) GetSampleRates() ([]uint, error) {
 // HardwareInfo implements the sdr.Sdr interface.
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return s.info
+}
+
+// GetCenterFrequency implements the sdr.Sdr interface.
+func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
+	return s.centerFrequency, nil
+}
+
+// SetAutomaticGain implements the sdr.Sdr interface.
+func (s *Sdr) SetAutomaticGain(bool) error {
+	return sdr.ErrNotSupported
+}
+
+// GetGainStages implements the sdr.Sdr interface.
+func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
+	return nil, sdr.ErrNotSupported
+}
+
+// GetGain implements the sdr.Sdr interface.
+func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
+	return 0, sdr.ErrNotSupported
+}
+
+// SetGain implements the sdr.Sdr interface.
+func (s *Sdr) SetGain(sdr.GainStage, float32) error {
+	return sdr.ErrNotSupported
+}
+
+// SetSampleRate implements the sdr.Sdr interface.
+func (s *Sdr) SetSampleRate(sampleRate uint) error {
+	if C.airspyhf_set_samplerate(s.handle, C.uint32_t(sampleRate)) != C.AIRSPYHF_SUCCESS {
+		// TODO: check against GetSampleRates
+		return fmt.Errorf("airspyhf.Sdr.SetSampleRate: Failed to set Sample Rate")
+	}
+	s.sampleRate = sampleRate
+	return nil
+}
+
+// GetSampleRate implements the sdr.Sdr interface.
+func (s *Sdr) GetSampleRate() (uint, error) {
+	return s.sampleRate, nil
+}
+
+// SampleFormat implements the sdr.Sdr interface.
+func (s *Sdr) SampleFormat() sdr.SampleFormat {
+	return sdr.SampleFormatC64
 }
 
 func init() {
