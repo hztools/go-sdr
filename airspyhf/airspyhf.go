@@ -26,6 +26,7 @@ package airspyhf
 import "C"
 
 import (
+	"bytes"
 	"fmt"
 	"unsafe"
 
@@ -122,6 +123,18 @@ func open(sn *uint64) (*Sdr, error) {
 		handle: dev,
 		info:   hwInfo,
 	}, nil
+}
+
+func (s *Sdr) Version() (string, error) {
+	var out [255]byte
+	if C.airspyhf_version_string_read(
+		s.handle,
+		(*C.char)(unsafe.Pointer(&out[0])),
+		C.uint8_t(len(out)),
+	) != C.AIRSPYHF_SUCCESS {
+		return "", fmt.Errorf("airspyhf.Sdr.Version: failed to get Version string")
+	}
+	return string(out[:bytes.Index(out[:], []byte{0x00})]), nil
 }
 
 type Sdr struct {
