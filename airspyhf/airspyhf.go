@@ -104,6 +104,9 @@ func open(sn *uint64) (*Sdr, error) {
 	if C.airspyhf_board_partid_serialno_read(dev, &id) != C.AIRSPYHF_SUCCESS {
 		return nil, fmt.Errorf("airspyhf: Can't real PartID / Serial Number")
 	}
+
+	serial := (uint64(id.serial_no[0]) << 32) | uint64(id.serial_no[1])
+
 	var product string
 	switch id.part_id {
 	case C.AIRSPYHF_BOARD_ID_UNKNOWN_AIRSPYHF:
@@ -119,7 +122,7 @@ func open(sn *uint64) (*Sdr, error) {
 	hwInfo := sdr.HardwareInfo{
 		Manufacturer: "Airspy",
 		Product:      product,
-		Serial:       fmt.Sprintf("%x", sn),
+		Serial:       fmt.Sprintf("%X", serial),
 	}
 
 	return &Sdr{
@@ -222,8 +225,8 @@ func (s *Sdr) SetGain(sdr.GainStage, float32) error {
 // SetSampleRate implements the sdr.Sdr interface.
 func (s *Sdr) SetSampleRate(sampleRate uint) error {
 	if C.airspyhf_set_samplerate(s.handle, C.uint32_t(sampleRate)) != C.AIRSPYHF_SUCCESS {
-		// TODO: check against GetSampleRates
-		return fmt.Errorf("airspyhf.Sdr.SetSampleRate: Failed to set Sample Rate")
+		validSampleRates, _ := s.GetSampleRates()
+		return fmt.Errorf("airspyhf.Sdr.SetSampleRate: Failed to set Sample Rate, valid sample rates: %d", validSampleRates)
 	}
 	s.sampleRate = sampleRate
 	return nil
