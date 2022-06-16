@@ -149,6 +149,25 @@ func (s *Sdr) Close() error {
 	return nil
 }
 
+func (s *Sdr) GetSampleRates() ([]uint, error) {
+	var nsr C.uint32_t
+	if C.airspyhf_get_samplerates(s.handle, &nsr, 0) != C.AIRSPYHF_SUCCESS {
+		return nil, fmt.Errorf("airspy.Sdr.GetSampleRates: Can't enumerate number of SampleRates")
+	}
+
+	srs := make([]uint32, int(nsr))
+	if C.airspyhf_get_samplerates(s.handle, (*C.uint32_t)(unsafe.Pointer(&srs[0])), nsr) != C.AIRSPYHF_SUCCESS {
+		return nil, fmt.Errorf("airspy.Sdr.GetSampleRates: Can't enumerate SampleRates")
+	}
+
+	ret := make([]uint, len(srs))
+	for i := range srs {
+		ret[i] = uint(srs[i])
+	}
+
+	return ret, nil
+}
+
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return s.info
 }
