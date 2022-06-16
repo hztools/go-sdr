@@ -55,7 +55,7 @@ func GetLibraryVersion() LibraryVersion {
 	return v
 }
 
-// ListSerials enumerates
+// ListSerials enumerates the Airspy SDRs attached to the local box.
 func ListSerials() []uint64 {
 	var (
 		ndev       = int(C.airspyhf_list_devices(nil, 0))
@@ -74,10 +74,12 @@ func ListSerials() []uint64 {
 	return serials
 }
 
+// OpenBySerial will open an Airspy by its Serial Number.
 func OpenBySerial(sn uint64) (*Sdr, error) {
 	return open(&sn)
 }
 
+// Open will open the first Airspy the library comes across.
 func Open() (*Sdr, error) {
 	return open(nil)
 }
@@ -125,6 +127,8 @@ func open(sn *uint64) (*Sdr, error) {
 	}, nil
 }
 
+// Version will return the firmware version string, as reported by the
+// SDR itself.
 func (s *Sdr) Version() (string, error) {
 	var out [255]byte
 	if C.airspyhf_version_string_read(
@@ -137,11 +141,13 @@ func (s *Sdr) Version() (string, error) {
 	return string(out[:bytes.Index(out[:], []byte{0x00})]), nil
 }
 
+// Sdr is an Airspy device attached to the host.
 type Sdr struct {
 	handle *C.airspyhf_device_t
 	info   sdr.HardwareInfo
 }
 
+// Close implements the sdr.Sdr interface.
 func (s *Sdr) Close() error {
 	if C.airspyhf_close(s.handle) != C.AIRSPYHF_SUCCESS {
 		return fmt.Errorf("airspy.Sdr.Close: Failed to close handle")
@@ -149,6 +155,8 @@ func (s *Sdr) Close() error {
 	return nil
 }
 
+// GetSampleRates will return a slice of SampleRate values that are supported
+// by the attached Airspy.
 func (s *Sdr) GetSampleRates() ([]uint, error) {
 	var nsr C.uint32_t
 	if C.airspyhf_get_samplerates(s.handle, &nsr, 0) != C.AIRSPYHF_SUCCESS {
@@ -168,6 +176,7 @@ func (s *Sdr) GetSampleRates() ([]uint, error) {
 	return ret, nil
 }
 
+// HardwareInfo implements the sdr.Sdr interface.
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return s.info
 }
