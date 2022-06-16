@@ -129,6 +129,13 @@ type Sdr struct {
 	info   sdr.HardwareInfo
 }
 
+func (s *Sdr) Close() error {
+	if C.airspyhf_close(s.handle) != C.AIRSPYHF_SUCCESS {
+		return fmt.Errorf("airspy.Sdr.Close: Failed to close handle")
+	}
+	return nil
+}
+
 func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 	return s.info
 }
