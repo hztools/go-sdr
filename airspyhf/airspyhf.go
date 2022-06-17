@@ -152,6 +152,8 @@ type Sdr struct {
 
 	centerFrequency rf.Hz
 	sampleRate      uint
+
+	windowSize int
 }
 
 // SetCenterFrequency implements the sdr.Sdr interface
@@ -203,8 +205,15 @@ func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
 }
 
 // SetAutomaticGain implements the sdr.Sdr interface.
-func (s *Sdr) SetAutomaticGain(bool) error {
-	return sdr.ErrNotSupported
+func (s *Sdr) SetAutomaticGain(state bool) error {
+	var v C.uint8_t = 0
+	if state {
+		v = 1
+	}
+	if C.airspyhf_set_hf_agc(s.handle, v) != C.AIRSPYHF_SUCCESS {
+		return fmt.Errorf("airspyhf.Sdr.SetAutomaticGain: failed to set automatic gain")
+	}
+	return nil
 }
 
 // GetGainStages implements the sdr.Sdr interface.
