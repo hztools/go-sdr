@@ -26,6 +26,8 @@ import (
 	"hz.tools/sdr"
 )
 
+// Beamform will combine a set of sdr.Readers into a single sdr.Reader using
+// the provided phase angles to stear the beam.
 type Beamform struct {
 	sdr.Reader
 
@@ -33,6 +35,7 @@ type Beamform struct {
 	config  BeamformConfig
 }
 
+// SetPhaseAngles will set the phase angle to shift every stream by.
 func (b *Beamform) SetPhaseAngles(angles []complex64) error {
 	if len(angles) != len(b.readers) {
 		return fmt.Errorf("Beamform.SetPhaseAngles: angles must match the reader length")
@@ -43,10 +46,13 @@ func (b *Beamform) SetPhaseAngles(angles []complex64) error {
 	return nil
 }
 
+// BeamformConfig contains configuration for the combined samples.
 type BeamformConfig struct {
 	Angles []complex64
 }
 
+// ReadBeamform will create a new sdr.Reader from a series of coherent
+// sdr.Readers using the provided phase angles.
 func ReadBeamform(rs sdr.Readers, cfg BeamformConfig) (*Beamform, error) {
 	multReaders := make(sdr.Readers, len(rs))
 	for i := range rs {
