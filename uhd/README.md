@@ -1,4 +1,4 @@
-# USRP hz.tools/uhd driver
+# USRP hz.tools/sdr driver
 
 | | |
 |-------------|------------|
