@@ -67,6 +67,10 @@ func (gst GainStageType) String() string {
 		attrs = append(attrs, "AMP")
 	}
 
+	if gst.Is(GainStageTypeAttenuator) {
+		attrs = append(attrs, "ATN")
+	}
+
 	return strings.Join(attrs, ",")
 }
 
@@ -89,6 +93,10 @@ const (
 	// GainStageTypeAmp represents a GainStage before the baseband/if, in
 	// the radio Frontend
 	GainStageTypeAmp GainStageType = 0x0008
+
+	// GainStageTypeAttenuator represents a GainStage which reduces the power
+	// passing through rather than amplifying it.
+	GainStageTypeAttenuator GainStageType = 0x0010
 
 	// GainStageTypeRecieve represents a GainStage on the receive path.
 	GainStageTypeRecieve GainStageType = 0x0100

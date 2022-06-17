@@ -66,7 +66,6 @@ func ListSerials() []uint64 {
 	if ndev == 0 {
 		return serials
 	}
-
 	ndev = int(C.airspyhf_list_devices(
 		(*C.uint64_t)(unsafe.Pointer(&serials[0])),
 		C.int(ndev),
@@ -152,8 +151,6 @@ type Sdr struct {
 
 	centerFrequency rf.Hz
 	sampleRate      uint
-
-	windowSize int
 }
 
 // SetCenterFrequency implements the sdr.Sdr interface
@@ -202,33 +199,6 @@ func (s *Sdr) HardwareInfo() sdr.HardwareInfo {
 // GetCenterFrequency implements the sdr.Sdr interface.
 func (s *Sdr) GetCenterFrequency() (rf.Hz, error) {
 	return s.centerFrequency, nil
-}
-
-// SetAutomaticGain implements the sdr.Sdr interface.
-func (s *Sdr) SetAutomaticGain(state bool) error {
-	var v C.uint8_t = 0
-	if state {
-		v = 1
-	}
-	if C.airspyhf_set_hf_agc(s.handle, v) != C.AIRSPYHF_SUCCESS {
-		return fmt.Errorf("airspyhf.Sdr.SetAutomaticGain: failed to set automatic gain")
-	}
-	return nil
-}
-
-// GetGainStages implements the sdr.Sdr interface.
-func (s *Sdr) GetGainStages() (sdr.GainStages, error) {
-	return nil, sdr.ErrNotSupported
-}
-
-// GetGain implements the sdr.Sdr interface.
-func (s *Sdr) GetGain(sdr.GainStage) (float32, error) {
-	return 0, sdr.ErrNotSupported
-}
-
-// SetGain implements the sdr.Sdr interface.
-func (s *Sdr) SetGain(sdr.GainStage, float32) error {
-	return sdr.ErrNotSupported
 }
 
 // SetSampleRate implements the sdr.Sdr interface.
