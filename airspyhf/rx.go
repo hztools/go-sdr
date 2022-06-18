@@ -65,7 +65,10 @@ func (rx rx) Close() error {
 
 //export airspyhfRxCallback
 func airspyhfRxCallback(transfer *C.airspyhf_transfer_t) C.int {
-	context := pointer.Restore(transfer.ctx).(*callbackContext)
+	context, ok := pointer.Restore(transfer.ctx).(*callbackContext)
+	if !ok {
+		return -1
+	}
 
 	// First, check to see if we need to stop.
 	if err := context.ctx.Err(); err != nil {
