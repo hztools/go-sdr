@@ -93,6 +93,17 @@ func airspyhfRxCallback(transfer *C.airspyhf_transfer_t) C.int {
 
 // StartRx implements the sdr.Receiver interface
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
+	// Before we go off and do anything here, let's
+	// check to see if we're currently streaming (due
+	// to bad cleanup or something), and if so, stop
+	// the rx.
+
+	if C.airspyhf_is_streaming(s.handle) == 1 {
+		if C.airspyhf_stop(s.handle) != C.AIRSPYHF_SUCCESS {
+			return nil, fmt.Errorf("airspyhf.Sdr.StartRx: can't stop existing stream")
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	sps, err := s.GetSampleRate()
@@ -108,17 +119,6 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		pipeWriter: pipeWriter,
 	}
 	state := pointer.Save(cc)
-
-	// Before we go off and do anything here, let's
-	// check to see if we're currently streaming (due
-	// to bad cleanup or something), and if so, stop
-	// the rx.
-
-	if C.airspyhf_is_streaming(s.handle) == 1 {
-		if C.airspyhf_stop(s.handle) != C.AIRSPYHF_SUCCESS {
-			return nil, fmt.Errorf("airspyhf.Sdr.StartRx: can't stop existing stream")
-		}
-	}
 
 	if C.airspyhf_start(
 		s.handle,
