@@ -109,6 +109,17 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	}
 	state := pointer.Save(cc)
 
+	// Before we go off and do anything here, let's
+	// check to see if we're currently streaming (due
+	// to bad cleanup or something), and if so, stop
+	// the rx.
+
+	if C.airspyhf_is_streaming(s.handle) == 1 {
+		if C.airspyhf_stop(s.handle) != C.AIRSPYHF_SUCCESS {
+			return nil, fmt.Errorf("airspyhf.Sdr.StartRx: can't stop existing stream")
+		}
+	}
+
 	if C.airspyhf_start(
 		s.handle,
 		C.airspyhf_sample_block_cb_fn(C.airspyhf_rx_callback),
