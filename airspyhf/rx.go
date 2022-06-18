@@ -54,10 +54,8 @@ type rx struct {
 
 func (rx rx) Close() error {
 	// sdr stop callbacks
-	rv := C.airspyhf_stop(rx.s.handle)
 	rx.cancel()
-
-	if rv != C.AIRSPYHF_SUCCESS {
+	if C.airspyhf_stop(rx.s.handle) != C.AIRSPYHF_SUCCESS {
 		return fmt.Errorf("airspyhf rx.Close(): failed to stop streaming")
 	}
 	return nil
@@ -111,7 +109,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		return nil, err
 	}
 
-	pipeReader, pipeWriter := sdr.Pipe(sps, sdr.SampleFormatC64)
+	pipeReader, pipeWriter := sdr.PipeWithContext(ctx, sps, sdr.SampleFormatC64)
 
 	cc := &callbackContext{
 		ctx:        ctx,
