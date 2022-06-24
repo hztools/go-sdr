@@ -70,10 +70,22 @@ func BeamformAngles(
 		// Right, so we have degrees, let's work out the complex value here.
 		// We know the magnitude is "1" (unit square, no gain), but we need
 		// to rotate the 1+0j by the number of degrees.
-
+		//
 		// Going back to trig, we have the hypotenuse, and the angle, and
 		// we need to work out the opposite and adjacent lengths of the
 		// right triangle.
+		//
+		//         /+ <-- cmplx here
+		//        / |
+		//       /  |
+		//    1 /   |
+		//     /    | <--- "Opposite" (Imag)
+		//    /     |
+		//   /      |
+		//  +-------+
+		//  ^      \_______ "Adjacent" (Real)
+		//   0+0i
+		//
 
 		ret[i] = complex(
 			float32(math.Cos(phaseShiftR)), // "Adjacent"
