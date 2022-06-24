@@ -22,7 +22,9 @@ package stream
 
 import (
 	"fmt"
+	"math"
 
+	"hz.tools/rf"
 	"hz.tools/sdr"
 )
 
@@ -33,6 +35,53 @@ type Beamform struct {
 
 	readers sdr.Readers
 	config  BeamformConfig
+}
+
+// BeamformAngles will determine what the phase offset required by
+// the Beamform Reader.
+//
+//  - frequency is the *rf* frequency (not IF).
+//  - angle is in *degrees*
+//  - distances is in *meters*
+//
+func BeamformAngles(
+	frequency rf.Hz,
+	angle float64,
+	distances []float64,
+) []complex64 {
+	// Let's first take in the data we have and convert
+	// it as required.
+
+	var (
+		// radians = degrees * π/180 (really, (tau/360, but...)
+		angleR   float64 = angle * (math.Pi / 180)
+		angleSin float64 = math.Sin(angleR)
+
+		ret = make([]complex64, len(distances))
+	)
+
+	for i, distance := range distances {
+		var (
+			// phaseShift is in Degrees
+			phaseShift  = (360 * distance * angleSin) / frequency.Wavelength()
+			phaseShiftR = phaseShift * (math.Pi / 180)
+		)
+
+		// Right, so we have degrees, let's work out the complex value here.
+		// We know the magnitude is "1" (unit square, no gain), but we need
+		// to rotate the 1+0j by the number of degrees.
+
+		// Going back to trig, we have the hypotenuse, and the angle, and
+		// we need to work out the opposite and adjacent lengths of the
+		// right triangle.
+
+		ret[i] = complex(
+			float32(math.Cos(phaseShiftR)), // "Adjacent"
+			float32(math.Sin(phaseShiftR)), // "Opposite"
+		)
+	}
+
+	return ret
 }
 
 // SetPhaseAngles will set the phase angle to shift every stream by.
