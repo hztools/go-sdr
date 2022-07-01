@@ -172,7 +172,7 @@ func TestBinByFreq(t *testing.T) {
 func TestBinByFreqShifted(t *testing.T) {
 	freq := make([]complex64, 2048)
 	complexTestArray(freq)
-	assert.NoError(t, fft.Shift(freq, 2048))
+	assert.NoError(t, fft.Shift(freq))
 
 	idx, err := fft.BinByFreq(freq, 2048, true, rf.KHz)
 	assert.NoError(t, err)
@@ -191,12 +191,12 @@ func TestFFTShift(t *testing.T) {
 	assert.Equal(t, complex(float32(-1024), 0), frequency[1024])
 	assert.Equal(t, complex(float32(1023), 0), frequency[1023])
 
-	assert.NoError(t, fft.Shift(frequency, 2048))
+	assert.NoError(t, fft.Shift(frequency))
 	assert.Equal(t, complex(float32(-1024), 0), frequency[0])
 	assert.Equal(t, complex(float32(0), 0), frequency[1024])
 	assert.Equal(t, complex(float32(1023), 0), frequency[2047])
 
-	assert.NoError(t, fft.Shift(frequency, 2048))
+	assert.NoError(t, fft.Shift(frequency))
 
 	assert.Equal(t, complex(float32(0), 0), frequency[0])
 	assert.Equal(t, complex(float32(-1024), 0), frequency[1024])

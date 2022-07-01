@@ -203,8 +203,8 @@ func (r FrequencySlice) BinByFreq(freq rf.Hz) (int, error) {
 
 // Shift will shift a FFT window from the native 0-index being 0 hz, to
 // 0hz being the center of the buffer.
-func Shift(frequency []complex64, sampleRate uint) error {
-	r := NewFrequencySlice(frequency, sampleRate, ZeroFirst)
+func Shift(frequency []complex64) error {
+	r := NewFrequencySlice(frequency, 0, ZeroFirst)
 	_, err := r.Shift()
 	return err
 }
