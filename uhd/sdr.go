@@ -87,6 +87,9 @@ func (opts Options) getBufferLength() int {
 	return opts.BufferLength
 }
 
+// TODO: add in support for uhd_usrp_find to enumerate UHD
+// devices
+
 // Open will connect to an USRP Radio.
 func Open(opts Options) (*Sdr, error) {
 	var (
