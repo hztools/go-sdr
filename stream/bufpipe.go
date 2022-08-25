@@ -124,8 +124,6 @@ func (p *BufPipe) do() {
 				// If we caught an error and we don't have an error
 				// ourselves (like a context error), we're going to
 				// go ahead and set the error condition and bail.
-				//
-				// TODO(paultag): This is not threadsafe.
 				p.lock.Lock()
 				if p.err == nil {
 					p.err = err

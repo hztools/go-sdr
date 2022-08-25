@@ -143,7 +143,7 @@ func (wc *writeCloser) run() {
 		ciqGB := yikes.GoBytes(uintptr(unsafe.Pointer(ciq)), iqSize)
 		copy(ciqGB, sdr.MustUnsafeSamplesAsBytes(iq))
 
-		if rvToError(C.uhd_tx_streamer_send(
+		if err := rvToError(C.uhd_tx_streamer_send(
 			wc.txStreamer, &ciq, ciqLen, &wc.txMetadata,
 			0.1, &cn,
 		)); err != nil {

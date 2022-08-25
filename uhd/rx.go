@@ -185,7 +185,6 @@ func (rc *readStreamer) run() {
 		i         int
 		errCode   C.uhd_rx_metadata_error_code_t
 		streamCmd C.uhd_stream_cmd_t
-		err       error
 
 		iqLength = int(ciqLen)
 		iqSize   = iqLength * rc.sampleFormat.Size()
@@ -215,7 +214,7 @@ func (rc *readStreamer) run() {
 			return
 		}
 
-		if rvToError(C.uhd_rx_streamer_recv(
+		if err := rvToError(C.uhd_rx_streamer_recv(
 			rc.rxStreamer, &cIQBuffers[0], ciqLen, &rc.rxMetadata,
 			3.0, false, &n,
 		)); err != nil {
@@ -223,7 +222,7 @@ func (rc *readStreamer) run() {
 			return
 		}
 
-		if rvToError(C.uhd_rx_metadata_error_code(rc.rxMetadata, &errCode)); err != nil {
+		if err := rvToError(C.uhd_rx_metadata_error_code(rc.rxMetadata, &errCode)); err != nil {
 			rc.writers.CloseWithError(err)
 			return
 		}
