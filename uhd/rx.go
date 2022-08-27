@@ -108,7 +108,7 @@ type readStreamer struct {
 	}
 }
 
-type pipeWriters []*stream.BufPipe
+type pipeWriters []*stream.BufPipe2
 
 func (pr pipeWriters) CloseWithError(e error) error {
 	var ret error
@@ -398,16 +398,15 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 
 	bufferLength := opts.BufferLength
 
-	pipes := make([]*stream.BufPipe, len(opts.RxChannels))
+	pipes := make([]*stream.BufPipe2, len(opts.RxChannels))
 	readers := make(sdr.ReadClosers, len(opts.RxChannels))
 
 	for i := range opts.RxChannels {
 		// TODO(paultag): 10 isn't right here.
-		pipe, err := stream.NewBufPipeWithContext(ctx, bufferLength, sr, s.sampleFormat)
+		pipe, err := stream.NewBufPipe2(bufferLength, sr, s.sampleFormat)
 		if err != nil {
 			return nil, err
 		}
-		pipe.SetBlocking(true)
 		pipes[i] = pipe
 		readers[i] = pipe
 	}

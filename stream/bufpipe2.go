@@ -96,6 +96,8 @@ func (p *BufPipe2) Write(s sdr.Samples) (int, error) {
 
 func (p *BufPipe2) do() {
 	defer p.Close()
+	defer func() { p.pipeWriter.CloseWithError(p.err) }()
+
 	for {
 		select {
 		case s1, ok := <-p.buf:

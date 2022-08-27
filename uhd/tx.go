@@ -48,7 +48,7 @@ type writeCloser struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	pipe         *stream.BufPipe
+	pipe         *stream.BufPipe2
 	sampleFormat sdr.SampleFormat
 
 	txStreamer C.uhd_tx_streamer_handle
@@ -82,9 +82,9 @@ func (wc *writeCloser) Close() error {
 	wc.pipe.Close()
 	wc.cancel()
 
-	// Wait until the STOP command has gone through and we're sure the
-	// goroutine is stopped. This means that we can free the resouwces below,
-	// otherwise we risk a SEGV.
+	// Wait until pipe is read fully, and we're sure the goroutine is stopped.
+	// This means that we can free the resouwces below, otherwise we risk a
+	// SEGV.
 	wc.wg.Wait()
 
 	C.uhd_tx_streamer_free(&wc.txStreamer)
@@ -127,27 +127,48 @@ func (wc *writeCloser) run() {
 		return
 	}
 
-	for {
-		i++
-		if err := wc.ctx.Err(); err != nil {
-			return
-		}
+	// Blank out the C memory
+	copy(yikes.GoBytes(uintptr(unsafe.Pointer(ciq)), iqSize),
+		sdr.MustUnsafeSamplesAsBytes(iq))
 
-		n, err := sdr.ReadFull(wc.pipe, iq)
-		if err != nil {
-			// wc.pipe.CloseWithError(err)
-			return
-		}
-		cn = C.size_t(n)
-
-		ciqGB := yikes.GoBytes(uintptr(unsafe.Pointer(ciq)), iqSize)
-		copy(ciqGB, sdr.MustUnsafeSamplesAsBytes(iq))
-
+	// before we do anything, let's send a buffer to let
+	// the hardware warm up and get something to chew on
+	// while we get going here
+	for i := 0; i < 10; i++ {
 		if err := rvToError(C.uhd_tx_streamer_send(
 			wc.txStreamer, &ciq, ciqLen, &wc.txMetadata,
 			0.1, &cn,
 		)); err != nil {
+			return
+		}
+	}
+
+	for {
+		i++
+		n, rferr := sdr.ReadFull(wc.pipe, iq)
+
+		if n != iq.Length() {
+			if rferr == nil {
+				// this is bad, something is broken
+				wc.pipe.CloseWithError(fmt.Errorf("uhd: ReadFull was short"))
+				return
+			}
+		}
+
+		copy(yikes.GoBytes(uintptr(unsafe.Pointer(ciq)), iqSize),
+			sdr.MustUnsafeSamplesAsBytes(iq))
+
+		if err := rvToError(C.uhd_tx_streamer_send(
+			wc.txStreamer, &ciq, C.size_t(n), &wc.txMetadata,
+			0.1, &cn,
+		)); err != nil {
 			// wc.pipe.CloseWithError(err)
+			return
+		}
+
+		if rferr != nil {
+			// if our ReadFull had an error, we can bail now that we sent
+			// the last windowsworth.
 			return
 		}
 	}
@@ -252,16 +273,12 @@ func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 
 	bufferLength := opts.BufferLength
 
-	bp, err := stream.NewBufPipeWithContext(ctx, bufferLength, sr, s.sampleFormat)
+	bp, err := stream.NewBufPipe2(bufferLength, sr, s.sampleFormat)
 	if err != nil {
 		C.uhd_tx_streamer_free(&txStreamer)
 		C.uhd_tx_metadata_free(&txMetadata)
 		return nil, err
 	}
-
-	// Here we want to set blocking, since _we_ are the time critical aspect
-	// here.
-	bp.SetBlocking(true)
 
 	wc := &writeCloser{
 		wg:     sync.WaitGroup{},
