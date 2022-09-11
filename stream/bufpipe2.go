@@ -26,6 +26,8 @@ import (
 	"hz.tools/sdr"
 )
 
+// BufPipe2 is a new (more stable?) and experimental implementation
+// of a buffered sdr.Pipe
 type BufPipe2 struct {
 	lock *sync.Mutex
 
@@ -58,6 +60,8 @@ func (p *BufPipe2) CloseWithError(err error) error {
 	return nil
 }
 
+// Close will close the BufPipe, which will remain readable until the end
+// of buffered data.
 func (p *BufPipe2) Close() error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
