@@ -134,7 +134,7 @@ func (wc *writeCloser) run() {
 	// before we do anything, let's send a buffer to let
 	// the hardware warm up and get something to chew on
 	// while we get going here
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		if err := rvToError(C.uhd_tx_streamer_send(
 			wc.txStreamer, &ciq, ciqLen, &wc.txMetadata,
 			0.1, &cn,
