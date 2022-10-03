@@ -220,4 +220,29 @@ func TestPipeParts(t *testing.T) {
 	wg.Wait()
 }
 
+func BenchmarkPipe(b *testing.B) {
+	pipeReader, pipeWriter := sdr.Pipe(0, sdr.SampleFormatC64)
+
+	wg := sync.WaitGroup{}
+
+	rb := make(sdr.SamplesC64, 1024)
+	go func(r sdr.Reader) {
+		defer wg.Done()
+		for {
+			_, err := r.Read(rb)
+			if err != nil {
+				return
+			}
+		}
+	}(pipeReader)
+	wg.Add(1)
+
+	wb := make(sdr.SamplesC64, 1024)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		pipeWriter.Write(wb)
+	}
+}
+
 // vim: foldmethod=marker

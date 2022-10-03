@@ -21,6 +21,8 @@
 package stream_test
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -83,6 +85,36 @@ func TestBufPipe2Close(t *testing.T) {
 
 	_, err = pipe.Write(b1)
 	assert.Error(t, err)
+}
+
+func BenchmarkBufPipe2(b *testing.B) {
+	for i := range []int{0, 1, 2, 4, 8, 16, 32, 64, 128} {
+		b.Run(fmt.Sprintf("Cap-%d", i), func(b *testing.B) {
+			pipe, err := stream.NewBufPipe2(i, 0, sdr.SampleFormatC64)
+			assert.NoError(b, err)
+
+			wg := sync.WaitGroup{}
+
+			rb := make(sdr.SamplesC64, 1024)
+			go func(r sdr.Reader) {
+				defer wg.Done()
+				for {
+					_, err := r.Read(rb)
+					if err != nil {
+						return
+					}
+				}
+			}(pipe)
+			wg.Add(1)
+
+			wb := make(sdr.SamplesC64, 1024)
+
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				pipe.Write(wb)
+			}
+		})
+	}
 }
 
 // vim: foldmethod=marker
