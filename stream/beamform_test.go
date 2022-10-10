@@ -61,4 +61,38 @@ func TestBeamformMath(t *testing.T) {
 	assert.InEpsilon(t, phase, (2*math.Pi)+cmplx.Phase(complex128(rotations[1])), 1e-4)
 }
 
+func TestBeamformMath2D(t *testing.T) {
+	rotations := stream.BeamformAngles2D(
+		900*rf.MHz,
+		0,
+		[2]float64{0, 10},
+		[][2]float64{
+			[2]float64{0, 10},
+			[2]float64{1, 10},
+		},
+	)
+
+	assert.InEpsilon(t, 1, real(rotations[0]), 1e-10)
+	assert.InEpsilon(t, 1, real(rotations[1]), 1e-10)
+
+	assert.InEpsilon(t, 1, 1+imag(rotations[0]), 1e-10)
+	assert.InEpsilon(t, 1, 1+imag(rotations[1]), 1e-10)
+
+	// rough numbers below taken from the math at
+	// https://www.radartutorial.eu/06.antennas/Phased%20Array%20Antenna.en.html
+	// as an independent check on the beamform computation
+
+	freq10cm := rf.GHz * 2.997925
+	d15cm := 0.15
+
+	rotations = stream.BeamformAngles(
+		freq10cm,
+		40,
+		[]float64{0, d15cm},
+	)
+
+	phase := 347.1 * math.Pi / 180
+	assert.InEpsilon(t, phase, (2*math.Pi)+cmplx.Phase(complex128(rotations[1])), 1e-4)
+}
+
 // vim: foldmethod=marker

@@ -37,13 +37,80 @@ type Beamform struct {
 	config  BeamformConfig
 }
 
+// computeDistance will compute the distance between two points
+func computeDistance(p1, p2 [2]float64) float64 {
+	var (
+		xd = p1[0] - p2[0]
+		xy = p1[1] - p2[1]
+	)
+	return math.Sqrt((xd * xd) + (xy * xy))
+}
+
+// BeamformAngles2D will determine what the phase offset required by
+// the Beamform Reader.
+//
+//   - frequency is the *rf* frequency (not IF).
+//   - angle is in *degrees*
+//   - ref is the X/Y coordinate in meters of the 'center' (can be anywhere).
+//   - antennas are X/Y coordinates in *meters*
+func BeamformAngles2D(
+	frequency rf.Hz,
+	angle float64,
+	center [2]float64,
+	antennas [][2]float64,
+) []complex64 {
+	var (
+		// radians = degrees * π/180 (really, (tau/360, but...)
+		angleR   float64 = angle * (math.Pi / 180)
+		angleSin float64 = math.Sin(angleR)
+
+		ret = make([]complex64, len(antennas))
+	)
+
+	for i, antenna := range antennas {
+		var (
+			distance = computeDistance(center, antenna)
+
+			// phaseShift is in Degrees
+			phaseShift  = (360 * distance * angleSin) / frequency.Wavelength()
+			phaseShiftR = phaseShift * (math.Pi / 180)
+		)
+
+		// Right, so we have degrees, let's work out the complex value here.
+		// We know the magnitude is "1" (unit square, no gain), but we need
+		// to rotate the 1+0j by the number of degrees.
+		//
+		// Going back to trig, we have the hypotenuse, and the angle, and
+		// we need to work out the opposite and adjacent lengths of the
+		// right triangle.
+		//
+		//         /+ <-- cmplx here
+		//        / |
+		//       /  |
+		//    1 /   |
+		//     /    | <--- "Opposite" (Imag)
+		//    /     |
+		//   /      |
+		//  +-------+
+		//  ^      \_______ "Adjacent" (Real)
+		//   0+0i
+		//
+
+		ret[i] = complex(
+			float32(math.Cos(phaseShiftR)), // "Adjacent"
+			float32(math.Sin(phaseShiftR)), // "Opposite"
+		)
+	}
+
+	return ret
+}
+
 // BeamformAngles will determine what the phase offset required by
 // the Beamform Reader.
 //
-//  - frequency is the *rf* frequency (not IF).
-//  - angle is in *degrees*
-//  - distances is in *meters*
-//
+//   - frequency is the *rf* frequency (not IF).
+//   - angle is in *degrees*
+//   - distances is in *meters*
 func BeamformAngles(
 	frequency rf.Hz,
 	angle float64,
