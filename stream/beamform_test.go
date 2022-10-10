@@ -61,6 +61,23 @@ func TestBeamformMath(t *testing.T) {
 	assert.InEpsilon(t, phase, (2*math.Pi)+cmplx.Phase(complex128(rotations[1])), 1e-4)
 }
 
+func TestBeamformShortInput(t *testing.T) {
+	rotations := stream.BeamformAngles(
+		900*rf.MHz,
+		0,
+		[]float64{},
+	)
+	assert.Nil(t, rotations)
+
+	rotations = stream.BeamformAngles2D(
+		900*rf.MHz,
+		0,
+		[2]float64{0, 10},
+		[][2]float64{},
+	)
+	assert.Nil(t, rotations)
+}
+
 func TestBeamformMath2D(t *testing.T) {
 	rotations := stream.BeamformAngles2D(
 		900*rf.MHz,
