@@ -59,6 +59,10 @@ func BeamformAngles2D(
 	center [2]float64,
 	antennas [][2]float64,
 ) []complex64 {
+	if len(antennas) == 0 {
+		return nil
+	}
+
 	var (
 		// radians = degrees * π/180 (really, (tau/360, but...)
 		angleR   float64 = angle * (math.Pi / 180)
@@ -116,51 +120,14 @@ func BeamformAngles(
 	angle float64,
 	distances []float64,
 ) []complex64 {
-	// Let's first take in the data we have and convert
-	// it as required.
-
-	var (
-		// radians = degrees * π/180 (really, (tau/360, but...)
-		angleR   float64 = angle * (math.Pi / 180)
-		angleSin float64 = math.Sin(angleR)
-
-		ret = make([]complex64, len(distances))
-	)
-
-	for i, distance := range distances {
-		var (
-			// phaseShift is in Degrees
-			phaseShift  = (360 * distance * angleSin) / frequency.Wavelength()
-			phaseShiftR = phaseShift * (math.Pi / 180)
-		)
-
-		// Right, so we have degrees, let's work out the complex value here.
-		// We know the magnitude is "1" (unit square, no gain), but we need
-		// to rotate the 1+0j by the number of degrees.
-		//
-		// Going back to trig, we have the hypotenuse, and the angle, and
-		// we need to work out the opposite and adjacent lengths of the
-		// right triangle.
-		//
-		//         /+ <-- cmplx here
-		//        / |
-		//       /  |
-		//    1 /   |
-		//     /    | <--- "Opposite" (Imag)
-		//    /     |
-		//   /      |
-		//  +-------+
-		//  ^      \_______ "Adjacent" (Real)
-		//   0+0i
-		//
-
-		ret[i] = complex(
-			float32(math.Cos(phaseShiftR)), // "Adjacent"
-			float32(math.Sin(phaseShiftR)), // "Opposite"
-		)
+	if len(distances) == 0 {
+		return nil
 	}
-
-	return ret
+	antennas := make([][2]float64, len(distances))
+	for i := range antennas {
+		antennas[i] = [2]float64{distances[i], 0}
+	}
+	return BeamformAngles2D(frequency, angle, antennas[0], antennas)
 }
 
 // SetPhaseAngles will set the phase angle to shift every stream by.
