@@ -33,12 +33,20 @@ var (
 // PipeReader is the Read interface exposed by the Pipe.
 type PipeReader interface {
 	ReadCloser
+
+	// CloseWithError will Close the pipe with a specific Error rather than
+	// the default ErrPipeClosed. This can be useful if code is expecting an
+	// io.EOF, for instance.
 	CloseWithError(error) error
 }
 
 // PipeWriter is the Write interface exposed by the Pipe.
 type PipeWriter interface {
 	WriteCloser
+
+	// CloseWithError will Close the pipe with a specific Error rather than
+	// the default ErrPipeClosed. This can be useful if code is expecting an
+	// io.EOF, for instance.
 	CloseWithError(error) error
 }
 

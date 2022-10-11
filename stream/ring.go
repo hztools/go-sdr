@@ -57,6 +57,9 @@ type RingBufferOptions struct {
 	BlockReads bool
 }
 
+// RingBuffer is an IQ Ring Buffer, where no allocations have to happen to write,
+// designed to take high frequency input data without dealing with things like
+// channel latency or goroutine scheduling.
 type RingBuffer struct {
 	cond *sync.Cond
 	lock *sync.Mutex
@@ -114,7 +117,7 @@ func (rb *RingBuffer) Read(buf sdr.Samples) (int, error) {
 		}
 
 		if !rb.opts.BlockReads {
-			rb.underruns += 1
+			rb.underruns++
 			return 0, ErrRingBufferUnderrun
 		}
 
@@ -168,7 +171,7 @@ func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 
 	nwidx := (rb.widx + 1) % rb.slots
 	if nwidx == rb.ridx {
-		rb.overruns += 1
+		rb.overruns++
 
 		// TODO: add in ErrRingBufferOverrun toggles.
 
@@ -192,7 +195,7 @@ func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 	return n, err
 }
 
-// StatsUnderrun will return the count of Overruns that have taken place.
+// StatsOverrun will return the count of Overruns that have taken place.
 func (rb *RingBuffer) StatsOverrun() int {
 	return rb.overruns
 }
