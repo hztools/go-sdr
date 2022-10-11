@@ -30,64 +30,22 @@ var (
 	ErrPipeClosed error = fmt.Errorf("sdr: pipe is closed")
 )
 
-// PipeReader allows for reads into the Pipe.
-type PipeReader struct {
-	pipe *pipe
+// PipeReader is the Read interface exposed by the Pipe.
+type PipeReader interface {
+	ReadCloser
+	CloseWithError(error) error
 }
 
-// Read implements the sdr.Reader interface.
-func (pr PipeReader) Read(b Samples) (int, error) {
-	return pr.pipe.Read(b)
+// PipeWriter is the Write interface exposed by the Pipe.
+type PipeWriter interface {
+	WriteCloser
+	CloseWithError(error) error
 }
 
-// Close implements the sdr.ReadCloser interface.
-func (pr PipeReader) Close() error {
-	return pr.pipe.Close()
-}
-
-// CloseWithError ...
-func (pr PipeReader) CloseWithError(err error) error {
-	return pr.pipe.CloseWithError(err)
-}
-
-// SampleFormat implements the sdr.Reader interface.
-func (pr PipeReader) SampleFormat() SampleFormat {
-	return pr.pipe.SampleFormat()
-}
-
-// SampleRate implements the sdr.Reader interface.
-func (pr PipeReader) SampleRate() uint {
-	return pr.pipe.SampleRate()
-}
-
-// PipeWriter allows for writes into the pipe.
-type PipeWriter struct {
-	pipe *pipe
-}
-
-// Read implements the sdr.Writer interface.
-func (pw PipeWriter) Write(b Samples) (int, error) {
-	return pw.pipe.Write(b)
-}
-
-// Close implements the sdr.WriteCloser interface.
-func (pw PipeWriter) Close() error {
-	return pw.pipe.Close()
-}
-
-// CloseWithError ...
-func (pw PipeWriter) CloseWithError(err error) error {
-	return pw.pipe.CloseWithError(err)
-}
-
-// SampleFormat implements the sdr.Writer interface.
-func (pw PipeWriter) SampleFormat() SampleFormat {
-	return pw.pipe.SampleFormat()
-}
-
-// SampleRate implements the sdr.Writer interface.
-func (pw PipeWriter) SampleRate() uint {
-	return pw.pipe.SampleRate()
+// PipeReadWriter is the Read/Write interface exposed by a Pipe.
+type PipeReadWriter interface {
+	PipeReader
+	PipeWriter
 }
 
 // pipe is a riff on io.Pipe in the Go stdlib, but tweaked a bit to be
@@ -218,7 +176,7 @@ func PipeWithContext(
 		samplesCh:        make(chan Samples),
 		readSamplesCh:    make(chan int),
 	}
-	return PipeReader{pipe: p}, PipeWriter{pipe: p}
+	return p, p
 }
 
 // vim: foldmethod=marker
