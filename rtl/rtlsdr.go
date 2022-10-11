@@ -72,11 +72,12 @@ func DeviceIndexBySerial(serial string) (uint, error) {
 // handles as required.
 //
 // index      corresponds to the index into the number of devices (as seen by
-//            DeviceCount) to open.
+//
+//	DeviceCount) to open.
 //
 // windowSize instructs the rtlsdr library as to how many iq samples to deliver
-//            per callback.
 //
+//	per callback.
 func New(index uint, windowSize uint) (*Sdr, error) {
 	if windowSize == 0 {
 		windowSize = 16 * 32 * 512
@@ -118,7 +119,6 @@ func (r Sdr) SampleFormat() sdr.SampleFormat {
 // to.
 //
 // TODO(paultag): Remove this now that we have sdr.HardwareInfo
-//
 type info struct {
 	Manufacturer string
 	Product      string

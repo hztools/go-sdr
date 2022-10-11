@@ -30,9 +30,9 @@ import (
 )
 
 // SetDSP will enable or disable the following features:
-//  - IQ correction
-//  - IF shift
-//  - Fine Tuning
+//   - IQ correction
+//   - IF shift
+//   - Fine Tuning
 func (s *Sdr) SetDSP(state bool) error {
 	var v C.uint8_t = 0
 	if state {

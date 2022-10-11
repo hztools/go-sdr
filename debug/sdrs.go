@@ -27,7 +27,6 @@ var radioDrivers []string
 //
 // Convention is to use the go path to the specific SDR type, so something
 // like "hz.tools/sdr/rtl.Sdr"
-//
 func RegisterRadioDriver(name string) {
 	radioDrivers = append(radioDrivers, name)
 }

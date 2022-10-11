@@ -47,10 +47,10 @@ var (
 //
 // This package contains 4 Samples implementations:
 //
-//  - SamplesU8  - interleaved uint8 values
-//  - SamplesI8  - interleaved int8 values
-//  - SamplesI16 - interleaved int16 values
-//  - SamplesC64 - vector of complex64 values (interleaved float32 values)
+//   - SamplesU8  - interleaved uint8 values
+//   - SamplesI8  - interleaved int8 values
+//   - SamplesI16 - interleaved int16 values
+//   - SamplesC64 - vector of complex64 values (interleaved float32 values)
 //
 // This should cover most common SDRs, but if you're handing a type of IQ data
 // that is not supported, you may either implement the Samples type yourself
