@@ -61,6 +61,13 @@ type ReadCloser interface {
 	Closer
 }
 
+// ReadWriteCloser is the interface that groups the basic Read, Write and Close methods.
+type ReadWriteCloser interface {
+	Reader
+	Writer
+	Closer
+}
+
 // ReadFull reads exactly len(buf) bytes from r into buf.
 func ReadFull(r Reader, buf Samples) (int, error) {
 	return ReadAtLeast(r, buf, buf.Length())
