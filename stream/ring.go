@@ -22,7 +22,6 @@ package stream
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	"hz.tools/sdr"
@@ -170,7 +169,6 @@ func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 	nwidx := (rb.widx + 1) % rb.slots
 	if nwidx == rb.ridx {
 		rb.overruns += 1
-		log.Printf("Ov")
 
 		// TODO: add in ErrRingBufferOverrun toggles.
 

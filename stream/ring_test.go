@@ -225,9 +225,7 @@ func TestRingBufferCloseWithData(t *testing.T) {
 	_, err = rb.Write(b)
 	assert.NoError(t, err)
 
-	rb.(interface {
-		CloseWithError(error) error
-	}).CloseWithError(io.EOF)
+	rb.CloseWithError(io.EOF)
 
 	// Check that the write failed and that we got an Error.
 	_, err = rb.Write(b)
