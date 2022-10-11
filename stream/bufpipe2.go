@@ -26,6 +26,17 @@ import (
 	"hz.tools/sdr"
 )
 
+// dupe will duplicate (and copy) samples from one buffer s1, to a new
+// buffer that is freshly allocated, and returned.
+func dupe(s1 sdr.Samples) (sdr.Samples, int, error) {
+	s2, err := sdr.MakeSamples(s1.Format(), s1.Length())
+	if err != nil {
+		return nil, 0, err
+	}
+	n, err := sdr.CopySamples(s2, s1)
+	return s2, n, err
+}
+
 // BufPipe2 is a new (more stable?) and experimental implementation
 // of a buffered sdr.Pipe
 type BufPipe2 struct {
