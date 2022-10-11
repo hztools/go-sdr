@@ -267,6 +267,10 @@ func NewRingBuffer(
 		cond = sync.NewCond(lock)
 	)
 
+	if opts.Slots == 0 || opts.SlotLength == 0 {
+		return nil, fmt.Errorf("stream.NewRingBuffer: Slots and SlotLength must be set to a value other than 0")
+	}
+
 	buf, err := sdr.MakeSamples(format, opts.Slots*opts.SlotLength)
 	if err != nil {
 		return nil, err
