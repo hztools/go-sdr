@@ -70,91 +70,142 @@ type RingBuffer struct {
 	closed bool
 	err    error
 
-	slots   int
-	slotLen int
-
 	ridx int
 	widx int
 
-	format sdr.SampleFormat
-	rate   uint
-
-	// stats
-	overruns  int
-	underruns int
+	rate uint
 
 	opts RingBufferOptions
 }
 
+// slots will return the configured Slot count.
+func (rb *RingBuffer) slots() int {
+	return rb.opts.Slots
+}
+
+// slotLength will return the configured Slot Length.
+func (rb *RingBuffer) slotLength() int {
+	return rb.opts.SlotLength
+}
+
 // slot will return the nth slot
 func (rb *RingBuffer) slot(n int) (sdr.Samples, error) {
-	if n >= rb.slots {
+	if n >= rb.slots() {
 		return nil, fmt.Errorf("RingBuffer: Slot is out of range")
 	}
-	base := (n * rb.slotLen)
-	return rb.buf.Slice(base, base+rb.slotLen), nil
+	base := (n * rb.slotLength())
+	return rb.buf.Slice(base, base+rb.slotLength()), nil
+}
+
+// advanceReadCursor (UNSAFE) will return the slot number of the next slot to be read.
+//
+// callers MUST have the mutex.
+//
+// If -1 is returned, there is no unread data in the Ring Buffer, otherwise the
+// ID is the next slot to be read. As a side-effect, this will advance the read
+// cursor if a slot is returned.
+func (rb *RingBuffer) advanceReadCursor() int {
+	if rb.ridx == rb.widx {
+		return -1
+	}
+	idx := rb.ridx
+	rb.ridx = (rb.ridx + 1) % rb.slots()
+	return idx
+}
+
+// advanceWriteCursor (UNSAFE) will return the slot number of the next slot to
+// be written to.
+//
+// callers MUST have the mutex.
+//
+// if the 'overwrite' boolean is true, this may result in the read cursor being
+// advanced, and a read slot being dropped to make room. if the overwrite bool
+// is false, -1 will be returned.
+//
+// the 0th argument returned is the write slot. If the argument is -1, the queue
+// is full and we can not overwrite.
+//
+// the 1st argument returned is a boolean indicating if an overrun has happened,
+// resulting in a read drop
+func (rb *RingBuffer) advanceWriteCursor(overwrite bool) (int, bool) {
+	nwidx := (rb.widx + 1) % rb.slots()
+	if nwidx == rb.ridx {
+		// right, so we're full. let's consult the overwrite boolean.
+		if overwrite {
+			rb.advanceReadCursor()
+			id, _ := rb.advanceWriteCursor(overwrite)
+			return id, true
+		}
+		// if we can't overwrite, lets give up. no slot, and we didn't drop
+		// any data.
+		return -1, false
+	}
+	idx := rb.widx
+	rb.widx = nwidx // advance the write index
+	return idx, false
+}
+
+func (rb *RingBuffer) getErr() error {
+	if !rb.closed {
+		return nil
+	}
+
+	if rb.err == nil {
+		return sdr.ErrPipeClosed
+	}
+	return rb.err
 }
 
 // Read implements the sdr.Reader interface.
 func (rb *RingBuffer) Read(buf sdr.Samples) (int, error) {
-	if buf.Length() < rb.slotLen {
+	if buf.Length() < rb.slotLength() {
 		return 0, fmt.Errorf("RingBuffer: Slot is larger than the target Read buffer")
 	}
 
 	rb.lock.Lock()
 	defer rb.lock.Unlock()
 
-	if rb.ridx == rb.widx {
+	id := rb.advanceReadCursor()
+	if id == -1 {
 		// This is reached when there's nothing in the buffer.
 
-		// Initial closed check; if we're closed, let's bail here.
-		if rb.closed {
-			// if we're closed, dump the error state.
-			if rb.err == nil {
-				return 0, sdr.ErrPipeClosed
-			}
-			return 0, rb.err
+		if err := rb.getErr(); err != nil {
+			return 0, err
 		}
 
+		// If we don't block reads, let's immediately return an underrun.
 		if !rb.opts.BlockReads {
-			rb.underruns++
 			return 0, ErrRingBufferUnderrun
 		}
 
-		for rb.ridx == rb.widx {
+		// attempt to move the cursor forward.
+		for ; id == -1; id = rb.advanceReadCursor() {
 			// Attempt to aquire the lock until we have data that we
 			// can read from the next slot.
 			rb.cond.Wait()
 		}
 
-		// Check if we were closed since we lost the lock.
-		if rb.closed {
-			// if we're closed, dump the error state.
-			if rb.err == nil {
-				return 0, sdr.ErrPipeClosed
-			}
-			return 0, rb.err
+		if err := rb.getErr(); err != nil {
+			return 0, err
 		}
 	}
 
-	idx := rb.ridx
-	rb.ridx = (rb.ridx + 1) % rb.slots
-	slot, err := rb.slot(idx)
+	slot, err := rb.slot(id)
 	if err != nil {
 		return 0, err
 	}
-	slot = slot.Slice(0, rb.bufn[idx])
+	slot = slot.Slice(0, rb.bufn[id])
 	n, err := sdr.CopySamples(buf, slot)
 
 	// zero out the buffer length after read
-	rb.bufn[idx] = 0
+	rb.bufn[id] = 0
 
 	return n, err
 }
 
 // Write implements the sdr.Writer interface.
 func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
-	if buf.Length() > rb.slotLen {
+	if buf.Length() > rb.slotLength() {
 		return 0, fmt.Errorf("RingBuffer: Slot is larger than provided Write buffer")
 	}
 
@@ -162,47 +213,24 @@ func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 	defer rb.lock.Unlock()
 
 	// sorry, no :)
-	if rb.closed {
-		if rb.err == nil {
-			return 0, sdr.ErrPipeClosed
-		}
-		return 0, rb.err
+	if err := rb.getErr(); err != nil {
+		return 0, err
 	}
 
-	nwidx := (rb.widx + 1) % rb.slots
-	if nwidx == rb.ridx {
-		rb.overruns++
+	// advance the write header, blow away any existing data for now
+	// TODO: add in a block toggle.
+	id, _ := rb.advanceWriteCursor(true)
 
-		// TODO: add in ErrRingBufferOverrun toggles.
-
-		// to overwrite, we need to drop the read slot by
-		// dropping the oldest slot, bump forward by one.
-		rb.ridx = (rb.ridx + 1) % rb.slots
-	}
-
-	idx := rb.widx
-	rb.widx = nwidx // advance the write index
-
-	slot, err := rb.slot(idx)
+	slot, err := rb.slot(id)
 	if err != nil {
 		return 0, err
 	}
-	rb.bufn[idx] = buf.Length()
 	n, err := sdr.CopySamples(slot, buf)
+	rb.bufn[id] = n
 	if !rb.opts.BlockReads {
 		rb.cond.Signal()
 	}
 	return n, err
-}
-
-// StatsOverrun will return the count of Overruns that have taken place.
-func (rb *RingBuffer) StatsOverrun() int {
-	return rb.overruns
-}
-
-// StatsUnderrun will return the count of Underruns that have taken place.
-func (rb *RingBuffer) StatsUnderrun() int {
-	return rb.underruns
 }
 
 // CloseWithError will set the error state on the Ring Buffer.
@@ -220,7 +248,7 @@ func (rb *RingBuffer) Close() error {
 
 // SampleFormat implements the sdr.ReadWriteCloser interface.
 func (rb *RingBuffer) SampleFormat() sdr.SampleFormat {
-	return rb.format
+	return rb.buf.Format()
 }
 
 // SampleRate implements the sdr.ReadWriteCloser interface.
@@ -249,13 +277,8 @@ func NewRingBuffer(
 		lock: lock,
 		buf:  buf,
 		bufn: make([]int, opts.Slots),
-
-		slots:   opts.Slots,
-		slotLen: opts.SlotLength,
-
-		rate:   rate,
-		format: format,
-		opts:   opts,
+		rate: rate,
+		opts: opts,
 	}, nil
 }
 
