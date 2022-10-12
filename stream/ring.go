@@ -55,6 +55,24 @@ type RingBufferOptions struct {
 	// BlockReads will force a wait (rather than an ErrRingBufferUnderrun)
 	// if the Read cursor has caught up with the Write cursor.
 	BlockReads bool
+
+	// AllocateIQBuffer will be passed the configured RingBufferOptions,
+	// and allocate an sdr.Samples object that is long enough for the
+	// Buffer (Slots*SlotLength at minimum). If Nil, this will use
+	// the stock Allocator.
+	AllocateIQBuffer func(sdr.SampleFormat, RingBufferOptions) (sdr.Samples, error)
+}
+
+// getAllocateIQBuffer will return the RingBuffer IQ Allocator configured
+// in the RingBufferOptions; or return the default IQ Allocator that uses
+// sdr.MakeSamples.
+func (opts RingBufferOptions) getAllocateIQBuffer() func(sdr.SampleFormat, RingBufferOptions) (sdr.Samples, error) {
+	if opts.AllocateIQBuffer != nil {
+		return opts.AllocateIQBuffer
+	}
+	return func(format sdr.SampleFormat, opts RingBufferOptions) (sdr.Samples, error) {
+		return sdr.MakeSamples(format, opts.Slots*opts.SlotLength)
+	}
 }
 
 // RingBuffer is an IQ Ring Buffer, where no allocations have to happen to write,
@@ -203,6 +221,32 @@ func (rb *RingBuffer) Read(buf sdr.Samples) (int, error) {
 	return n, err
 }
 
+// WriteDirect will check out a Slot, allow for the dirct manupulation of the
+// raw Slot, and then release internal locks.
+func (rb *RingBuffer) WriteDirect(fn func(sdr.Samples) int) error {
+	rb.lock.Lock()
+	defer rb.lock.Unlock()
+
+	if err := rb.getErr(); err != nil {
+		return err
+	}
+
+	// advance the write header, blow away any existing data for now
+	// TODO: add in a block toggle.
+	id, _ := rb.advanceWriteCursor(true)
+
+	slot, err := rb.slot(id)
+	if err != nil {
+		return err
+	}
+
+	rb.bufn[id] = fn(slot)
+	if !rb.opts.BlockReads {
+		rb.cond.Signal()
+	}
+	return err
+}
+
 // Write implements the sdr.Writer interface.
 func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 	if buf.Length() > rb.slotLength() {
@@ -271,9 +315,13 @@ func NewRingBuffer(
 		return nil, fmt.Errorf("stream.NewRingBuffer: Slots and SlotLength must be set to a value other than 0")
 	}
 
-	buf, err := sdr.MakeSamples(format, opts.Slots*opts.SlotLength)
+	buf, err := opts.getAllocateIQBuffer()(format, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if buf.Length() < opts.Slots*opts.SlotLength {
+		return nil, fmt.Errorf("stream.NewRingBuffer: opts.AllocateIQBuffer did not return enough IQ space.")
 	}
 
 	return &RingBuffer{
