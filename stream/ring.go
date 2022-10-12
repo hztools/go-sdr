@@ -56,19 +56,33 @@ type RingBufferOptions struct {
 	// if the Read cursor has caught up with the Write cursor.
 	BlockReads bool
 
-	// AllocateIQBuffer will be passed the configured RingBufferOptions,
+	// IQBufferAllocator will be passed the configured RingBufferOptions,
 	// and allocate an sdr.Samples object that is long enough for the
 	// Buffer (Slots*SlotLength at minimum). If Nil, this will use
 	// the stock Allocator.
-	AllocateIQBuffer func(sdr.SampleFormat, RingBufferOptions) (sdr.Samples, error)
+	IQBufferAllocator func(sdr.SampleFormat, RingBufferOptions) (sdr.Samples, error)
+
+	// IQBufferSlotSlicer is responsible for returning a slice of the IQ Buffer
+	// allocated to a specific slot. If Nil, this will use the stock Slicer.
+	IQBufferSlotSlicer func(sdr.Samples, int) sdr.Samples
 }
 
-// getAllocateIQBuffer will return the RingBuffer IQ Allocator configured
+func (opts RingBufferOptions) getIQBufferSlotSlicer() func(sdr.Samples, int) sdr.Samples {
+	if opts.IQBufferSlotSlicer != nil {
+		return opts.IQBufferSlotSlicer
+	}
+	return func(s sdr.Samples, id int) sdr.Samples {
+		base := (id * opts.slotLength())
+		return s.Slice(base, base+opts.slotLength())
+	}
+}
+
+// getIQBufferAllocator will return the RingBuffer IQ Allocator configured
 // in the RingBufferOptions; or return the default IQ Allocator that uses
 // sdr.MakeSamples.
-func (opts RingBufferOptions) getAllocateIQBuffer() func(sdr.SampleFormat, RingBufferOptions) (sdr.Samples, error) {
-	if opts.AllocateIQBuffer != nil {
-		return opts.AllocateIQBuffer
+func (opts RingBufferOptions) getIQBufferAllocator() func(sdr.SampleFormat, RingBufferOptions) (sdr.Samples, error) {
+	if opts.IQBufferAllocator != nil {
+		return opts.IQBufferAllocator
 	}
 	return func(format sdr.SampleFormat, opts RingBufferOptions) (sdr.Samples, error) {
 		return sdr.MakeSamples(format, opts.Slots*opts.SlotLength)
@@ -97,13 +111,21 @@ type RingBuffer struct {
 }
 
 // slots will return the configured Slot count.
+func (opts RingBufferOptions) slots() int {
+	return opts.Slots
+}
+
 func (rb *RingBuffer) slots() int {
-	return rb.opts.Slots
+	return rb.opts.slots()
 }
 
 // slotLength will return the configured Slot Length.
+func (opts RingBufferOptions) slotLength() int {
+	return opts.SlotLength
+}
+
 func (rb *RingBuffer) slotLength() int {
-	return rb.opts.SlotLength
+	return rb.opts.slotLength()
 }
 
 // slot will return the nth slot
@@ -111,8 +133,7 @@ func (rb *RingBuffer) slot(n int) (sdr.Samples, error) {
 	if n >= rb.slots() {
 		return nil, fmt.Errorf("RingBuffer: Slot is out of range")
 	}
-	base := (n * rb.slotLength())
-	return rb.buf.Slice(base, base+rb.slotLength()), nil
+	return rb.opts.getIQBufferSlotSlicer()(rb.buf, n), nil
 }
 
 // advanceReadCursor (UNSAFE) will return the slot number of the next slot to be read.
@@ -221,32 +242,6 @@ func (rb *RingBuffer) Read(buf sdr.Samples) (int, error) {
 	return n, err
 }
 
-// WriteDirect will check out a Slot, allow for the dirct manupulation of the
-// raw Slot, and then release internal locks.
-func (rb *RingBuffer) WriteDirect(fn func(sdr.Samples) int) error {
-	rb.lock.Lock()
-	defer rb.lock.Unlock()
-
-	if err := rb.getErr(); err != nil {
-		return err
-	}
-
-	// advance the write header, blow away any existing data for now
-	// TODO: add in a block toggle.
-	id, _ := rb.advanceWriteCursor(true)
-
-	slot, err := rb.slot(id)
-	if err != nil {
-		return err
-	}
-
-	rb.bufn[id] = fn(slot)
-	if !rb.opts.BlockReads {
-		rb.cond.Signal()
-	}
-	return err
-}
-
 // Write implements the sdr.Writer interface.
 func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 	if buf.Length() > rb.slotLength() {
@@ -315,13 +310,13 @@ func NewRingBuffer(
 		return nil, fmt.Errorf("stream.NewRingBuffer: Slots and SlotLength must be set to a value other than 0")
 	}
 
-	buf, err := opts.getAllocateIQBuffer()(format, opts)
+	buf, err := opts.getIQBufferAllocator()(format, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	if buf.Length() < opts.Slots*opts.SlotLength {
-		return nil, fmt.Errorf("stream.NewRingBuffer: opts.AllocateIQBuffer did not return enough IQ space.")
+		return nil, fmt.Errorf("stream.NewRingBuffer: opts.IQBufferAllocator did not return enough IQ space.")
 	}
 
 	return &RingBuffer{
@@ -332,6 +327,47 @@ func NewRingBuffer(
 		rate: rate,
 		opts: opts,
 	}, nil
+}
+
+// Unsafe wrapper here for I/O perf critical zero-copy applications.
+//
+// Here be dragons.
+
+// UnsafeRingBuffer is a wrapper around a RingBuffer that allows a few specific
+// and very unsafe things for the sake of I/O critical direct access given a-priori
+// knowledge of the IQ Buffer and a deep understanding of the thread safty.
+type UnsafeRingBuffer struct {
+	*RingBuffer
+}
+
+// WritePeek will return the underlying Slot the Write cursor will write to
+// next, but without advancing the Write cursor. By the time this function
+// returns, the index can be wrong if any other Writes are happening to this
+// Ring Buffer.
+func (urb *UnsafeRingBuffer) WritePeek() int {
+	return urb.widx
+}
+
+// WritePoke will write the next slot (blindly) assuming that the caller
+// has used WritePeek to figure out what cell we'll be using next, infer the
+// slice based on the layout, written data there, and ensured that no race
+// conditions can cause any other Writes to the RingBuffer.
+func (urb *UnsafeRingBuffer) WritePoke(n int) {
+	urb.lock.Lock()
+	defer urb.lock.Unlock()
+
+	id, _ := urb.advanceWriteCursor(true)
+	urb.bufn[id] = n
+	if !urb.opts.BlockReads {
+		urb.cond.Signal()
+	}
+}
+
+// NewUnsafeRingBuffer will create a RingBuffer wrapper around the provided
+// RingBuffer, but will enable some very shady helpers to mutate the RingBuffer
+// given a deep understanding of the underlying magic.
+func NewUnsafeRingBuffer(rb *RingBuffer) *UnsafeRingBuffer {
+	return &UnsafeRingBuffer{rb}
 }
 
 // vim: foldmethod=marker

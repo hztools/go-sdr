@@ -241,4 +241,25 @@ func TestRingBufferCloseWithData(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 }
 
+func TestUnsafeRingBuffer(t *testing.T) {
+	rb, err := stream.NewRingBuffer(0, sdr.SampleFormatC64, stream.RingBufferOptions{
+		Slots:      10,
+		SlotLength: 1024,
+		BlockReads: true,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, rb)
+
+	urb := stream.NewUnsafeRingBuffer(rb)
+	assert.Equal(t, 0, urb.WritePeek())
+
+	b := make(sdr.SamplesC64, 1024)
+	rb.Write(b)
+
+	assert.Equal(t, 1, urb.WritePeek())
+	urb.WritePoke(0)
+	assert.Equal(t, 2, urb.WritePeek())
+
+}
+
 // vim: foldmethod=marker
