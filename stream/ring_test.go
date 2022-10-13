@@ -259,7 +259,31 @@ func TestUnsafeRingBuffer(t *testing.T) {
 	assert.Equal(t, 1, urb.WritePeek())
 	urb.WritePoke(0)
 	assert.Equal(t, 2, urb.WritePeek())
+}
 
+func TestUnsafeRingBufferUnsafe(t *testing.T) {
+	rb, err := stream.NewRingBuffer(0, sdr.SampleFormatU8, stream.RingBufferOptions{
+		Slots:      10,
+		SlotLength: 1024,
+		BlockReads: true,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, rb)
+
+	urb := stream.NewUnsafeRingBuffer(rb)
+
+	base := (*[16][2]uint8)(urb.WritePeekUnsafePointer())
+	(*base)[0][0] = 0xFF
+	(*base)[0][1] = 0xAB
+
+	urb.WritePoke(2)
+
+	buf := make(sdr.SamplesU8, 1024)
+	n, _ := urb.Read(buf)
+	assert.Equal(t, 2, n)
+
+	assert.Equal(t, uint8(0xFF), buf[0][0])
+	assert.Equal(t, uint8(0xAB), buf[0][1])
 }
 
 // vim: foldmethod=marker

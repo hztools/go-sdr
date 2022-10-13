@@ -23,6 +23,7 @@ package stream
 import (
 	"fmt"
 	"sync"
+	"unsafe"
 
 	"hz.tools/sdr"
 )
@@ -64,14 +65,14 @@ type RingBufferOptions struct {
 
 	// IQBufferSlotSlicer is responsible for returning a slice of the IQ Buffer
 	// allocated to a specific slot. If Nil, this will use the stock Slicer.
-	IQBufferSlotSlicer func(sdr.Samples, int) sdr.Samples
+	IQBufferSlotSlicer func(sdr.Samples, int, RingBufferOptions) sdr.Samples
 }
 
-func (opts RingBufferOptions) getIQBufferSlotSlicer() func(sdr.Samples, int) sdr.Samples {
+func (opts RingBufferOptions) getIQBufferSlotSlicer() func(sdr.Samples, int, RingBufferOptions) sdr.Samples {
 	if opts.IQBufferSlotSlicer != nil {
 		return opts.IQBufferSlotSlicer
 	}
-	return func(s sdr.Samples, id int) sdr.Samples {
+	return func(s sdr.Samples, id int, opts RingBufferOptions) sdr.Samples {
 		base := (id * opts.slotLength())
 		return s.Slice(base, base+opts.slotLength())
 	}
@@ -133,7 +134,7 @@ func (rb *RingBuffer) slot(n int) (sdr.Samples, error) {
 	if n >= rb.slots() {
 		return nil, fmt.Errorf("RingBuffer: Slot is out of range")
 	}
-	return rb.opts.getIQBufferSlotSlicer()(rb.buf, n), nil
+	return rb.opts.getIQBufferSlotSlicer()(rb.buf, n, rb.opts), nil
 }
 
 // advanceReadCursor (UNSAFE) will return the slot number of the next slot to be read.
@@ -348,6 +349,16 @@ func (urb *UnsafeRingBuffer) WritePeek() int {
 	return urb.widx
 }
 
+// WritePeekUnsafePointer will return an unsafe.Pointer pointing to
+// the 0th element of the Slot. This method has the same caviats as WritePeek,
+// and more, since it's wildly unsafe.
+func (urb *UnsafeRingBuffer) WritePeekUnsafePointer() unsafe.Pointer {
+	b := sdr.MustUnsafeSamplesAsBytes(
+		urb.opts.getIQBufferSlotSlicer()(urb.buf, urb.widx, urb.opts),
+	)
+	return unsafe.Pointer(&b[0])
+}
+
 // WritePoke will write the next slot (blindly) assuming that the caller
 // has used WritePeek to figure out what cell we'll be using next, infer the
 // slice based on the layout, written data there, and ensured that no race
@@ -361,6 +372,12 @@ func (urb *UnsafeRingBuffer) WritePoke(n int) {
 	if !urb.opts.BlockReads {
 		urb.cond.Signal()
 	}
+}
+
+// UnsafeRingBuffer will return the underlying ring buffer as created by
+// the IQBufferAllocator.
+func (urb *UnsafeRingBuffer) UnsafeGetIQBuffer() sdr.Samples {
+	return urb.buf
 }
 
 // NewUnsafeRingBuffer will create a RingBuffer wrapper around the provided
