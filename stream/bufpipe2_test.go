@@ -88,7 +88,7 @@ func TestBufPipe2Close(t *testing.T) {
 }
 
 func BenchmarkBufPipe2(b *testing.B) {
-	for _, i := range []int{0, 1, 2, 4, 8, 16, 32, 64, 128} {
+	for _, i := range []int{0, 1, 8, 128} {
 		b.Run(fmt.Sprintf("Cap-%d", i), func(b *testing.B) {
 			pipe, err := stream.NewBufPipe2(i, 0, sdr.SampleFormatC64)
 			assert.NoError(b, err)
