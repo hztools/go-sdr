@@ -28,12 +28,12 @@ import "C"
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 	"unsafe"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/yikes"
 	"hz.tools/sdr/stream"
 )
 
@@ -102,13 +102,15 @@ type readStreamer struct {
 	rxStreamer C.uhd_rx_streamer_handle
 	rxMetadata C.uhd_rx_metadata_handle
 
+	iqLen int
+
 	timing struct {
 		Set    bool
 		Offset time.Duration
 	}
 }
 
-type pipeWriters []*stream.BufPipe2
+type pipeWriters []*stream.UnsafeRingBuffer
 
 func (pr pipeWriters) CloseWithError(e error) error {
 	var ret error
@@ -169,12 +171,6 @@ func (rc *readStreamer) run() {
 	defer rc.cancel()
 	defer rc.wg.Done()
 
-	var ciqLen C.size_t
-	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rc.rxStreamer, &ciqLen)); err != nil {
-		rc.writers.CloseWithError(err)
-		return
-	}
-
 	var channels = len(rc.writers)
 	if channels > 32 {
 		panic("UHD: too many rx channels set")
@@ -186,14 +182,14 @@ func (rc *readStreamer) run() {
 		errCode   C.uhd_rx_metadata_error_code_t
 		streamCmd C.uhd_stream_cmd_t
 
-		iqLength = int(ciqLen)
-		iqSize   = iqLength * rc.sampleFormat.Size()
-		ciqSize  = C.size_t(iqSize)
+		iqLength = rc.iqLen
+		ciqLen   = C.size_t(iqLength)
 
 		cIQBuffers = make([]unsafe.Pointer, channels)
 	)
+
 	for i := 0; i < len(rc.writers); i++ {
-		cIQBuffers[i] = C.malloc(C.size_t(ciqSize))
+		cIQBuffers[i] = rc.writers[i].WritePeekUnsafePointer()
 	}
 
 	var hasTimeSpec = C.bool(rc.timing.Set)
@@ -208,7 +204,13 @@ func (rc *readStreamer) run() {
 		rc.writers.CloseWithError(err)
 	}
 
+	var (
+		dFac = time.Duration(1000)
+		dAvg time.Duration
+	)
+
 	for {
+		start := time.Now()
 		i++
 		if err := rc.ctx.Err(); err != nil {
 			return
@@ -233,19 +235,15 @@ func (rc *readStreamer) run() {
 		}
 
 		for i := 0; i < channels; i++ {
-			ciq := cIQBuffers[i]
-			writer := rc.writers[i]
-			iq, err := yikes.Samples(uintptr(ciq), iqLength, rc.sampleFormat)
-			if err != nil {
-				rc.writers.CloseWithError(uhdRxMetadataError(errCode))
-				return
-			}
-			iq = iq.Slice(0, int(n))
-			_, err = writer.Write(iq)
-			if err != nil {
-				rc.writers.CloseWithError(err)
-				return
-			}
+			rc.writers[i].WritePoke(iqLength)
+			cIQBuffers[i] = rc.writers[i].WritePeekUnsafePointer()
+		}
+		end := time.Now()
+
+		dAvg = ((dAvg * (dFac - 1)) + end.Sub(start)) / dFac
+
+		if i%1000 == 0 {
+			log.Printf("Rx loop agv: %s", dAvg)
 		}
 	}
 }
@@ -389,6 +387,14 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		return nil, err
 	}
 
+	var ciqLen C.size_t
+	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rxStreamer, &ciqLen)); err != nil {
+		C.uhd_rx_streamer_free(&rxStreamer)
+		C.uhd_rx_metadata_free(&rxMetadata)
+		return nil, err
+	}
+	iqLen := int(ciqLen)
+
 	sr, err := s.GetSampleRate()
 	if err != nil {
 		C.uhd_rx_streamer_free(&rxStreamer)
@@ -398,12 +404,15 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 
 	bufferLength := opts.BufferLength
 
-	pipes := make([]*stream.BufPipe2, len(opts.RxChannels))
+	pipes := make([]*stream.UnsafeRingBuffer, len(opts.RxChannels))
 	readers := make(sdr.ReadClosers, len(opts.RxChannels))
 
 	for i := range opts.RxChannels {
-		// TODO(paultag): 10 isn't right here.
-		pipe, err := stream.NewBufPipe2(bufferLength, sr, s.sampleFormat)
+		pipe, err := newCUnsafeRingBuffer(sr, s.sampleFormat, stream.RingBufferOptions{
+			Slots:      bufferLength,
+			SlotLength: iqLen,
+			BlockReads: true,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -415,6 +424,8 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		wg:     sync.WaitGroup{},
 		ctx:    ctx,
 		cancel: cancel,
+
+		iqLen: int(ciqLen),
 
 		sampleFormat: s.sampleFormat,
 		writers:      pipes,
