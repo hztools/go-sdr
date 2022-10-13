@@ -28,7 +28,6 @@ import "C"
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 	"unsafe"
@@ -204,13 +203,7 @@ func (rc *readStreamer) run() {
 		rc.writers.CloseWithError(err)
 	}
 
-	var (
-		dFac = time.Duration(1000)
-		dAvg time.Duration
-	)
-
 	for {
-		start := time.Now()
 		i++
 		if err := rc.ctx.Err(); err != nil {
 			return
@@ -237,13 +230,6 @@ func (rc *readStreamer) run() {
 		for i := 0; i < channels; i++ {
 			rc.writers[i].WritePoke(iqLength)
 			cIQBuffers[i] = rc.writers[i].WritePeekUnsafePointer()
-		}
-		end := time.Now()
-
-		dAvg = ((dAvg * (dFac - 1)) + end.Sub(start)) / dFac
-
-		if i%1000 == 0 {
-			log.Printf("Rx loop agv: %s", dAvg)
 		}
 	}
 }
