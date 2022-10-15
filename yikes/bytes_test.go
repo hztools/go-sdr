@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/yikes"
+	"hz.tools/sdr/yikes"
 )
 
 func TestSamplesC64(t *testing.T) {

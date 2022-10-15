@@ -33,8 +33,8 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/yikes"
 	"hz.tools/sdr/stream"
+	"hz.tools/sdr/yikes"
 )
 
 // writeCloser contains all the allocated structs to be used by the writeer

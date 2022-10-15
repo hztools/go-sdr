@@ -30,7 +30,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/yikes"
+	"hz.tools/sdr/yikes"
 )
 
 // StartTx implements the sdr.Transmitter interface.

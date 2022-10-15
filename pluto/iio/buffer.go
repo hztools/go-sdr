@@ -30,7 +30,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"hz.tools/sdr/internal/yikes"
+	"hz.tools/sdr/yikes"
 )
 
 // Buffer wraps an iio_buffer, which allows for reading samples from and writing

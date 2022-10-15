@@ -34,8 +34,8 @@ import "C"
 
 import (
 	"hz.tools/sdr"
-	"hz.tools/sdr/internal/yikes"
 	"hz.tools/sdr/stream"
+	"hz.tools/sdr/yikes"
 )
 
 // slicer will do the IQ Buffer slicing for us.
