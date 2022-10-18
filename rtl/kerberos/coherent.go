@@ -30,16 +30,7 @@ import (
 )
 
 // CoherentReadCloser is a slice of ReadClosers, which are in sample lock.
-type CoherentReadCloser []sdr.ReadCloser
-
-// Readers will return the ReadClosers as a Reader slice.
-func (cr CoherentReadCloser) Readers() []sdr.Reader {
-	ret := make([]sdr.Reader, len(cr))
-	for i := range cr {
-		ret[i] = cr[i]
-	}
-	return ret
-}
+type CoherentReadCloser sdr.ReadClosers
 
 // ReadersC64 will return a Reader slice, but converting to C64 while
 // writing them out.
