@@ -49,6 +49,8 @@ type Sdr struct {
 	sampleRate   uint
 	bufferLength int
 
+	nice *int
+
 	hi sdr.HardwareInfo
 }
 

@@ -32,6 +32,7 @@ import (
 	"time"
 	"unsafe"
 
+	"hz.tools/nice"
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
 	"hz.tools/sdr/yikes"
@@ -98,7 +99,7 @@ func (wc *writeCloser) Close() error {
 
 // run is a goroutine to handle copying IQ data from the UHD device
 // to the Pipe contained inside the writeCloser.
-func (wc *writeCloser) run() {
+func (wc *writeCloser) run() error {
 	defer wc.pipe.Close()
 	defer wc.cancel()
 	defer wc.wg.Done()
@@ -107,7 +108,7 @@ func (wc *writeCloser) run() {
 
 	if err := rvToError(C.uhd_tx_streamer_max_num_samps(wc.txStreamer, &ciqLen)); err != nil {
 		wc.pipe.CloseWithError(err)
-		return
+		return err
 	}
 
 	var (
@@ -124,7 +125,7 @@ func (wc *writeCloser) run() {
 	iq, err := sdr.MakeSamples(wc.sampleFormat, iqLength)
 	if err != nil {
 		wc.pipe.CloseWithError(err)
-		return
+		return err
 	}
 
 	// Blank out the C memory
@@ -139,7 +140,7 @@ func (wc *writeCloser) run() {
 			wc.txStreamer, &ciq, ciqLen, &wc.txMetadata,
 			0.1, &cn,
 		)); err != nil {
-			return
+			return err
 		}
 	}
 
@@ -150,8 +151,9 @@ func (wc *writeCloser) run() {
 		if n != iq.Length() {
 			if rferr == nil {
 				// this is bad, something is broken
-				wc.pipe.CloseWithError(fmt.Errorf("uhd: ReadFull was short"))
-				return
+				err := fmt.Errorf("uhd: ReadFull was short")
+				wc.pipe.CloseWithError(err)
+				return err
 			}
 		}
 
@@ -163,20 +165,23 @@ func (wc *writeCloser) run() {
 			0.1, &cn,
 		)); err != nil {
 			// wc.pipe.CloseWithError(err)
-			return
+			return err
 		}
 
 		if rferr != nil {
 			// if our ReadFull had an error, we can bail now that we sent
 			// the last windowsworth.
-			return
+			return rferr
 		}
 	}
 }
 
 // StartTxAt will start TX at the provided Duration offset.
 func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
-	opts := startTxOpts{BufferLength: s.bufferLength}
+	opts := startTxOpts{
+		BufferLength: s.bufferLength,
+		Nice:         s.nice,
+	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
 	return s.startTx(opts)
@@ -184,12 +189,16 @@ func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
 
 // StartTx implements the sdr.Sdr interface.
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
-	opts := startTxOpts{BufferLength: s.bufferLength}
+	opts := startTxOpts{
+		BufferLength: s.bufferLength,
+		Nice:         s.nice,
+	}
 	return s.startTx(opts)
 }
 
 type startTxOpts struct {
 	BufferLength int
+	Nice         *int
 	Timing       struct {
 		Set    bool
 		Offset time.Duration
@@ -292,7 +301,12 @@ func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 		txMetadata: txMetadata,
 	}
 	wc.wg.Add(1)
-	go wc.run()
+
+	if opts.Nice == nil {
+		go wc.run()
+	} else {
+		go nice.Run(*opts.Nice, wc.run)
+	}
 	return wc, nil
 }
 

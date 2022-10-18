@@ -32,6 +32,7 @@ import (
 	"time"
 	"unsafe"
 
+	"hz.tools/nice"
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
 )
@@ -165,7 +166,7 @@ func (rc *readStreamer) Close() error {
 
 // run is a goroutine to handle copying IQ data from the UHD device
 // to the Pipe contained inside the readStreamer.
-func (rc *readStreamer) run() {
+func (rc *readStreamer) run() error {
 	defer rc.writers.Close()
 	defer rc.cancel()
 	defer rc.wg.Done()
@@ -201,12 +202,13 @@ func (rc *readStreamer) run() {
 
 	if err := rvToError(C.uhd_rx_streamer_issue_stream_cmd(rc.rxStreamer, &streamCmd)); err != nil {
 		rc.writers.CloseWithError(err)
+		return err
 	}
 
 	for {
 		i++
 		if err := rc.ctx.Err(); err != nil {
-			return
+			return err
 		}
 
 		if err := rvToError(C.uhd_rx_streamer_recv(
@@ -214,17 +216,18 @@ func (rc *readStreamer) run() {
 			3.0, false, &n,
 		)); err != nil {
 			rc.writers.CloseWithError(err)
-			return
+			return err
 		}
 
 		if err := rvToError(C.uhd_rx_metadata_error_code(rc.rxMetadata, &errCode)); err != nil {
 			rc.writers.CloseWithError(err)
-			return
+			return err
 		}
 
 		if errCode != C.UHD_RX_METADATA_ERROR_CODE_NONE {
-			rc.writers.CloseWithError(uhdRxMetadataError(errCode))
-			return
+			err := uhdRxMetadataError(errCode)
+			rc.writers.CloseWithError(err)
+			return err
 		}
 
 		for i := 0; i < channels; i++ {
@@ -237,6 +240,7 @@ func (rc *readStreamer) run() {
 type startRxOpts struct {
 	BufferLength int
 	RxChannels   []int
+	Nice         *int
 	Timing       struct {
 		Set    bool
 		Offset time.Duration
@@ -252,6 +256,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	opts := startRxOpts{
 		BufferLength: s.bufferLength,
 		RxChannels:   s.rxChannels,
+		Nice:         s.nice,
 	}
 	rcs, err := s.startRx(opts)
 	if err != nil {
@@ -269,6 +274,7 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 	opts := startRxOpts{
 		BufferLength: s.bufferLength,
 		RxChannels:   s.rxChannels,
+		Nice:         s.nice,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -294,6 +300,7 @@ func (s *Sdr) StartCoherentRxAt(d time.Duration) (sdr.ReadClosers, error) {
 	opts := startRxOpts{
 		BufferLength: s.bufferLength,
 		RxChannels:   s.rxChannels,
+		Nice:         s.nice,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -422,7 +429,12 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 	rc.timing.Set = opts.Timing.Set
 	rc.timing.Offset = opts.Timing.Offset
 	rc.wg.Add(1)
-	go rc.run()
+
+	if opts.Nice == nil {
+		go rc.run()
+	} else {
+		go nice.Run(*opts.Nice, rc.run)
+	}
 	return readers, nil
 }
 
