@@ -28,6 +28,7 @@ import "C"
 import (
 	"fmt"
 
+	"hz.tools/nice"
 	"hz.tools/rf"
 	"hz.tools/sdr"
 	"hz.tools/sdr/debug"
@@ -49,7 +50,7 @@ type Sdr struct {
 	sampleRate   uint
 	bufferLength int
 
-	nice *int
+	nice *nice.Options
 
 	hi sdr.HardwareInfo
 }
@@ -81,9 +82,9 @@ type Options struct {
 	// to help avoid overruns. If set to 0, this will use a default value.
 	BufferLength int
 
-	// Nice will set the UNIX 'nice' value to run IQ I/O as. Setting this value
+	// NiceOpts will set the UNIX 'nice' value to run IQ I/O as. Setting this value
 	// will consume an OS thread to only deal with IQ I/O.
-	Nice *int
+	NiceOpts *nice.Options
 }
 
 func (opts Options) getBufferLength() int {
@@ -147,7 +148,7 @@ func Open(opts Options) (*Sdr, error) {
 		txChannel:    opts.TxChannel,
 		hi:           hi,
 		bufferLength: opts.getBufferLength(),
-		nice:         opts.Nice,
+		nice:         opts.NiceOpts,
 	}, nil
 }
 

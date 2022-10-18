@@ -180,7 +180,7 @@ func (wc *writeCloser) run() error {
 func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
 	opts := startTxOpts{
 		BufferLength: s.bufferLength,
-		Nice:         s.nice,
+		NiceOpts:     s.nice,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -191,14 +191,14 @@ func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 	opts := startTxOpts{
 		BufferLength: s.bufferLength,
-		Nice:         s.nice,
+		NiceOpts:     s.nice,
 	}
 	return s.startTx(opts)
 }
 
 type startTxOpts struct {
 	BufferLength int
-	Nice         *int
+	NiceOpts     *nice.Options
 	Timing       struct {
 		Set    bool
 		Offset time.Duration
@@ -302,10 +302,13 @@ func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 	}
 	wc.wg.Add(1)
 
-	if opts.Nice == nil {
+	if opts.NiceOpts == nil {
 		go wc.run()
 	} else {
-		go nice.Run(*opts.Nice, wc.run)
+		if !opts.NiceOpts.IgnoreErrors {
+			return nil, fmt.Errorf("uhd: nice.NiceOpts must have IgnoreErrors set to true")
+		}
+		go nice.Run(*opts.NiceOpts, wc.run)
 	}
 	return wc, nil
 }
