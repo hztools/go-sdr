@@ -64,41 +64,38 @@ func BeamformAngles2D(
 	}
 
 	var (
-		// radians = degrees * π/180 (really, (tau/360, but...)
-		angleR   float64 = angle * (math.Pi / 180)
-		angleSin float64 = math.Sin(angleR)
-
 		ret = make([]complex64, len(antennas))
 	)
 
 	for i, antenna := range antennas {
 		var (
-			distance = computeDistance(center, antenna)
-
-			// phaseShift is in Degrees
-			phaseShift  = (360 * distance * angleSin) / frequency.Wavelength()
-			phaseShiftR = phaseShift * (math.Pi / 180)
+			// "natural" triangle
+			nDistance = computeDistance(center, antenna)
 		)
 
-		// Right, so we have degrees, let's work out the complex value here.
-		// We know the magnitude is "1" (unit square, no gain), but we need
-		// to rotate the 1+0j by the number of degrees.
-		//
-		// Going back to trig, we have the hypotenuse, and the angle, and
-		// we need to work out the opposite and adjacent lengths of the
-		// right triangle.
-		//
-		//         /+ <-- cmplx here
-		//        / |
-		//       /  |
-		//    1 /   |
-		//     /    | <--- "Opposite" (Imag)
-		//    /     |
-		//   /      |
-		//  +-------+
-		//  ^      \_______ "Adjacent" (Real)
-		//   0+0i
-		//
+		// before we go any further, if the distance between the synthetic
+		// point and the antenna point is 0, it's not worth going on, since
+		// the trig will go whacky anyway.
+		if nDistance == 0 {
+			ret[i] = 1 // really 1+0i
+			continue
+		}
+
+		var (
+			angleR = angle * (math.Pi / 180)
+
+			// nAdjacent = (center[0] - antenna[0])
+			nOpposite = (center[1] - antenna[1])
+			nThetaR   = math.Asin(nOpposite / nDistance)
+
+			// "phase" triangle
+			pDistance = nDistance
+			pThetaR   = (angleR - nThetaR)
+			pOpposite = math.Sin(pThetaR) * pDistance
+
+			phaseShift  = (pOpposite / frequency.Wavelength()) * 360
+			phaseShiftR = phaseShift * (math.Pi / 180)
+		)
 
 		ret[i] = complex(
 			float32(math.Cos(phaseShiftR)), // "Adjacent"
