@@ -144,21 +144,106 @@ func TestBeamformMath2DWavelength(t *testing.T) {
 		[2]float64{0, 0}, // synthetic center is at 0,0
 		[][2]float64{
 			[2]float64{0, 0},
-			[2]float64{0, 0.5}, // we're 180 degrees out of phase
+			[2]float64{0, 0.25}, // we're 90 degrees out of phase
+			[2]float64{0, 0.5},  // we're 180 degrees out of phase
+			[2]float64{0, 0.75}, // we're 270 degrees out of phase
+		},
+	)
+	assert.InEpsilon(t, math.Pi/2, cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+	assert.InEpsilon(t, math.Pi, cmplx.Phase(cmplx.Conj(complex128(rotations[2]))), 1e-4)
+	assert.InEpsilon(t, -(math.Pi / 2), cmplx.Phase(cmplx.Conj(complex128(rotations[3]))), 1e-4)
+}
+
+func TestBeamformMath2DWavelengthHard(t *testing.T) {
+	rotations := stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		45,               // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.70711, 0.70711}, // distance of 1 wavelength
+		},
+	)
+	assert.InEpsilon(t, 1, 1+cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		-45,              // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.70711, 0.70711}, // distance of 1 wavelength
+		},
+	)
+	assert.InEpsilon(t, 1, 1+cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		315,              // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.70711, 0.70711}, // distance of 1 wavelength
+		},
+	)
+	assert.InEpsilon(t, 1, 1+cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+
+	// now try half phase of the above
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		45,               // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.35355, 0.35355}, // distance of 0.5 wavelength
 		},
 	)
 	assert.InEpsilon(t, math.Pi, cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
 
 	rotations = stream.BeamformAngles2D(
 		299.792*rf.MHz,   // mostly just about 1m wavelength
-		0,                // no beamform angle
+		-45,              // no beamform angle
 		[2]float64{0, 0}, // synthetic center is at 0,0
 		[][2]float64{
 			[2]float64{0, 0},
-			[2]float64{0, 0.75}, // we're 270 degrees out of phase
+			[2]float64{0.35355, 0.35355}, // distance of 0.5 wavelength
 		},
 	)
-	assert.InEpsilon(t, -(math.Pi / 2), cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+	assert.InEpsilon(t, 1, 1+cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		315,              // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.35355, 0.35355}, // distance of 0.5 wavelength
+		},
+	)
+	assert.InEpsilon(t, 1, 1+cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		135,              // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.35355, 0.35355}, // distance of 0.5 wavelength
+		},
+	)
+	assert.InEpsilon(t, 1, 1+cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		225,              // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0.35355, 0.35355}, // distance of 0.5 wavelength
+		},
+	)
+	assert.InEpsilon(t, -math.Pi, cmplx.Phase(cmplx.Conj(complex128(rotations[1]))), 1e-4)
 }
 
 // vim: foldmethod=marker
