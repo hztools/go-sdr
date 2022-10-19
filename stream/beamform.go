@@ -70,7 +70,7 @@ func BeamformAngles2D(
 	for i, antenna := range antennas {
 		var (
 			// "natural" triangle
-			nDistance = computeDistance(center, antenna)
+			nDistance = computeDistance(antenna, center)
 		)
 
 		// before we go any further, if the distance between the synthetic
@@ -84,13 +84,12 @@ func BeamformAngles2D(
 		var (
 			angleR = angle * (math.Pi / 180)
 
-			// nAdjacent = (center[0] - antenna[0])
-			nOpposite = (center[1] - antenna[1])
+			nOpposite = (antenna[1] - center[1])
 			nThetaR   = math.Asin(nOpposite / nDistance)
 
 			// "phase" triangle
 			pDistance = nDistance
-			pThetaR   = (angleR - nThetaR)
+			pThetaR   = (nThetaR + angleR)
 			pOpposite = math.Sin(pThetaR) * pDistance
 
 			phaseShift  = (pOpposite / frequency.Wavelength()) * 360

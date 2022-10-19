@@ -148,6 +148,17 @@ func TestBeamformMath2DWavelength(t *testing.T) {
 		},
 	)
 	assert.InEpsilon(t, math.Pi, cmplx.Phase(complex128(rotations[1])), 1e-4)
+
+	rotations = stream.BeamformAngles2D(
+		299.792*rf.MHz,   // mostly just about 1m wavelength
+		0,                // no beamform angle
+		[2]float64{0, 0}, // synthetic center is at 0,0
+		[][2]float64{
+			[2]float64{0, 0},
+			[2]float64{0, 0.75}, // we're 270 degrees out of phase
+		},
+	)
+	assert.InEpsilon(t, -(math.Pi / 2), cmplx.Phase(complex128(rotations[1])), 1e-4)
 }
 
 // vim: foldmethod=marker
