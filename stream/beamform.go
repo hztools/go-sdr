@@ -23,6 +23,7 @@ package stream
 import (
 	"fmt"
 	"math"
+	"math/cmplx"
 
 	"hz.tools/rf"
 	"hz.tools/sdr"
@@ -96,10 +97,10 @@ func BeamformAngles2D(
 			phaseShiftR = phaseShift * (math.Pi / 180)
 		)
 
-		ret[i] = complex(
-			float32(math.Cos(phaseShiftR)), // "Adjacent"
-			float32(math.Sin(phaseShiftR)), // "Opposite"
-		)
+		ret[i] = complex64(cmplx.Conj(complex(
+			math.Cos(phaseShiftR), // "Adjacent"
+			math.Sin(phaseShiftR), // "Opposite"
+		)))
 	}
 
 	return ret
