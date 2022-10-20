@@ -37,11 +37,12 @@ type Sdr [4]*rtl.Sdr
 // New will create a new Kerberos SDR
 func New(i1, i2, i3, i4 uint, windowSize uint) (*Sdr, error) {
 	var (
-		err error
-		sdr = &Sdr{}
+		err  error
+		sdr  = &Sdr{}
+		idxs = [4]uint{i1, i2, i3, i4}
 	)
 	for i := range sdr {
-		sdr[i], err = rtl.New(uint(i), windowSize)
+		sdr[i], err = rtl.New(idxs[i], windowSize)
 		if err != nil {
 			return nil, err
 		}
