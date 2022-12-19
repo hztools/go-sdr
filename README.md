@@ -18,3 +18,26 @@ IQ samples.
 | [uhd](uhd/README.md)                   | i16/c64/i8 | RX/TX  | Good  |
 | [airspyhf](airspyhf/README.md)         | c64        | RX     | Exp   |
 
+## Toggles for building hz.tools/sdr.
+
+| Build Flag     | Supported | Description                                        |
+|----------------|-----------|----------------------------------------------------|
+| sdr.nosimd     | yes       | Build without any SIMD ASM (useful for older CPUs) |
+| sdr.nortl      | yes       | Build without any RTL-SDR support                  |
+| sdr.nohackrf   | yes       | Build without any HackRF support                   |
+| sdr.nopluto    | yes       | Build without any Pluto / iio support              |
+| sdr.nouhd      | yes       | Build without any UHD support                      |
+| sdr.noairspyhf | yes       | Build without any AirspyHF+ Support                |
+| static         | yes       | Internally prepare for a static build              |
+
+### -tags=static
+
+When building a static binary, the `-tags=static` flag will pass a `--static`
+flag to `pkg-config` to get all the right dependencies to build the .a rather
+than the .so into the binary. However, due to the LDFLAGS restrictions, we
+can't pass the other magic required to actually build a static binary yet. For
+that, you'd have to invoke the build similar to:
+
+```
+$ go build --ldflags='-extldflags "-static"' -tags=static .
+```
