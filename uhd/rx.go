@@ -32,7 +32,6 @@ import (
 	"time"
 	"unsafe"
 
-	"hz.tools/nice"
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
 )
@@ -240,7 +239,6 @@ func (rc *readStreamer) run() error {
 type startRxOpts struct {
 	BufferLength int
 	RxChannels   []int
-	NiceOpts     *nice.Options
 	Timing       struct {
 		Set    bool
 		Offset time.Duration
@@ -256,7 +254,6 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	opts := startRxOpts{
 		BufferLength: s.bufferLength,
 		RxChannels:   s.rxChannels,
-		NiceOpts:     s.nice,
 	}
 	rcs, err := s.startRx(opts)
 	if err != nil {
@@ -274,7 +271,6 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 	opts := startRxOpts{
 		BufferLength: s.bufferLength,
 		RxChannels:   s.rxChannels,
-		NiceOpts:     s.nice,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -300,7 +296,6 @@ func (s *Sdr) StartCoherentRxAt(d time.Duration) (sdr.ReadClosers, error) {
 	opts := startRxOpts{
 		BufferLength: s.bufferLength,
 		RxChannels:   s.rxChannels,
-		NiceOpts:     s.nice,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -430,14 +425,7 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 	rc.timing.Offset = opts.Timing.Offset
 	rc.wg.Add(1)
 
-	if opts.NiceOpts == nil {
-		go rc.run()
-	} else {
-		if !opts.NiceOpts.IgnoreErrors {
-			return nil, fmt.Errorf("uhd: nice.NiceOpts must have IgnoreErrors set to true")
-		}
-		go nice.Run(*opts.NiceOpts, rc.run)
-	}
+	go rc.run()
 	return readers, nil
 }
 

@@ -32,7 +32,6 @@ import (
 	"time"
 	"unsafe"
 
-	"hz.tools/nice"
 	"hz.tools/sdr"
 	"hz.tools/sdr/stream"
 	"hz.tools/sdr/yikes"
@@ -180,7 +179,6 @@ func (wc *writeCloser) run() error {
 func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
 	opts := startTxOpts{
 		BufferLength: s.bufferLength,
-		NiceOpts:     s.nice,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -191,14 +189,12 @@ func (s *Sdr) StartTxAt(d time.Duration) (sdr.WriteCloser, error) {
 func (s *Sdr) StartTx() (sdr.WriteCloser, error) {
 	opts := startTxOpts{
 		BufferLength: s.bufferLength,
-		NiceOpts:     s.nice,
 	}
 	return s.startTx(opts)
 }
 
 type startTxOpts struct {
 	BufferLength int
-	NiceOpts     *nice.Options
 	Timing       struct {
 		Set    bool
 		Offset time.Duration
@@ -301,15 +297,7 @@ func (s *Sdr) startTx(opts startTxOpts) (sdr.WriteCloser, error) {
 		txMetadata: txMetadata,
 	}
 	wc.wg.Add(1)
-
-	if opts.NiceOpts == nil {
-		go wc.run()
-	} else {
-		if !opts.NiceOpts.IgnoreErrors {
-			return nil, fmt.Errorf("uhd: nice.NiceOpts must have IgnoreErrors set to true")
-		}
-		go nice.Run(*opts.NiceOpts, wc.run)
-	}
+	go wc.run()
 	return wc, nil
 }
 
