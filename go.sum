@@ -11,6 +11,7 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
+golang.org/x/sys v0.1.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
@@ -18,5 +19,7 @@ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 hz.tools/nice v0.0.0-20221018032346-6f6e1c9d4b06 h1:nab6uuWN2TX1+0ZBw9gV9hyZ7g4mX9tTQ5vLstMM7y8=
 hz.tools/nice v0.0.0-20221018032346-6f6e1c9d4b06/go.mod h1:9OtaKfINhnByGQIWxRYKUsJhonHw3Hsjt4C8XdJh05s=
+hz.tools/nice v0.0.0-20221219030408-bb857d731555 h1:Krw5dxXzlCr7ogsSaX1Z6U+b8LVI5RMGGcca4IUsFNg=
+hz.tools/nice v0.0.0-20221219030408-bb857d731555/go.mod h1:HWfe1Wz+889gLpr3J7NiJzr1CVifV3VVI6WPBAD89vU=
 hz.tools/rf v0.0.7 h1:jzIP+Q9We0B1lEZgQp7VTVAPtO/yuTwhNRxkCG/lWOg=
 hz.tools/rf v0.0.7/go.mod h1:wTwZ2xbRvTgaa5S7y34NPMg3YY5hYTlhpBbPlWYcMSE=
