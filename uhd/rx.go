@@ -33,7 +33,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/stream"
+	"hz.tools/sdr/yikes"
 )
 
 type uhdRxMetadataError int
@@ -109,7 +109,7 @@ type readStreamer struct {
 	}
 }
 
-type pipeWriters []*stream.UnsafeRingBuffer
+type pipeWriters []sdr.PipeWriter
 
 func (pr pipeWriters) CloseWithError(e error) error {
 	var ret error
@@ -181,14 +181,16 @@ func (rc *readStreamer) run() error {
 		errCode   C.uhd_rx_metadata_error_code_t
 		streamCmd C.uhd_stream_cmd_t
 
-		iqLength = rc.iqLen
-		ciqLen   = C.size_t(iqLength)
+		iqLength  = rc.iqLen
+		iqSize    = iqLength * rc.sampleFormat.Size()
+		ciqSize   = C.size_t(iqSize)
+		ciqLength = C.size_t(iqLength)
 
 		cIQBuffers = make([]unsafe.Pointer, channels)
 	)
 
-	for i := 0; i < len(rc.writers); i++ {
-		cIQBuffers[i] = rc.writers[i].WritePeekUnsafePointer()
+	for i := 0; i < channels; i++ {
+		cIQBuffers[i] = C.malloc(C.size_t(ciqSize))
 	}
 
 	var hasTimeSpec = C.bool(rc.timing.Set)
@@ -211,7 +213,7 @@ func (rc *readStreamer) run() error {
 		}
 
 		if err := rvToError(C.uhd_rx_streamer_recv(
-			rc.rxStreamer, &cIQBuffers[0], ciqLen, &rc.rxMetadata,
+			rc.rxStreamer, &cIQBuffers[0], ciqLength, &rc.rxMetadata,
 			3.0, false, &n,
 		)); err != nil {
 			rc.writers.CloseWithError(err)
@@ -230,8 +232,19 @@ func (rc *readStreamer) run() error {
 		}
 
 		for i := 0; i < channels; i++ {
-			rc.writers[i].WritePoke(iqLength)
-			cIQBuffers[i] = rc.writers[i].WritePeekUnsafePointer()
+			ciq := cIQBuffers[i]
+			writer := rc.writers[i]
+			iq, err := yikes.Samples(uintptr(ciq), iqLength, rc.sampleFormat)
+			if err != nil {
+				rc.writers.CloseWithError(uhdRxMetadataError(errCode))
+				return err
+			}
+			iq = iq.Slice(0, int(n))
+			_, err = writer.Write(iq)
+			if err != nil {
+				rc.writers.CloseWithError(err)
+				return err
+			}
 		}
 	}
 }
@@ -252,8 +265,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	}
 
 	opts := startRxOpts{
-		BufferLength: s.bufferLength,
-		RxChannels:   s.rxChannels,
+		RxChannels: s.rxChannels,
 	}
 	rcs, err := s.startRx(opts)
 	if err != nil {
@@ -269,8 +281,7 @@ func (s *Sdr) StartRxAt(d time.Duration) (sdr.ReadCloser, error) {
 	}
 
 	opts := startRxOpts{
-		BufferLength: s.bufferLength,
-		RxChannels:   s.rxChannels,
+		RxChannels: s.rxChannels,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -294,8 +305,7 @@ func (s *Sdr) StartCoherentRx() (sdr.ReadClosers, error) {
 // provided offset.
 func (s *Sdr) StartCoherentRxAt(d time.Duration) (sdr.ReadClosers, error) {
 	opts := startRxOpts{
-		BufferLength: s.bufferLength,
-		RxChannels:   s.rxChannels,
+		RxChannels: s.rxChannels,
 	}
 	opts.Timing.Set = true
 	opts.Timing.Offset = d
@@ -375,13 +385,13 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		return nil, err
 	}
 
-	var ciqLen C.size_t
-	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rxStreamer, &ciqLen)); err != nil {
+	var ciqLength C.size_t
+	if err := rvToError(C.uhd_rx_streamer_max_num_samps(rxStreamer, &ciqLength)); err != nil {
 		C.uhd_rx_streamer_free(&rxStreamer)
 		C.uhd_rx_metadata_free(&rxMetadata)
 		return nil, err
 	}
-	iqLen := int(ciqLen)
+	iqLength := int(ciqLength)
 
 	sr, err := s.GetSampleRate()
 	if err != nil {
@@ -390,22 +400,11 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		return nil, err
 	}
 
-	bufferLength := opts.BufferLength
-
-	pipes := make([]*stream.UnsafeRingBuffer, len(opts.RxChannels))
+	writers := make([]sdr.PipeWriter, len(opts.RxChannels))
 	readers := make(sdr.ReadClosers, len(opts.RxChannels))
 
 	for i := range opts.RxChannels {
-		pipe, err := newCUnsafeRingBuffer(sr, s.sampleFormat, stream.RingBufferOptions{
-			Slots:      bufferLength,
-			SlotLength: iqLen,
-			BlockReads: true,
-		})
-		if err != nil {
-			return nil, err
-		}
-		pipes[i] = pipe
-		readers[i] = pipe
+		readers[i], writers[i] = sdr.Pipe(sr, s.sampleFormat)
 	}
 
 	rc := &readStreamer{
@@ -413,10 +412,10 @@ func (s *Sdr) startRx(opts startRxOpts) (sdr.ReadClosers, error) {
 		ctx:    ctx,
 		cancel: cancel,
 
-		iqLen: int(ciqLen),
+		iqLen: iqLength,
 
 		sampleFormat: s.sampleFormat,
-		writers:      pipes,
+		writers:      writers,
 
 		rxStreamer: rxStreamer,
 		rxMetadata: rxMetadata,
