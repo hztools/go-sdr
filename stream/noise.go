@@ -121,8 +121,8 @@ func Noise(nc NoiseConfig) sdr.Reader {
 // some added noise on top.
 //
 // SNR represents the signal to noise ratio. The SNR param is a float
-// that represents the amount of noise added to the provided signal from 0
-// (no noise) to 1 (100% noise).
+// that represents the amount of noise added to the provided signal from 1
+// (no noise) to 0 (100% noise).
 func NoisyReader(nc NoiseConfig, r sdr.Reader, snr float32) (sdr.Reader, error) {
 	nc.SampleRate = r.SampleRate()
 	nr := Gain(Noise(nc), 1.0-snr)
