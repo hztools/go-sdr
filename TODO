@@ -10,6 +10,7 @@
  - SIMD
    - Unity Gain
    - Downsample
+   - rsqrtss
 
 
  - Allow custom HardwareInfo by SDR
