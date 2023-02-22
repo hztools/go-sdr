@@ -129,4 +129,10 @@ func (s SamplesC64) Multiply(c complex64) {
 	simd.RotateComplex(c, s)
 }
 
+// Add will conduct a complex addition of each phasor in this buffer
+// by a provided complex number 'c', writing results to 'dst'.
+func (s SamplesC64) Add(c []complex64) error {
+	return simd.AddComplex(s, c, s)
+}
+
 // vim: foldmethod=marker

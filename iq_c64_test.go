@@ -130,4 +130,18 @@ func TestC64Multiply(t *testing.T) {
 	}
 }
 
+func TestC64Add(t *testing.T) {
+	c64Samples1 := make(sdr.SamplesC64, 31)
+	c64Samples2 := make(sdr.SamplesC64, 31)
+	for i := range c64Samples1 {
+		c64Samples1[i] = complex64(complex(1, 3))
+		c64Samples2[i] = complex64(complex(3, 1))
+	}
+	c64Samples1.Add(c64Samples2)
+	for i, el := range c64Samples1 {
+		assert.Equal(t, complex64(complex(4, 4)), el)
+		assert.Equal(t, complex64(complex(3, 1)), c64Samples2[i])
+	}
+}
+
 // vim: foldmethod=marker
