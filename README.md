@@ -2,6 +2,8 @@
 
 > :warning: Please read [Expectations within this Organization](https://github.com/hztools/.github/tree/main/profile#expectations-within-this-organization) before using it.
 
+[![Go Reference](https://pkg.go.dev/badge/hz.tools/sdr.svg)](https://pkg.go.dev/hz.tools/sdr)
+
 Package sdr contains go fundamental types and helpers to allow for
 reading from and writing to software defined radios.
 
