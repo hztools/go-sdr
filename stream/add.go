@@ -120,6 +120,7 @@ func (ar *addReader) AddC64(out sdr.SamplesC64, buffers ...sdr.Samples) {
 
 func (ar *addReader) Read(s sdr.Samples) (int, error) {
 	// TODO(paultag): SIMD moderate hanging fruit
+	// TODO(paultag): SampleFormatU8 support here
 
 	if ar.err != nil {
 		return 0, ar.err
@@ -179,10 +180,6 @@ func (ar *addReader) Read(s sdr.Samples) (int, error) {
 		ar.AddI8(samples, buffers...)
 		return len(samples), nil
 	default:
-		// Egads this is bad. I have no earthly idea how we've wound up
-		// in this state sensibly. I have half a mind to throw a panic, but
-		// maybe this isn't a practical concern. I'm going to live to regret
-		// that thought...
 		return 0, sdr.ErrSampleFormatUnknown
 	}
 }
