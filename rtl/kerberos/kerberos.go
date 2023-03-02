@@ -126,11 +126,6 @@ func (k Sdr) SetBiasT(on bool) error {
 	return k[0].SetBiasT(on)
 }
 
-// SetBiasTGPIO will toggle a GPIO Pin.
-func (k Sdr) SetBiasTGPIO(pin int, on bool) error {
-	return k[0].SetBiasTGPIO(pin, on)
-}
-
 // SetCenterFrequency implements the sdr.Sdr interface.
 func (k Sdr) SetCenterFrequency(freq rf.Hz) error {
 	for i := range k {

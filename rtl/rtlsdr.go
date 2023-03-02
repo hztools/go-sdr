@@ -262,16 +262,6 @@ func (r Sdr) SetBiasT(on bool) error {
 	return rvToErr(C.rtlsdr_set_bias_tee(r.handle, 0))
 }
 
-// SetBiasTGPIO will enable or disable the bias tee.
-func (r Sdr) SetBiasTGPIO(pin int, on bool) error {
-	// TODO(paultag): check if return value is -1, which is uninitialized
-
-	if on {
-		return rvToErr(C.rtlsdr_set_bias_tee_gpio(r.handle, C.int(pin), 1))
-	}
-	return rvToErr(C.rtlsdr_set_bias_tee_gpio(r.handle, C.int(pin), 0))
-}
-
 // Tuner will return the rtlsdr Tuner type. This can be used to determine
 // the behavior of some of the Gain options, as well as well as performance.
 func (r Sdr) Tuner() Tuner {

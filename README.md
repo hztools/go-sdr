@@ -29,6 +29,7 @@ IQ samples.
 |----------------|-----------|----------------------------------------------------|
 | sdr.nosimd     | yes       | Build without any SIMD ASM (useful for older CPUs) |
 | sdr.nortl      | yes       | Build without any RTL-SDR support                  |
+| sdr.rtl.old    | yes       | Disable new API surface support for compat         |
 | sdr.nohackrf   | yes       | Build without any HackRF support                   |
 | sdr.nopluto    | yes       | Build without any Pluto / iio support              |
 | sdr.nouhd      | yes       | Build without any UHD support                      |
