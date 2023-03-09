@@ -35,7 +35,7 @@ import (
 // dongles to adjacent frequency bands, and combine those SDRs into a single
 // SDR at 4 times the sample rate.
 type OffsetSdr struct {
-	*Sdr
+	*CoherentSdr
 
 	planner    fft.Planner
 	centerFreq rf.Hz
@@ -43,14 +43,14 @@ type OffsetSdr struct {
 
 // NewOffset will create a new OffsetSdr.
 func NewOffset(planner fft.Planner, i1, i2, i3, i4 uint, windowSize uint) (*OffsetSdr, error) {
-	sdr, err := New(i1, i2, i3, i4, windowSize)
+	sdr, err := NewCoherent(planner, i1, i2, i3, i4, windowSize)
 	if err != nil {
 		return nil, err
 	}
 	return &OffsetSdr{
-		Sdr:        sdr,
-		planner:    planner,
-		centerFreq: rf.Hz(0),
+		CoherentSdr: sdr,
+		planner:     planner,
+		centerFreq:  rf.Hz(0),
 	}, nil
 }
 
@@ -156,7 +156,7 @@ func (rcc readCloserCloser) Close() error {
 // Mismatched sample rates, changing frequencies under the hood or changing
 // things manually during the RX may result in some seriously weird shit.
 func (k *OffsetSdr) StartRx() (sdr.ReadCloser, error) {
-	readClosers, err := k.Sdr.StartCoherentRx(k.planner)
+	readClosers, err := k.CoherentSdr.StartCoherentRx()
 	if err != nil {
 		return nil, err
 	}

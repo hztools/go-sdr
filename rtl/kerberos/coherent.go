@@ -29,6 +29,25 @@ import (
 	"hz.tools/sdr/stream"
 )
 
+// CoherentSdr will return a "meta-sdr" that tunes each of the 4 Kerberos SDR
+// dongles to the same frequency, and allow for a StartCoherentRx call.
+type CoherentSdr struct {
+	*Sdr
+	planner fft.Planner
+}
+
+// NewCoherent will create a new CoherentSdr.
+func NewCoherent(planner fft.Planner, i1, i2, i3, i4 uint, windowSize uint) (*CoherentSdr, error) {
+	sdr, err := New(i1, i2, i3, i4, windowSize)
+	if err != nil {
+		return nil, err
+	}
+	return &CoherentSdr{
+		Sdr:     sdr,
+		planner: planner,
+	}, nil
+}
+
 // CoherentReadCloser is a slice of ReadClosers, which are in sample lock.
 type CoherentReadCloser sdr.ReadClosers
 
@@ -75,11 +94,13 @@ func (cr CoherentReadCloser) Close() error {
 // This will toggle the BiasT feature (RNG), and also flip the AGC on.
 // If the AGC is not needed, it needs to be explicitly turned off after
 // this function call.
-func (k Sdr) StartCoherentRx(planner fft.Planner) (CoherentReadCloser, error) {
+func (c *CoherentSdr) StartCoherentRx() (sdr.ReadClosers, error) {
 	var (
-		err error
-		sps uint
-		ret = make(CoherentReadCloser, len(k))
+		err     error
+		sps     uint
+		planner = c.planner
+		k       = c.Sdr
+		ret     = make(CoherentReadCloser, len(k))
 	)
 
 	sps, err = k[0].GetSampleRate()
@@ -123,7 +144,7 @@ func (k Sdr) StartCoherentRx(planner fft.Planner) (CoherentReadCloser, error) {
 		return nil, err
 	}
 
-	return ret, nil
+	return sdr.ReadClosers(ret), nil
 }
 
 // vim: foldmethod=marker
