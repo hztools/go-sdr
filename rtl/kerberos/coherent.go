@@ -22,7 +22,6 @@ package kerberos
 
 import (
 	"fmt"
-	"log"
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/fft"
@@ -72,8 +71,6 @@ func (cr CoherentReadCloser) ReadersC64() ([]sdr.Reader, error) {
 // Sync will check the algnment of the buffers. For best results the RNG needs
 // to be on.
 func (cr CoherentReadCloser) Sync(planner fft.Planner) ([]complex64, error) {
-	defer log.Printf("Sync done")
-
 	readers, err := cr.ReadersC64()
 	if err != nil {
 		return nil, err
@@ -81,7 +78,6 @@ func (cr CoherentReadCloser) Sync(planner fft.Planner) ([]complex64, error) {
 	if err := internal.AlignReaders(planner, readers); err != nil {
 		return nil, err
 	}
-
 	return internal.PhaseOffsets(readers)
 }
 
@@ -147,7 +143,7 @@ func (c *CoherentSdr) StartCoherentRx() (sdr.ReadClosers, error) {
 		return nil, err
 	}
 
-	for i := 1; i < len(ret); i++ {
+	for i := range ret {
 		r, err := stream.ConvertReader(ret[i], sdr.SampleFormatC64)
 		if err != nil {
 			return nil, err

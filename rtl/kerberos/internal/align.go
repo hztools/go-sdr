@@ -256,6 +256,7 @@ func PhaseOffsets(readers []sdr.Reader) ([]complex64, error) {
 			phases[j] += cmplx.Phase(complex128(conjMult(bufs[0][i], bufs[j][i])))
 		}
 	}
+	phases[0] = 1
 
 	for i := range phases {
 		phases[i] /= float64(len(bufs[0]))
