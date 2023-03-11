@@ -162,7 +162,7 @@ func (c *CoherentSdr) StartCoherentRx() (sdr.ReadClosers, error) {
 	go func() {
 		// Do this in a goroutine since the Rx needs to be consumed for
 		// this to go through. This isn't good.
-		if err := c.SetBiasT(true); err != nil {
+		if err := c.SetBiasT(false); err != nil {
 			ret.Close()
 		}
 	}()
