@@ -22,6 +22,7 @@ package kerberos
 
 import (
 	"fmt"
+	"log"
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/fft"
@@ -70,12 +71,18 @@ func (cr CoherentReadCloser) ReadersC64() ([]sdr.Reader, error) {
 
 // Sync will check the algnment of the buffers. For best results the RNG needs
 // to be on.
-func (cr CoherentReadCloser) Sync(planner fft.Planner) error {
+func (cr CoherentReadCloser) Sync(planner fft.Planner) ([]complex64, error) {
+	defer log.Printf("Sync done")
+
 	readers, err := cr.ReadersC64()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return internal.AlignReaders(planner, readers)
+	if err := internal.AlignReaders(planner, readers); err != nil {
+		return nil, err
+	}
+
+	return internal.PhaseOffsets(readers)
 }
 
 // Close will close all the ReadClosers.
@@ -117,12 +124,12 @@ func (c *CoherentSdr) StartCoherentRx() (sdr.ReadClosers, error) {
 		}
 	}
 
-	if err := k.SetAutomaticGain(true); err != nil {
+	if err := c.SetAutomaticGain(true); err != nil {
 		ret.Close()
 		return nil, err
 	}
 
-	if err := k.SetBiasT(true); err != nil {
+	if err := c.SetBiasT(true); err != nil {
 		ret.Close()
 		return nil, err
 	}
@@ -134,15 +141,31 @@ func (c *CoherentSdr) StartCoherentRx() (sdr.ReadClosers, error) {
 		}
 	}
 
-	if err := ret.Sync(planner); err != nil {
+	rotations, err := ret.Sync(planner)
+	if err != nil {
 		ret.Close()
 		return nil, err
 	}
 
-	if err := k.SetBiasT(false); err != nil {
-		ret.Close()
-		return nil, err
+	for i := 1; i < len(ret); i++ {
+		r, err := stream.ConvertReader(ret[i], sdr.SampleFormatC64)
+		if err != nil {
+			return nil, err
+		}
+		r, err = stream.Multiply(r, rotations[i])
+		if err != nil {
+			return nil, err
+		}
+		ret[i] = sdr.ReaderWithCloser(r, ret[i].Close)
 	}
+
+	go func() {
+		// Do this in a goroutine since the Rx needs to be consumed for
+		// this to go through. This isn't good.
+		if err := c.SetBiasT(true); err != nil {
+			ret.Close()
+		}
+	}()
 
 	return sdr.ReadClosers(ret), nil
 }
