@@ -68,13 +68,63 @@ func TestRotate(t *testing.T) {
 	wg.Wait()
 }
 
+func TestRotateU8(t *testing.T) {
+	var (
+		valsU8  = make(sdr.SamplesU8, 1024*60)
+		valsC64 = make(sdr.SamplesC64, 1024*60)
+		refU8   = make(sdr.SamplesU8, 1024*60)
+	)
+	var counter uint16
+	for i := range valsU8 {
+		valsU8[i] = [2]uint8{
+			uint8(counter & 0xFF),
+			uint8((counter & 0xFF00 >> 8)),
+		}
+		counter++
+	}
+	sdr.ConvertBuffer(valsC64, valsU8)
+	valsC64.Multiply(0 - 1i)
+	sdr.ConvertBuffer(refU8, valsC64)
+
+	pipeReader, pipeWriter := sdr.Pipe(1.8e6, sdr.SampleFormatU8)
+
+	rotateReader, err := stream.Multiply(pipeReader, 0-1i)
+	assert.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		_, err := pipeWriter.Write(valsU8)
+		assert.NoError(t, err)
+	}()
+
+	buf := make(sdr.SamplesU8, 1024*60)
+	_, err = sdr.ReadFull(rotateReader, buf)
+	assert.NoError(t, err)
+
+	for i := range buf {
+		assert.Equal(t, refU8[i], buf[i])
+	}
+
+	wg.Wait()
+}
+
 func TestRotateStd(t *testing.T) {
 	pipeReader, pipeWriter := sdr.Pipe(1.8e6, sdr.SampleFormatC64)
 	rotateReader, err := stream.Multiply(pipeReader, 0-1i)
 	assert.NoError(t, err)
 
-	testutils.TestReader(t, "Read-Rotate", rotateReader)
-	testutils.TestReadWriteSamples(t, "ReadWrite-Rotate", rotateReader, pipeWriter)
+	testutils.TestReader(t, "C64-Read-Rotate", rotateReader)
+	testutils.TestReadWriteSamples(t, "C64-ReadWrite-Rotate", rotateReader, pipeWriter)
+
+	pipeReader, pipeWriter = sdr.Pipe(1.8e6, sdr.SampleFormatU8)
+	rotateReader, err = stream.Multiply(pipeReader, 0-1i)
+	assert.NoError(t, err)
+
+	testutils.TestReader(t, "U8-Read-Rotate", rotateReader)
+	testutils.TestReadWriteSamples(t, "U8-ReadWrite-Rotate", rotateReader, pipeWriter)
 }
 
 // vim: foldmethod=marker
