@@ -144,11 +144,7 @@ func (c *CoherentSdr) StartCoherentRx() (sdr.ReadClosers, error) {
 	}
 
 	for i := range ret {
-		r, err := stream.ConvertReader(ret[i], sdr.SampleFormatC64)
-		if err != nil {
-			return nil, err
-		}
-		r, err = stream.Multiply(r, rotations[i])
+		r, err := stream.Multiply(ret[i], rotations[i])
 		if err != nil {
 			return nil, err
 		}
