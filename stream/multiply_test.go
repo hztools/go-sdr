@@ -111,6 +111,81 @@ func TestRotateU8(t *testing.T) {
 	wg.Wait()
 }
 
+func BenchmarkMultiplyReaderU8(b *testing.B) {
+	buf := make(sdr.SamplesU8, 1024*64)
+	for i := range buf {
+		buf[i] = [2]uint8{128, 200}
+	}
+
+	pipeReader, pipeWriter := sdr.Pipe(1024, sdr.SampleFormatC64)
+	multReader, err := stream.Multiply(pipeReader, 0+1i)
+	assert.NoError(b, err)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pipeWriter.Write(buf)
+		pipeWriter.Close()
+	}()
+
+	bufout := make(sdr.SamplesU8, 1024*64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		multReader.Read(bufout)
+	}
+}
+
+func BenchmarkMultiplyReaderI8(b *testing.B) {
+	buf := make(sdr.SamplesI8, 1024*64)
+	for i := range buf {
+		buf[i] = [2]int8{100, -5}
+	}
+
+	pipeReader, pipeWriter := sdr.Pipe(1024, sdr.SampleFormatC64)
+	multReader, err := stream.Multiply(pipeReader, 0+1i)
+	assert.NoError(b, err)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pipeWriter.Write(buf)
+		pipeWriter.Close()
+	}()
+
+	bufout := make(sdr.SamplesI8, 1024*64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		multReader.Read(bufout)
+	}
+}
+
+func BenchmarkMultiplyReaderC64(b *testing.B) {
+	buf := make(sdr.SamplesC64, 1024*64)
+	for i := range buf {
+		buf[i] = complex64(complex(5, 5))
+	}
+
+	pipeReader, pipeWriter := sdr.Pipe(1024, sdr.SampleFormatC64)
+	multReader, err := stream.Multiply(pipeReader, 0+1i)
+	assert.NoError(b, err)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pipeWriter.Write(buf)
+		pipeWriter.Close()
+	}()
+
+	bufout := make(sdr.SamplesC64, 1024*64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		multReader.Read(bufout)
+	}
+}
+
 func TestRotateI8(t *testing.T) {
 	var (
 		valsI8  = make(sdr.SamplesI8, 1024*60)
