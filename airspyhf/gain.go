@@ -33,7 +33,7 @@ import (
 
 // SetAutomaticGain implements the sdr.Sdr interface.
 func (s *Sdr) SetAutomaticGain(state bool) error {
-	var v C.uint8_t = 0
+	var v C.uint8_t
 	if state {
 		v = 1
 	}
@@ -109,8 +109,8 @@ func (stg steppedGain) GetGainSteps() []float32 {
 // gain step, all in rtl gain increments.
 func (stg steppedGain) nearestGain(gain int) int {
 	var (
-		gainStep         int = 0
-		gainStepDistance int = -1
+		gainStep         int
+		gainStepDistance = -1
 	)
 
 	for _, gainValue := range stg.supportedGains {
@@ -220,7 +220,7 @@ func (ag ampGain) String() string {
 // SetGain is used as part of the rtlGainStage interface to handle
 // requests to set the gain on the Sdr dongle.
 func (ag ampGain) SetGain(s *Sdr, gain float32) error {
-	var state C.uint8_t = 0
+	var state C.uint8_t
 	if steppedGain(ag).nearestGain(int(gain)) != 0 {
 		state = 1
 	}

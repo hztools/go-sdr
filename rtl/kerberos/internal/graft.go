@@ -125,9 +125,9 @@ func (gr *graftReader) do() error {
 // an sdr.Reader at a higher sample rate.
 func GraftReaders(planner fft.Planner, readers []sdr.Reader) (sdr.ReadCloser, error) {
 	var (
-		bufl   int              = 1024 * 64
-		lenr   int              = len(readers)
-		iqBufs []sdr.SamplesC64 = make([]sdr.SamplesC64, lenr)
+		bufl   = 1024 * 64
+		lenr   = len(readers)
+		iqBufs = make([]sdr.SamplesC64, lenr)
 
 		sampleRate uint = uint(len(readers)) * readers[0].SampleRate()
 	)

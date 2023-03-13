@@ -29,7 +29,7 @@ import (
 var (
 	// ErrFrequencyOutOfSamplingRange is returned if the target frequency is too
 	// far outside the sampling rate of the underlying sample rate.
-	ErrFrequencyOutOfSamplingRange error = fmt.Errorf("fft: target frequency is out of sampling rate")
+	ErrFrequencyOutOfSamplingRange = fmt.Errorf("fft: target frequency is out of sampling rate")
 )
 
 // Order specifies what order the fft slice is in.

@@ -27,15 +27,15 @@ import (
 var (
 	// ErrSampleFormatMismatch will be returned when there's a mismatch between
 	// sample formats.
-	ErrSampleFormatMismatch error = fmt.Errorf("sdr: iq sample formats do not match")
+	ErrSampleFormatMismatch = fmt.Errorf("sdr: iq sample formats do not match")
 
 	// ErrSampleFormatUnknown will be returned when a specific iq format is not
 	// implemented.
-	ErrSampleFormatUnknown error = fmt.Errorf("sdr: iq sample format is not understood")
+	ErrSampleFormatUnknown = fmt.Errorf("sdr: iq sample format is not understood")
 
 	// ErrDstTooSmall will be returned when attempting to perform an operation
 	// and the target buffer is too small to use.
-	ErrDstTooSmall error = fmt.Errorf("sdr: destination sample buffer is too small")
+	ErrDstTooSmall = fmt.Errorf("sdr: destination sample buffer is too small")
 )
 
 // Samples represents a vector of IQ data.

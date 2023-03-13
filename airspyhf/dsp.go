@@ -34,7 +34,7 @@ import (
 //   - IF shift
 //   - Fine Tuning
 func (s *Sdr) SetDSP(state bool) error {
-	var v C.uint8_t = 0
+	var v C.uint8_t
 	if state {
 		v = 1
 	}

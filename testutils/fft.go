@@ -69,8 +69,8 @@ func testForwardFFT(t *testing.T, planner fft.Planner) {
 		assert.NoError(t, plan.Close())
 
 		var (
-			powerMax float64 = 0
-			powerI   int     = -1
+			powerMax float64
+			powerI   = -1
 		)
 		power := make([]float64, cwPhase0.Length())
 		for i := range power {
@@ -108,8 +108,8 @@ func testBackwardFFT(t *testing.T, planner fft.Planner) {
 		assert.NoError(t, plan.Close())
 
 		var (
-			powerMax float64 = 0
-			powerI   int     = -1
+			powerMax float64
+			powerI   = -1
 		)
 		power := make([]float64, len(freq))
 		for i := range power {

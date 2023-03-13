@@ -39,8 +39,8 @@ func init() {
 }
 
 var (
-	hasInit         bool = false
-	usbBoardMapping      = map[uint32]Board{
+	hasInit         = false
+	usbBoardMapping = map[uint32]Board{
 		0x604B: BoardJawbreaker,
 		0x6089: BoardHackRfOne,
 		0xFFFF: BoardInvalid,

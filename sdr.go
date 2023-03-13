@@ -28,7 +28,7 @@ import (
 
 // ErrNotSupported will be returned when an SDR does not support the feature
 // requested.
-var ErrNotSupported error = fmt.Errorf("sdr: feature not supported by this device")
+var ErrNotSupported = fmt.Errorf("sdr: feature not supported by this device")
 
 // Sdr is the generic interface that all SDRs will expose. Since this covers
 // an extensive amount of functionality, it's expected some devices will not

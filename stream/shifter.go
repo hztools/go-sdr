@@ -66,8 +66,8 @@ func (sr *shiftReader) Read(s sdr.Samples) (int, error) {
 func ShiftBuffer(sampleRate uint) func(rf.Hz, sdr.SamplesC64) {
 	var (
 		ts  float64
-		inc float64 = (1 / float64(sampleRate))
-		tau         = math.Pi * 2
+		inc = (1 / float64(sampleRate))
+		tau = math.Pi * 2
 	)
 
 	return func(freq rf.Hz, buf sdr.SamplesC64) {

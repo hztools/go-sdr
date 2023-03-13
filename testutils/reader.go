@@ -34,9 +34,9 @@ import (
 func TestReadWriteSamples(t *testing.T, name string, r sdr.Reader, w sdr.Writer) {
 	t.Run(name, func(t *testing.T) {
 		var (
-			sampleChunk  int = 1024
-			sampleChunks int = 32
-			wg               = sync.WaitGroup{}
+			sampleChunk  = 1024
+			sampleChunks = 32
+			wg           = sync.WaitGroup{}
 		)
 
 		go func() {

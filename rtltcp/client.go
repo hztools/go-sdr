@@ -61,7 +61,7 @@ func (c *Client) HardwareInfo() sdr.HardwareInfo {
 }
 
 func bool2uint32(yn bool) uint32 {
-	var argument uint32 = 0
+	var argument uint32
 	if yn {
 		argument = 1
 	}

@@ -58,7 +58,7 @@ benchmark:
 
 lint:
 	@echo "================= golint ================="
-	golint ./...
+	revive ./...
 
 
 .PHONY: all test benchmark lint

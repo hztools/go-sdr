@@ -59,11 +59,11 @@ func (d Device) String() string {
 var (
 	// ErrOverrun will be returned if samples have been dropped on the
 	// receive path.
-	ErrOverrun error = fmt.Errorf("iio: iq overrun")
+	ErrOverrun = fmt.Errorf("iio: iq overrun")
 
 	// ErrUnderrun will be returned if the buffer ran out of samples while
 	// transmitting.
-	ErrUnderrun error = fmt.Errorf("iio: iq underrun")
+	ErrUnderrun = fmt.Errorf("iio: iq underrun")
 )
 
 // ClearCheckBuffer will clear registry flags.

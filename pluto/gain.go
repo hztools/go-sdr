@@ -85,7 +85,7 @@ var (
 
 // SetAutomaticGain implements the sdr.Sdr interface.
 func (s *Sdr) SetAutomaticGain(autoGain bool) error {
-	var gcm string = "manual"
+	var gcm = "manual"
 	if autoGain {
 		gcm = "slow_attack"
 	}

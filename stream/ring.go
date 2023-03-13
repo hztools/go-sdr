@@ -41,7 +41,7 @@ var (
 	// Slot is written to.
 	//
 	// This error is only returned if BlockReads is set to False.
-	ErrRingBufferUnderrun error = fmt.Errorf("RingBuffer: Buffer Underrun")
+	ErrRingBufferUnderrun = fmt.Errorf("RingBuffer: Buffer Underrun")
 )
 
 // RingBufferOptions contains configurable options for a Ring Buffer.
@@ -317,7 +317,7 @@ func NewRingBuffer(
 	}
 
 	if buf.Length() < opts.Slots*opts.SlotLength {
-		return nil, fmt.Errorf("stream.NewRingBuffer: opts.IQBufferAllocator did not return enough IQ space.")
+		return nil, fmt.Errorf("stream.NewRingBuffer: opts.IQBufferAllocator did not return enough IQ space")
 	}
 
 	return &RingBuffer{
@@ -374,7 +374,7 @@ func (urb *UnsafeRingBuffer) WritePoke(n int) {
 	}
 }
 
-// UnsafeRingBuffer will return the underlying ring buffer as created by
+// UnsafeGetIQBuffer will return the underlying ring buffer as created by
 // the IQBufferAllocator.
 func (urb *UnsafeRingBuffer) UnsafeGetIQBuffer() sdr.Samples {
 	return urb.buf

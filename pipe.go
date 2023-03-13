@@ -27,7 +27,7 @@ import (
 
 var (
 	// ErrPipeClosed will be returned when the Pipe is closed.
-	ErrPipeClosed error = fmt.Errorf("sdr: pipe is closed")
+	ErrPipeClosed = fmt.Errorf("sdr: pipe is closed")
 )
 
 // PipeReader is the Read interface exposed by the Pipe.
@@ -115,7 +115,7 @@ func (pipe *pipe) Write(b Samples) (int, error) {
 		return 0, ErrSampleFormatMismatch
 	}
 
-	var n int = 0
+	var n int
 
 	for b.Length() > 0 {
 		select {

@@ -71,8 +71,8 @@ func MultiWriter(
 	}
 
 	var (
-		samplesPerSecond uint         = writers[0].SampleRate()
-		sampleFormat     SampleFormat = writers[0].SampleFormat()
+		samplesPerSecond = writers[0].SampleRate()
+		sampleFormat     = writers[0].SampleFormat()
 	)
 
 	allWriters := make([]Writer, 0, len(writers))

@@ -28,11 +28,11 @@ import (
 var (
 	// ErrShortBuffer will return if the number of bytes read was less than the
 	// minimum required by the callee.
-	ErrShortBuffer error = fmt.Errorf("sdr: short read")
+	ErrShortBuffer = fmt.Errorf("sdr: short read")
 
 	// ErrUnexpectedEOF will return if the EOF was reached before parsing was
 	// completed.
-	ErrUnexpectedEOF error = fmt.Errorf("sdr: expected EOF")
+	ErrUnexpectedEOF = fmt.Errorf("sdr: expected EOF")
 )
 
 // Reader is the interface that wraps the basic Read method.
@@ -162,8 +162,8 @@ func MultiReader(readers ...Reader) (Reader, error) {
 	}
 
 	var (
-		sampleFormat SampleFormat = readers[0].SampleFormat()
-		sampleRate   uint         = readers[0].SampleRate()
+		sampleFormat = readers[0].SampleFormat()
+		sampleRate   = readers[0].SampleRate()
 	)
 
 	for _, reader := range readers[1:] {

@@ -108,8 +108,8 @@ func (stg steppedGain) GetGainSteps() []float32 {
 // gain step, all in rtl gain increments.
 func (stg steppedGain) nearestGain(gain int) int {
 	var (
-		gainStep         int = 0
-		gainStepDistance int = -1
+		gainStep         int
+		gainStepDistance = -1
 	)
 
 	for _, gainValue := range stg.supportedGains {

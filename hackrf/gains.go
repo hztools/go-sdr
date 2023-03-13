@@ -88,7 +88,7 @@ type steppedGain struct {
 
 func newSteppedGain(name string, gainType sdr.GainStageType, low, high, step uint32) steppedGain {
 	gains := []uint32{}
-	var i uint32 = low
+	var i = low
 	for ; i <= high; i = i + step {
 		gains = append(gains, i)
 	}
@@ -112,8 +112,8 @@ func (stg steppedGain) GetGainSteps() []float32 {
 // gain step, all in hackrf gain increments.
 func (stg steppedGain) nearestGain(fGain float32) uint32 {
 	var (
-		gainStep         uint32 = 0
-		gainStepDistance int32  = -1
+		gainStep         uint32
+		gainStepDistance int32 = -1
 	)
 
 	// TODO(paultag): use math.Round
@@ -287,7 +287,7 @@ func (ag ampGain) String() string {
 // SetGain implements the internal hackrfGain interface.
 func (ag ampGain) SetGain(s *Sdr, gain float32) error {
 	onOff := C.uint32_t(steppedGain(ag).nearestGain(gain))
-	var enabledU8 C.uint8_t = 0
+	var enabledU8 C.uint8_t
 	if onOff != 0 {
 		enabledU8 = 1
 	}

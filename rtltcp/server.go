@@ -37,7 +37,7 @@ import (
 
 var (
 	// ErrSDRNotFound will be returned if no SDR can be acquired.
-	ErrSDRNotFound error = fmt.Errorf("rtltcp: SDR Not Found")
+	ErrSDRNotFound = fmt.Errorf("rtltcp: SDR Not Found")
 )
 
 // ServerHandler will return an SDR to be used by the incoming

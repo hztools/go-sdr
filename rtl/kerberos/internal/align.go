@@ -127,9 +127,9 @@ func checkAlignment(planner fft.Planner, readers []sdr.Reader, bufs []sdr.Sample
 		}
 
 		var (
-			maxPow  float64 = math.Inf(-1)
-			maxPowI int     = -1
-			leng    int     = bufs[0].Length()
+			maxPow  = math.Inf(-1)
+			maxPowI = -1
+			leng    = bufs[0].Length()
 		)
 
 		for ci, el := range cc {
@@ -237,6 +237,10 @@ func alignReaders(alignments []int, readers []sdr.Reader) (bool, error) {
 	return false, nil
 }
 
+// PhaseOffsets will compute the PLL startup-specific phase offsets from
+// eachother. Although we're in sample lock, because each RTL has their own
+// PLL and friends, they will still have phase differences. We must correct for
+// these when doing coherent operations.
 func PhaseOffsets(readers []sdr.Reader) ([]complex64, error) {
 	ret := make([]complex64, len(readers))
 

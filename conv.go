@@ -27,7 +27,7 @@ import (
 var (
 	// ErrConversionNotImplemented will be returned if the Sample type is
 	// unable to be converted into the desired target format.
-	ErrConversionNotImplemented error = fmt.Errorf("sdr: unknown format conversion")
+	ErrConversionNotImplemented = fmt.Errorf("sdr: unknown format conversion")
 )
 
 //         ===   Table of Conversions, what's implemented?  ===

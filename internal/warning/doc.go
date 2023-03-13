@@ -1,4 +1,4 @@
-// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2020
+// {{{ Copyright (c) Paul R. Tagliamonte <paul@k3xec.com>, 2023
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,32 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
+// Package warning contains helpers to mark functions as unsafe, experimental
+// or deprecated.
 package warning
-
-import (
-	"log"
-	"runtime"
-)
-
-// ExperimentalEnabled will toggle Experimental messages being printed.
-var ExperimentalEnabled = true
-
-// Experimental marks an API as experimental and subject to change.
-func Experimental(name string) {
-	if !ExperimentalEnabled {
-		return
-	}
-
-	_, file, line, ok := runtime.Caller(2)
-	if !ok {
-		file = "<unknown>"
-	}
-
-	log.Printf(
-		"%s:%d: %s is an *experimental* API. Be careful with it!\n",
-		file, line,
-		name,
-	)
-}
 
 // vim: foldmethod=marker

@@ -36,15 +36,15 @@ func init() {
 var (
 	// plutoPhyName is the name of the transceiver itself, used for control
 	// over things like samples per second or frequency.
-	plutoPhyName string = "ad9361-phy"
+	plutoPhyName = "ad9361-phy"
 
 	// plutoRxName is the name of the RX ADC, to read samples from the rx
 	// antenna.
-	plutoRxName string = "cf-ad9361-lpc"
+	plutoRxName = "cf-ad9361-lpc"
 
 	// plutoTxName is the name of the TX DAC, to write samples to the
 	// tx side of the house.
-	plutoTxName string = "cf-ad9361-dds-core-lpc"
+	plutoTxName = "cf-ad9361-dds-core-lpc"
 )
 
 // Sdr is an interface to the underlying PlutoSDR endpoint. This will allow
@@ -96,8 +96,8 @@ type Options struct {
 // passed to the iio* tools, such as ip:192.168.2.1, or ip:pluto3.hz.tools
 func OpenWithOptions(endpoint string, opts Options) (*Sdr, error) {
 	var (
-		rxWindowSize int = opts.RxBufferLength
-		txWindowSize int = opts.TxBufferLength
+		rxWindowSize = opts.RxBufferLength
+		txWindowSize = opts.TxBufferLength
 	)
 
 	ictx, err := iio.Open(endpoint)
@@ -177,7 +177,7 @@ func (s *Sdr) SetLoopback(b bool) error {
 	// 1  Digital TX → Digital RX
 	// 2  RF RX → RF TX
 
-	var v int64 = 0
+	var v int64
 	if b {
 		v = 1
 	}
