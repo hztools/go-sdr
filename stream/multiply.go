@@ -73,6 +73,10 @@ func (mr *multiplyReader) Read(s sdr.Samples) (int, error) {
 // each sample by the defined amount.
 func Multiply(r sdr.Reader, m complex64) (sdr.Reader, error) {
 	switch r.SampleFormat() {
+	case sdr.SampleFormatI8:
+		ret := &int8MultiplyReader{r: r}
+		ret.SetMultiplier(m)
+		return ret, nil
 	case sdr.SampleFormatU8:
 		ret := &uint8MultiplyReader{r: r}
 		ret.SetMultiplier(m)
@@ -160,6 +164,89 @@ func (mr *uint8MultiplyReader) SetMultiplier(m complex64) {
 
 	// Here, we'll round trip it through Complex64 once, do a SIMD optimized
 	// multiply operation, and return the uint8 buffer as a lookup table.
+
+	sdr.ConvertBuffer(cbuf, ubuf)
+	cbuf.Multiply(m)
+	sdr.ConvertBuffer(ubuf, cbuf)
+	mr.tab = ubuf
+}
+
+type int8MultiplyReader struct {
+	m complex64
+
+	// tab is an index for a complex real/imag value, returning the rotated
+	// real/imag vaule. This is a memory (and one-time CPU) tradeoff to
+	// generate every rotation up-front.
+	tab sdr.SamplesI8
+
+	r sdr.Reader
+}
+
+func (mr *int8MultiplyReader) mult(x [2]int8) [2]int8 {
+	return mr.tab[mr.index(x)]
+}
+
+func (mr *int8MultiplyReader) index(x [2]int8) int {
+	return ((int(x[0]) + 128) * 255) + (int(x[1]) + 128)
+}
+
+func (mr *int8MultiplyReader) SampleFormat() sdr.SampleFormat {
+	return mr.r.SampleFormat()
+}
+
+func (mr *int8MultiplyReader) SampleRate() uint {
+	return mr.r.SampleRate()
+}
+
+func (mr *int8MultiplyReader) Read(s sdr.Samples) (int, error) {
+	switch s.Format() {
+	case sdr.SampleFormatI8:
+		break
+	default:
+		return 0, sdr.ErrSampleFormatMismatch
+	}
+
+	i, err := mr.r.Read(s)
+	if err != nil {
+		return i, err
+	}
+
+	// TODO(paultag): Fix this to be safe when the above format checks
+	// grow.
+	sI8 := s.Slice(0, i).(sdr.SamplesI8)
+	for i := range sI8 {
+		sI8[i] = mr.mult(sI8[i])
+	}
+	return i, nil
+}
+
+// SetMultiplier is an undocumented API to update the complex value
+// after the construction of the Reader. For the int8 variant, this has
+// a one-time CPU hit.
+func (mr *int8MultiplyReader) SetMultiplier(m complex64) {
+	var (
+		// This is 65535 samples of work to change the multiply const,
+		// which, while not 0, is a lot better than the O(n). FWIW, 65535
+		// IQ samples at 2 Msps is 0.03 seconds of IQ data, to have all
+		// Reads be pure-lookups. This is worth it so long as you're
+		// reading more than 65535 IQ samples via this reader before
+		// changing the Multiplier again.
+
+		ubuf = make(sdr.SamplesI8, 65535)
+		cbuf = make(sdr.SamplesC64, 65535)
+	)
+
+	var realv uint16
+	for ; realv < 256; realv++ {
+		var imagv uint16
+		for ; imagv <= 256; imagv++ {
+			v := [2]int8{int8(realv), int8(imagv)}
+			ubuf[mr.index(v)] = v
+		}
+	}
+
+	// Here, we'll round trip it through Complex64 once, do a SIMD optimized
+	// multiply operation, and return the int8 buffer as a lookup table.
 
 	sdr.ConvertBuffer(cbuf, ubuf)
 	cbuf.Multiply(m)
