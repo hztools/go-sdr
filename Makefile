@@ -28,6 +28,7 @@ check: test lint
 
 clean:
 	rm -vf benchmark.*
+	make -C docs/man clean
 
 test: $(addprefix test_, $(SUPPORTED_BUILTAGS))
 	$(GO) test -coverprofile=coverage.out ./...
@@ -55,12 +56,13 @@ benchmark:
 	# golang.org/x/perf/cmd/benchstat
 	benchstat benchmark.nosimd benchmark.default
 
-
 lint:
 	@echo "================= golint ================="
 	revive ./...
 
+docs:
+	make -C docs/man
 
-.PHONY: all test benchmark lint
+.PHONY: all test benchmark lint docs
 
 # vim: foldmethod=marker
