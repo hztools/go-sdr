@@ -95,6 +95,10 @@ func (rc *readCloser) run() error {
 	}
 	defer ibuf.Close()
 
+	if err := rx.adc.ClearCheckBuffer(); err != nil {
+		return err
+	}
+
 	buf := rc.buf
 	for {
 		i, err := ibuf.Refill()
@@ -102,6 +106,10 @@ func (rc *readCloser) run() error {
 			return err
 		}
 		buf := buf[:i/4]
+
+		if err := rx.adc.CheckBuffer(); err != nil {
+			return err
+		}
 
 		i, err = ibuf.CopyToUnsafeFromBuffer(*rx.rxi, unsafe.Pointer(&buf[0]), buf.Size())
 		if err != nil {
