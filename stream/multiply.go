@@ -174,20 +174,8 @@ func (mr *uint8MultiplyReader) SetMultiplier(m complex64) {
 type int8MultiplyReader struct {
 	m complex64
 
-	// tab is an index for a complex real/imag value, returning the rotated
-	// real/imag vaule. This is a memory (and one-time CPU) tradeoff to
-	// generate every rotation up-front.
-	tab sdr.SamplesI8
-
-	r sdr.Reader
-}
-
-func (mr *int8MultiplyReader) mult(x [2]int8) [2]int8 {
-	return mr.tab[mr.index(x)]
-}
-
-func (mr *int8MultiplyReader) index(x [2]int8) int {
-	return ((int(x[0]) + 128) * 255) + (int(x[1]) + 128)
+	tab sdr.LookupTable
+	r   sdr.Reader
 }
 
 func (mr *int8MultiplyReader) SampleFormat() sdr.SampleFormat {
@@ -214,9 +202,7 @@ func (mr *int8MultiplyReader) Read(s sdr.Samples) (int, error) {
 	// TODO(paultag): Fix this to be safe when the above format checks
 	// grow.
 	sI8 := s.Slice(0, i).(sdr.SamplesI8)
-	for i := range sI8 {
-		sI8[i] = mr.mult(sI8[i])
-	}
+	mr.tab.Lookup(sI8, sI8)
 	return i, nil
 }
 
@@ -232,18 +218,10 @@ func (mr *int8MultiplyReader) SetMultiplier(m complex64) {
 		// reading more than 65535 IQ samples via this reader before
 		// changing the Multiplier again.
 
-		ubuf = make(sdr.SamplesI8, 65535)
-		cbuf = make(sdr.SamplesC64, 65535)
+		ubuf = sdr.LookupTableIdentityI8()
+		cbuf = make(sdr.SamplesC64, 65536)
+		err  error
 	)
-
-	var realv uint16
-	for ; realv < 256; realv++ {
-		var imagv uint16
-		for ; imagv <= 256; imagv++ {
-			v := [2]int8{int8(realv), int8(imagv)}
-			ubuf[mr.index(v)] = v
-		}
-	}
 
 	// Here, we'll round trip it through Complex64 once, do a SIMD optimized
 	// multiply operation, and return the int8 buffer as a lookup table.
@@ -251,7 +229,12 @@ func (mr *int8MultiplyReader) SetMultiplier(m complex64) {
 	sdr.ConvertBuffer(cbuf, ubuf)
 	cbuf.Multiply(m)
 	sdr.ConvertBuffer(ubuf, cbuf)
-	mr.tab = ubuf
+	mr.tab, err = sdr.NewLookupTable(sdr.SampleFormatI8, ubuf)
+	if err != nil {
+		// This shouldn't be reachable since we're positive of the construction,
+		// although we ought to return something nicer than this.
+		panic(err)
+	}
 }
 
 // vim: foldmethod=marker
