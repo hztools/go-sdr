@@ -71,7 +71,7 @@ var (
 		maxGain:   73,
 		gainStep:  1,
 		name:      "RX",
-		stageType: sdr.GainStageTypeBB | sdr.GainStageTypeTransmit,
+		stageType: sdr.GainStageTypeBB | sdr.GainStageTypeRecieve,
 	}
 
 	txHardwareGain = gain{
@@ -79,7 +79,7 @@ var (
 		maxGain:   0,
 		gainStep:  0.25,
 		name:      "TX",
-		stageType: sdr.GainStageTypeBB | sdr.GainStageTypeRecieve,
+		stageType: sdr.GainStageTypeBB | sdr.GainStageTypeTransmit,
 	}
 )
 
