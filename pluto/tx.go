@@ -116,7 +116,7 @@ func (wc *writeCloser) run() error {
 	defer wc.powerdown()
 
 	for {
-		if err := tx.dac.CheckBuffer(); err != nil {
+		if err := tx.dac.CheckBufferUnderflow(); err != nil {
 			return err
 		}
 

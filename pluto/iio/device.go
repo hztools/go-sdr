@@ -68,33 +68,45 @@ var (
 
 // ClearCheckBuffer will clear registry flags.
 func (d Device) ClearCheckBuffer() error {
-	errno := C.iio_device_reg_write(d.handle, 0x80000088, 6)
+	errno := C.iio_device_reg_write(d.handle, 0x80000088, 0x06)
 	if errno == 0 {
 		return nil
 	}
 	return syscall.Errno(-errno)
 }
 
-// CheckBuffer will check to see if there was an overrun when streaming
+// CheckBufferOverflow will check to see if there was an overrun when streaming
 // IQ samples.
 //
-// If there was an overrun condition, this will return an iio.ErrOverrun
-// If there was an underrun condition, this will return an iio.ErrUnderrun
-func (d Device) CheckBuffer() error {
+// If there was an overflow condition, this will return an iio.ErrOverrun. If
+// there was an error fetching the overflow stauts, this will return an errno.
+func (d Device) CheckBufferOverflow() error {
 	var val C.uint32_t
 	errno := C.iio_device_reg_read(d.handle, 0x80000088, &val)
 	if errno != 0 {
 		return syscall.Errno(-errno)
 	}
-
-	if (val & 1) == 1 {
-		C.iio_device_reg_write(d.handle, 0x80000088, 1)
-		return ErrUnderrun
-	}
-
 	if (val & 4) == 4 {
 		C.iio_device_reg_write(d.handle, 0x80000088, 4)
 		return ErrOverrun
+	}
+	return nil
+}
+
+// CheckBufferUnderflow will check to see if there was an underrun when
+// streaming IQ samples.
+//
+// If there was an underflow condition, this will return an iio.ErrUnderrun. If
+// there was an error fetching the overflow stauts, this will return an errno.
+func (d Device) CheckBufferUnderflow() error {
+	var val C.uint32_t
+	errno := C.iio_device_reg_read(d.handle, 0x80000088, &val)
+	if errno != 0 {
+		return syscall.Errno(-errno)
+	}
+	if (val & 1) == 1 {
+		C.iio_device_reg_write(d.handle, 0x80000088, 1)
+		return ErrUnderrun
 	}
 	return nil
 }

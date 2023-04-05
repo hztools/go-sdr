@@ -95,11 +95,15 @@ func (rc *readCloser) run() error {
 	}
 	defer ibuf.Close()
 
+	var (
+		buf      = rc.buf
+		nsamples int64
+	)
+
 	if err := rx.adc.ClearCheckBuffer(); err != nil {
 		return err
 	}
 
-	buf := rc.buf
 	for {
 		i, err := ibuf.Refill()
 		if err != nil {
@@ -107,9 +111,15 @@ func (rc *readCloser) run() error {
 		}
 		buf := buf[:i/4]
 
-		if err := rx.adc.CheckBuffer(); err != nil {
-			return err
-		}
+		// if err := rx.adc.CheckBufferOverflow(); err != nil {
+		// 	// Let's keep clearing the buffer until we can catch up with
+		// 	// ourselves. This won't go past the Check/Clear until it actually
+		// 	// gets a window without it having been dropped.
+		// 	if nsamples == 0 {
+		// 		continue
+		// 	}
+		// 	return err
+		// }
 
 		i, err = ibuf.CopyToUnsafeFromBuffer(*rx.rxi, unsafe.Pointer(&buf[0]), buf.Size())
 		if err != nil {
@@ -118,10 +128,11 @@ func (rc *readCloser) run() error {
 		buf = buf[:i/4]
 
 		buf.ShiftLSBToMSBBits(12)
-		_, err = rc.writer.Write(buf)
+		n, err := rc.writer.Write(buf)
 		if err != nil {
 			return err
 		}
+		nsamples += int64(n)
 	}
 }
 
