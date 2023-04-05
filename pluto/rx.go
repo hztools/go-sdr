@@ -21,7 +21,6 @@
 package pluto
 
 import (
-	"log"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -118,15 +117,15 @@ func (rc *readCloser) run() error {
 		}
 		buf := buf[:i/4]
 
-		// if err := rx.adc.CheckBufferOverflow(); err != nil {
-		// 	// Let's keep clearing the buffer until we can catch up with
-		// 	// ourselves. This won't go past the Check/Clear until it actually
-		// 	// gets a window without it having been dropped.
-		// 	if err == iio.ErrOverrun && nsamples == 0 {
-		// 		continue
-		// 	}
-		// 	return err
-		// }
+		if err := rx.adc.CheckBufferOverflow(); err != nil {
+			// Let's keep clearing the buffer until we can catch up with
+			// ourselves. This won't go past the Check/Clear until it actually
+			// gets a window without it having been dropped.
+			if err == iio.ErrOverrun && nsamples == 0 {
+				continue
+			}
+			return err
+		}
 
 		i, err = ibuf.CopyToUnsafeFromBuffer(*rx.rxi, unsafe.Pointer(&buf[0]), buf.Size())
 		if err != nil {

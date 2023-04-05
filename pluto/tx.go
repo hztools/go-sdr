@@ -127,7 +127,6 @@ func (wc *writeCloser) run() error {
 		}
 
 		n, err := sdr.ReadFull(wc.reader, buf)
-		// n, err := wc.reader.Read(buf)
 		if err != nil && n == 0 {
 			return err
 		}
