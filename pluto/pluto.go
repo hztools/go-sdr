@@ -62,9 +62,11 @@ type Sdr struct {
 	rx *rx
 	tx *tx
 
-	txWindowSize     int
-	rxWindowSize     int
-	samplesPerSecond uint
+	txWindowSize         int
+	rxWindowSize         int
+	rxKernelBuffersCount uint
+	txKernelBuffersCount uint
+	samplesPerSecond     uint
 }
 
 // Open will create a PlutoSDR handle with the default set of
@@ -74,8 +76,8 @@ type Sdr struct {
 // such as ip:192.168.2.1, or ip:pluto3.hz.tools
 func Open(endpoint string) (*Sdr, error) {
 	return OpenWithOptions(endpoint, Options{
-		RxBufferLength: 4096 * 32,
-		TxBufferLength: 4096 * 32 * 10,
+		RxBufferLength: 1024,
+		TxBufferLength: 1024,
 	})
 }
 
@@ -89,6 +91,16 @@ type Options struct {
 	// TxBufferLength defines the size of the buffer that will be used to
 	// copy samples into the process of writing data out of the PlutoSDR.
 	TxBufferLength int
+
+	// RxKernelBuffersCount controlls the number of kernelspace buffers that
+	// are to be used for the rx channel. Leaving this at 0 will use the
+	// iio default.
+	RxKernelBuffersCount uint
+
+	// TxKernelBuffersCount controlls the number of kernelspace buffers that
+	// are to be used for the tx channel. Leaving this at 0 will use the
+	// iio default.
+	TxKernelBuffersCount uint
 }
 
 // OpenWithOptions will establish a connection to a PlutoSDR, and return a handle to
@@ -96,8 +108,10 @@ type Options struct {
 // passed to the iio* tools, such as ip:192.168.2.1, or ip:pluto3.hz.tools
 func OpenWithOptions(endpoint string, opts Options) (*Sdr, error) {
 	var (
-		rxWindowSize = opts.RxBufferLength
-		txWindowSize = opts.TxBufferLength
+		rxWindowSize         = opts.RxBufferLength
+		txWindowSize         = opts.TxBufferLength
+		rxKernelBuffersCount = opts.RxKernelBuffersCount
+		txKernelBuffersCount = opts.TxKernelBuffersCount
 	)
 
 	ictx, err := iio.Open(endpoint)
@@ -150,8 +164,10 @@ func OpenWithOptions(endpoint string, opts Options) (*Sdr, error) {
 		voltage0Rx:  voltage0Rx,
 		voltage0Tx:  voltage0Tx,
 
-		rxWindowSize: rxWindowSize,
-		txWindowSize: txWindowSize,
+		rxWindowSize:         rxWindowSize,
+		txWindowSize:         txWindowSize,
+		rxKernelBuffersCount: rxKernelBuffersCount,
+		txKernelBuffersCount: txKernelBuffersCount,
 
 		rx: rx,
 		tx: tx,

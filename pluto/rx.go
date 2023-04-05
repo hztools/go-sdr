@@ -21,6 +21,7 @@
 package pluto
 
 import (
+	"log"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -89,6 +90,12 @@ func (rc *readCloser) run() error {
 	defer rx.rxi.Disable()
 	defer rx.rxq.Disable()
 
+	if rc.sdr.rxKernelBuffersCount != 0 {
+		if err := rx.adc.SetKernelBuffersCount(rc.sdr.rxKernelBuffersCount); err != nil {
+			return err
+		}
+	}
+
 	ibuf, err := rx.adc.CreateBuffer(rc.buf.Length())
 	if err != nil {
 		return err
@@ -115,7 +122,7 @@ func (rc *readCloser) run() error {
 		// 	// Let's keep clearing the buffer until we can catch up with
 		// 	// ourselves. This won't go past the Check/Clear until it actually
 		// 	// gets a window without it having been dropped.
-		// 	if nsamples == 0 {
+		// 	if err == iio.ErrOverrun && nsamples == 0 {
 		// 		continue
 		// 	}
 		// 	return err
@@ -126,8 +133,8 @@ func (rc *readCloser) run() error {
 			return err
 		}
 		buf = buf[:i/4]
-
 		buf.ShiftLSBToMSBBits(12)
+
 		n, err := rc.writer.Write(buf)
 		if err != nil {
 			return err

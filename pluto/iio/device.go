@@ -66,6 +66,16 @@ var (
 	ErrUnderrun = fmt.Errorf("iio: iq underrun")
 )
 
+// SetKernelBuffersCount will configure the number of kernelspace buffers
+// to be used when transfering data to and from the device. The default is 4.
+func (d Device) SetKernelBuffersCount(nbuf uint) error {
+	errno := C.iio_device_set_kernel_buffers_count(d.handle, C.uint(nbuf))
+	if errno == 0 {
+		return nil
+	}
+	return syscall.Errno(-errno)
+}
+
 // ClearCheckBuffer will clear registry flags.
 func (d Device) ClearCheckBuffer() error {
 	errno := C.iio_device_reg_write(d.handle, 0x80000088, 0x06)

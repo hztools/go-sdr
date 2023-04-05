@@ -102,6 +102,12 @@ func (wc *writeCloser) run() error {
 	defer tx.txi.Disable()
 	defer tx.txq.Disable()
 
+	if wc.sdr.txKernelBuffersCount != 0 {
+		if err := tx.dac.SetKernelBuffersCount(wc.sdr.txKernelBuffersCount); err != nil {
+			return err
+		}
+	}
+
 	buf := wc.buf
 	ibuf, err := tx.dac.CreateBuffer(len(buf))
 	if err != nil {
