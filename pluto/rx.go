@@ -25,6 +25,7 @@ import (
 
 	"hz.tools/sdr"
 	"hz.tools/sdr/pluto/iio"
+	"hz.tools/sdr/stream"
 )
 
 type rx struct {
@@ -144,18 +145,26 @@ func (rc *readCloser) run() error {
 
 // StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
-	pipeReader, pipeWriter := sdr.Pipe(s.samplesPerSecond, sdr.SampleFormatI16)
+	// pipeReader, pipeWriter := sdr.Pipe(s.samplesPerSecond, sdr.SampleFormatI16)
+	ring, err := stream.NewRingBuffer(s.samplesPerSecond, sdr.SampleFormatI16, stream.RingBufferOptions{
+		Slots:      512,
+		SlotLength: 1024,
+		BlockReads: true,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	rc := &readCloser{
-		writer: pipeWriter,
-		reader: pipeReader,
+		writer: ring,
+		reader: ring,
 		sdr:    s,
 		buf:    make(sdr.SamplesI16, s.rxWindowSize),
 	}
 
 	go func() {
 		if err := rc.run(); err != nil {
-			pipeWriter.CloseWithError(err)
+			ring.CloseWithError(err)
 		}
 	}()
 
