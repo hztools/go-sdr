@@ -61,10 +61,11 @@ func openRx(ictx *iio.Context, windowSize int) (*rx, error) {
 }
 
 type readCloser struct {
-	writer sdr.PipeWriter
-	reader sdr.PipeReader
-	sdr    *Sdr
-	buf    sdr.SamplesI16
+	writer        sdr.PipeWriter
+	reader        sdr.PipeReader
+	checkOverruns bool
+	sdr           *Sdr
+	buf           sdr.SamplesI16
 }
 
 func (rc *readCloser) Read(iq sdr.Samples) (int, error) {
@@ -122,17 +123,19 @@ func (rc *readCloser) run() error {
 		}
 		buf := buf[:i/4]
 
-		if err := rx.adc.CheckBufferOverflow(); err != nil {
-			if time.Now().After(deadline) {
-				return iio.ErrOverrun
+		if rc.checkOverruns {
+			if err := rx.adc.CheckBufferOverflow(); err != nil {
+				if time.Now().After(deadline) {
+					return iio.ErrOverrun
+				}
+				// Let's keep clearing the buffer until we can catch up with
+				// ourselves. This won't go past the Check/Clear until it actually
+				// gets a window without it having been dropped.
+				if err == iio.ErrOverrun && nsamples == 0 {
+					continue
+				}
+				return err
 			}
-			// Let's keep clearing the buffer until we can catch up with
-			// ourselves. This won't go past the Check/Clear until it actually
-			// gets a window without it having been dropped.
-			if err == iio.ErrOverrun && nsamples == 0 {
-				continue
-			}
-			return err
 		}
 
 		i, err = ibuf.CopyToUnsafeFromBuffer(*rx.rxi, unsafe.Pointer(&buf[0]), buf.Size())
@@ -157,7 +160,7 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 		sdr.SampleFormatI16,
 		stream.RingBufferOptions{
 			Slots:      32,
-			SlotLength: 1024,
+			SlotLength: s.rxWindowSize,
 			BlockReads: true,
 		},
 	)
@@ -166,10 +169,11 @@ func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
 	}
 
 	rc := &readCloser{
-		writer: ring,
-		reader: ring,
-		sdr:    s,
-		buf:    make(sdr.SamplesI16, s.rxWindowSize),
+		checkOverruns: s.checkOverruns,
+		writer:        ring,
+		reader:        ring,
+		sdr:           s,
+		buf:           make(sdr.SamplesI16, s.rxWindowSize),
 	}
 
 	go func() {

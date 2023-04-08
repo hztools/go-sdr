@@ -63,10 +63,13 @@ type Sdr struct {
 	tx *tx
 
 	txWindowSize         int
+	txKernelBuffersCount uint
+
 	rxWindowSize         int
 	rxKernelBuffersCount uint
-	txKernelBuffersCount uint
-	samplesPerSecond     uint
+	checkOverruns        bool
+
+	samplesPerSecond uint
 }
 
 // Open will create a PlutoSDR handle with the default set of
@@ -101,6 +104,10 @@ type Options struct {
 	// are to be used for the tx channel. Leaving this at 0 will use the
 	// iio default.
 	TxKernelBuffersCount uint
+
+	// CheckOverruns will check to see if there's been an overrun when refilling
+	// the IQ buffer.
+	CheckOverruns bool
 }
 
 // OpenWithOptions will establish a connection to a PlutoSDR, and return a handle to
@@ -164,10 +171,12 @@ func OpenWithOptions(endpoint string, opts Options) (*Sdr, error) {
 		voltage0Rx:  voltage0Rx,
 		voltage0Tx:  voltage0Tx,
 
-		rxWindowSize:         rxWindowSize,
 		txWindowSize:         txWindowSize,
-		rxKernelBuffersCount: rxKernelBuffersCount,
 		txKernelBuffersCount: txKernelBuffersCount,
+
+		rxWindowSize:         rxWindowSize,
+		rxKernelBuffersCount: rxKernelBuffersCount,
+		checkOverruns:        opts.CheckOverruns,
 
 		rx: rx,
 		tx: tx,
