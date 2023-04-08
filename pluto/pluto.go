@@ -260,12 +260,6 @@ func (s *Sdr) SetSampleRate(sps uint) error {
 		return fmt.Errorf("pluto: minimum samples per second is 2083336")
 	}
 
-	// TODO(paultag): Add in a log message when going above 5msps because
-	// it will result in dropped samples.
-	//
-	// if sps > 5000000 {
-	// }
-
 	// TODO(paultag): The tx and rx should be independently controllable
 	// for full duplex devices such as Pluto.
 	if err := s.voltage0Rx.WriteInt64("sampling_frequency", int64(sps)); err != nil {

@@ -21,6 +21,7 @@
 package pluto
 
 import (
+	"time"
 	"unsafe"
 
 	"hz.tools/sdr"
@@ -105,6 +106,9 @@ func (rc *readCloser) run() error {
 	var (
 		buf      = rc.buf
 		nsamples int64
+
+		// If we take more than 2 seconds, abort everything.
+		deadline = time.Now().Add(time.Second * 2)
 	)
 
 	if err := rx.adc.ClearCheckBuffer(); err != nil {
@@ -119,6 +123,9 @@ func (rc *readCloser) run() error {
 		buf := buf[:i/4]
 
 		if err := rx.adc.CheckBufferOverflow(); err != nil {
+			if time.Now().After(deadline) {
+				return iio.ErrOverrun
+			}
 			// Let's keep clearing the buffer until we can catch up with
 			// ourselves. This won't go past the Check/Clear until it actually
 			// gets a window without it having been dropped.
@@ -145,12 +152,15 @@ func (rc *readCloser) run() error {
 
 // StartRx implements the sdr.Sdr interface.
 func (s *Sdr) StartRx() (sdr.ReadCloser, error) {
-	// pipeReader, pipeWriter := sdr.Pipe(s.samplesPerSecond, sdr.SampleFormatI16)
-	ring, err := stream.NewRingBuffer(s.samplesPerSecond, sdr.SampleFormatI16, stream.RingBufferOptions{
-		Slots:      512,
-		SlotLength: 1024,
-		BlockReads: true,
-	})
+	ring, err := stream.NewRingBuffer(
+		s.samplesPerSecond,
+		sdr.SampleFormatI16,
+		stream.RingBufferOptions{
+			Slots:      32,
+			SlotLength: 1024,
+			BlockReads: true,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
