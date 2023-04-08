@@ -223,6 +223,10 @@ func (rb *RingBuffer) Read(buf sdr.Samples) (int, error) {
 			// Attempt to aquire the lock until we have data that we
 			// can read from the next slot.
 			rb.cond.Wait()
+
+			if err := rb.getErr(); err != nil {
+				return 0, err
+			}
 		}
 
 		if err := rb.getErr(); err != nil {
@@ -267,7 +271,7 @@ func (rb *RingBuffer) Write(buf sdr.Samples) (int, error) {
 	}
 	n, err := sdr.CopySamples(slot, buf)
 	rb.bufn[id] = n
-	if !rb.opts.BlockReads {
+	if rb.opts.BlockReads {
 		rb.cond.Signal()
 	}
 	return n, err
@@ -369,7 +373,7 @@ func (urb *UnsafeRingBuffer) WritePoke(n int) {
 
 	id, _ := urb.advanceWriteCursor(true)
 	urb.bufn[id] = n
-	if !urb.opts.BlockReads {
+	if urb.opts.BlockReads {
 		urb.cond.Signal()
 	}
 }
