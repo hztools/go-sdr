@@ -77,8 +77,7 @@ func NewFrequencySlice(frequency []complex64, sampleRate uint, order Order) Freq
 
 // BinBandwidth is the amount frequency each bin represents in a fft slice.
 func (r FrequencySlice) BinBandwidth() rf.Hz {
-	binWidth := float32(r.SampleRate) / float32(len(r.Frequency))
-	return rf.Hz(binWidth)
+	return BinBandwidth(len(r.Frequency), r.SampleRate)
 }
 
 // Shift will go from ZeroFirst to negativeFirst or vice versa.
@@ -99,13 +98,35 @@ func (r FrequencySlice) Shift() (FrequencySlice, error) {
 
 // Nyquest is half the sampling rate.
 func (r FrequencySlice) Nyquest() rf.Hz {
-	return rf.Hz(r.SampleRate) / 2
-
+	return Nyquest(r.SampleRate)
 }
 
 // BinsByRange will return the bins representing the range provided.
 func (r FrequencySlice) BinsByRange(rng rf.Range) ([]int, error) {
-	nyquest := r.Nyquest()
+	return BinsByRange(len(r.Frequency), r.SampleRate, r.Order, rng)
+}
+
+// FreqByBin will return the center of the bin represented by an offset.
+func (r FrequencySlice) FreqByBin(bin int) (rf.Hz, error) {
+	return FreqByBin(len(r.Frequency), r.SampleRate, r.Order, bin)
+}
+
+// BinByFreq will return the bin index by a provided frequency.
+func (r FrequencySlice) BinByFreq(freq rf.Hz) (int, error) {
+	return BinByFreq(len(r.Frequency), r.SampleRate, r.Order, freq)
+}
+
+// BinBandwidth will return the bandwidth represented by a provided bin.
+func BinBandwidth(frequencyLen int, sampleRate uint) rf.Hz {
+	return rf.Hz(float32(sampleRate) / float32(frequencyLen))
+}
+
+func Nyquest(sampleRate uint) rf.Hz {
+	return rf.Hz(sampleRate) / 2
+}
+
+func BinsByRange(frequencyLen int, sampleRate uint, order Order, rng rf.Range) ([]int, error) {
+	nyquest := Nyquest(sampleRate)
 	if rng[1] > nyquest || rng[1] < -nyquest {
 		return nil, ErrFrequencyOutOfSamplingRange
 	}
@@ -113,11 +134,11 @@ func (r FrequencySlice) BinsByRange(rng rf.Range) ([]int, error) {
 	lowFreq := rng[0]
 	highFreq := rng[1]
 
-	lowBin, err := r.BinByFreq(lowFreq)
+	lowBin, err := BinByFreq(frequencyLen, sampleRate, order, lowFreq)
 	if err != nil {
 		return nil, err
 	}
-	highBin, err := r.BinByFreq(highFreq)
+	highBin, err := BinByFreq(frequencyLen, sampleRate, order, highFreq)
 	if err != nil {
 		return nil, err
 	}
@@ -133,9 +154,9 @@ func (r FrequencySlice) BinsByRange(rng rf.Range) ([]int, error) {
 		return ret, nil
 	}
 
-	switch r.Order {
+	switch order {
 	case ZeroFirst:
-		for i := lowBin; i < len(r.Frequency); i++ {
+		for i := lowBin; i < frequencyLen; i++ {
 			ret = append(ret, i)
 		}
 		for i := 0; i <= highBin; i++ {
@@ -151,19 +172,18 @@ func (r FrequencySlice) BinsByRange(rng rf.Range) ([]int, error) {
 	return ret, nil
 }
 
-// FreqByBin will return the center of the bin represented by an offset.
-func (r FrequencySlice) FreqByBin(bin int) (rf.Hz, error) {
-	if bin < 0 || bin > len(r.Frequency) {
+func FreqByBin(frequencyLen int, sampleRate uint, order Order, bin int) (rf.Hz, error) {
+	if bin < 0 || bin > frequencyLen {
 		return rf.Hz(0), ErrFrequencyOutOfSamplingRange
 	}
 
-	midpoint := len(r.Frequency) / 2
-	bw := r.BinBandwidth()
+	midpoint := frequencyLen / 2
+	bw := BinBandwidth(frequencyLen, sampleRate)
 
-	switch r.Order {
+	switch order {
 	case ZeroFirst:
 		if bin > midpoint {
-			bin = (bin - len(r.Frequency))
+			bin = (bin - frequencyLen)
 		}
 		return bw * rf.Hz(bin), nil
 	case NegativeFirst:
@@ -177,8 +197,8 @@ func (r FrequencySlice) FreqByBin(bin int) (rf.Hz, error) {
 }
 
 // BinByFreq will return the bin index by a provided frequency.
-func (r FrequencySlice) BinByFreq(freq rf.Hz) (int, error) {
-	nyquest := r.Nyquest()
+func BinByFreq(frequencyLen int, sampleRate uint, order Order, freq rf.Hz) (int, error) {
+	nyquest := Nyquest(sampleRate)
 	if freq > nyquest || freq <= -nyquest {
 		return 0, ErrFrequencyOutOfSamplingRange
 	}
@@ -187,15 +207,15 @@ func (r FrequencySlice) BinByFreq(freq rf.Hz) (int, error) {
 	// it's not perfectly symmetric threw off the first version of this code
 	// so i'm not convinced this is right at the edge between sign changes.
 
-	binIdx := freq / r.BinBandwidth()
-	switch r.Order {
+	binIdx := freq / BinBandwidth(frequencyLen, sampleRate)
+	switch order {
 	case ZeroFirst:
 		if binIdx < 0 {
-			return (len(r.Frequency) + int(binIdx)), nil
+			return (frequencyLen + int(binIdx)), nil
 		}
 		return int(binIdx), nil
 	case NegativeFirst:
-		return (len(r.Frequency) / 2) + int(binIdx), nil
+		return (frequencyLen / 2) + int(binIdx), nil
 	default:
 		return 0, fmt.Errorf("fft.FrequencySlice.BinByFreq: Unknown fft layout")
 	}
@@ -207,32 +227,6 @@ func Shift(frequency []complex64) error {
 	r := NewFrequencySlice(frequency, 0, ZeroFirst)
 	_, err := r.Shift()
 	return err
-}
-
-// BinByFreq will return the bin index for the provided frequency for the
-// frequency buffer provided.
-func BinByFreq(frequency []complex64, sampleRate uint, order Order, freq rf.Hz) (int, error) {
-	r := NewFrequencySlice(frequency, sampleRate, order)
-	return r.BinByFreq(freq)
-}
-
-// FreqByBin will return the center of the bin represented by an offset.
-func FreqByBin(frequency []complex64, sampleRate uint, order Order, bin int) (rf.Hz, error) {
-	r := NewFrequencySlice(frequency, sampleRate, order)
-	return r.FreqByBin(bin)
-}
-
-// BinsByRange will return the bin index for the provided frequency for the
-// frequency buffer provided.
-func BinsByRange(frequency []complex64, sampleRate uint, order Order, rng rf.Range) ([]int, error) {
-	r := NewFrequencySlice(frequency, sampleRate, order)
-	return r.BinsByRange(rng)
-}
-
-// BinBandwidth will return the bandwidth represented by a provided bin.
-func BinBandwidth(frequency []complex64, sampleRate uint, order Order) rf.Hz {
-	r := NewFrequencySlice(frequency, sampleRate, order)
-	return r.BinBandwidth()
 }
 
 // vim: foldmethod=marker

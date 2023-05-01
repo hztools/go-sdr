@@ -42,16 +42,16 @@ func complexTestArray(dst []complex64) {
 func TestFreqBinOOR(t *testing.T) {
 	freq := make([]complex64, 2048)
 
-	_, err := fft.BinByFreq(freq, 2048, false, rf.MHz)
+	_, err := fft.BinByFreq(len(freq), 2048, false, rf.MHz)
 	assert.Equal(t, fft.ErrFrequencyOutOfSamplingRange, err)
 
-	_, err = fft.BinByFreq(freq, 2048, false, -rf.MHz)
+	_, err = fft.BinByFreq(len(freq), 2048, false, -rf.MHz)
 	assert.Equal(t, fft.ErrFrequencyOutOfSamplingRange, err)
 }
 
 func TestFreqBinRangeNyquestZero(t *testing.T) {
 	freq := make([]complex64, 2048)
-	bins, err := fft.BinsByRange(freq, 2048, fft.ZeroFirst, rf.Range{rf.Hz(-1023), rf.Hz(1023)})
+	bins, err := fft.BinsByRange(len(freq), 2048, fft.ZeroFirst, rf.Range{rf.Hz(-1023), rf.Hz(1023)})
 	assert.Equal(t, 2047, len(bins))
 	assert.NoError(t, err)
 	myBins := map[int]bool{}
@@ -64,7 +64,7 @@ func TestFreqBinRangeNyquestZero(t *testing.T) {
 
 func TestFreqBinRangeNyquestNeg(t *testing.T) {
 	freq := make([]complex64, 2048)
-	bins, err := fft.BinsByRange(freq, 2048, fft.NegativeFirst, rf.Range{rf.Hz(-1023), rf.Hz(1023)})
+	bins, err := fft.BinsByRange(len(freq), 2048, fft.NegativeFirst, rf.Range{rf.Hz(-1023), rf.Hz(1023)})
 	assert.Equal(t, 2047, len(bins))
 	assert.NoError(t, err)
 	myBins := map[int]bool{}
@@ -81,37 +81,37 @@ func TestFreqBinRange(t *testing.T) {
 
 	// ZeroFirst
 
-	bins, err := fft.BinsByRange(freq, 2048, fft.ZeroFirst, rf.Range{rf.Hz(0), rf.Hz(10)})
+	bins, err := fft.BinsByRange(len(freq), 2048, fft.ZeroFirst, rf.Range{rf.Hz(0), rf.Hz(10)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, bins)
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.ZeroFirst, rf.Range{rf.Hz(-10), rf.Hz(-1)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.ZeroFirst, rf.Range{rf.Hz(-10), rf.Hz(-1)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{2038, 2039, 2040, 2041, 2042, 2043, 2044, 2045, 2046, 2047}, bins)
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.ZeroFirst, rf.Range{rf.Hz(-5), rf.Hz(5)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.ZeroFirst, rf.Range{rf.Hz(-5), rf.Hz(5)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{2043, 2044, 2045, 2046, 2047, 0, 1, 2, 3, 4, 5}, bins)
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.ZeroFirst, rf.Range{rf.Hz(-10), rf.Hz(0)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.ZeroFirst, rf.Range{rf.Hz(-10), rf.Hz(0)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{2038, 2039, 2040, 2041, 2042, 2043, 2044, 2045, 2046, 2047, 0}, bins)
 
 	// NegativeFirst
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.NegativeFirst, rf.Range{rf.Hz(0), rf.Hz(10)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.NegativeFirst, rf.Range{rf.Hz(0), rf.Hz(10)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034}, bins)
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.NegativeFirst, rf.Range{rf.Hz(-10), rf.Hz(-1)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.NegativeFirst, rf.Range{rf.Hz(-10), rf.Hz(-1)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023}, bins)
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.NegativeFirst, rf.Range{rf.Hz(-5), rf.Hz(5)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.NegativeFirst, rf.Range{rf.Hz(-5), rf.Hz(5)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029}, bins)
 
-	bins, err = fft.BinsByRange(freq, 2048, fft.NegativeFirst, rf.Range{rf.Hz(-10), rf.Hz(0)})
+	bins, err = fft.BinsByRange(len(freq), 2048, fft.NegativeFirst, rf.Range{rf.Hz(-10), rf.Hz(0)})
 	assert.NoError(t, err)
 	assert.Equal(t, []int{1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024}, bins)
 }
@@ -119,35 +119,35 @@ func TestFreqBinRange(t *testing.T) {
 func TestFreqByBin(t *testing.T) {
 	buf := make([]complex64, 2048)
 
-	freq, err := fft.FreqByBin(buf, 2048, false, 10)
+	freq, err := fft.FreqByBin(len(buf), 2048, false, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, rf.Hz(10), freq)
 
-	idx, err := fft.BinByFreq(buf, 2048, false, freq)
+	idx, err := fft.BinByFreq(len(buf), 2048, false, freq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, idx)
 
-	freq, err = fft.FreqByBin(buf, 2048, false, 2000)
+	freq, err = fft.FreqByBin(len(buf), 2048, false, 2000)
 	assert.NoError(t, err)
 	assert.Equal(t, rf.Hz(-48), freq)
 
-	idx, err = fft.BinByFreq(buf, 2048, false, freq)
+	idx, err = fft.BinByFreq(len(buf), 2048, false, freq)
 	assert.NoError(t, err)
 	assert.Equal(t, 2000, idx)
 
-	freq, err = fft.FreqByBin(buf, 2048, true, 10)
+	freq, err = fft.FreqByBin(len(buf), 2048, true, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, rf.Hz(-1014), freq)
 
-	idx, err = fft.BinByFreq(buf, 2048, true, freq)
+	idx, err = fft.BinByFreq(len(buf), 2048, true, freq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, idx)
 
-	freq, err = fft.FreqByBin(buf, 2048, true, 2000)
+	freq, err = fft.FreqByBin(len(buf), 2048, true, 2000)
 	assert.NoError(t, err)
 	assert.Equal(t, rf.Hz(976), freq)
 
-	idx, err = fft.BinByFreq(buf, 2048, true, freq)
+	idx, err = fft.BinByFreq(len(buf), 2048, true, freq)
 	assert.NoError(t, err)
 	assert.Equal(t, 2000, idx)
 }
@@ -156,15 +156,15 @@ func TestBinByFreq(t *testing.T) {
 	freq := make([]complex64, 2048)
 	complexTestArray(freq)
 
-	idx, err := fft.BinByFreq(freq, 2048, false, rf.KHz)
+	idx, err := fft.BinByFreq(len(freq), 2048, false, rf.KHz)
 	assert.NoError(t, err)
 	assert.Equal(t, complex(float32(1000), 0), freq[idx])
 
-	idx, err = fft.BinByFreq(freq, 2048, false, rf.Hz(-1))
+	idx, err = fft.BinByFreq(len(freq), 2048, false, rf.Hz(-1))
 	assert.NoError(t, err)
 	assert.Equal(t, complex(float32(-1), 0), freq[idx])
 
-	idx, err = fft.BinByFreq(freq, 2048, false, -rf.KHz)
+	idx, err = fft.BinByFreq(len(freq), 2048, false, -rf.KHz)
 	assert.NoError(t, err)
 	assert.Equal(t, complex(float32(-1000), 0), freq[idx])
 }
@@ -174,11 +174,11 @@ func TestBinByFreqShifted(t *testing.T) {
 	complexTestArray(freq)
 	assert.NoError(t, fft.Shift(freq))
 
-	idx, err := fft.BinByFreq(freq, 2048, true, rf.KHz)
+	idx, err := fft.BinByFreq(len(freq), 2048, true, rf.KHz)
 	assert.NoError(t, err)
 	assert.Equal(t, complex(float32(1000), 0), freq[idx])
 
-	idx, err = fft.BinByFreq(freq, 2048, true, -rf.KHz)
+	idx, err = fft.BinByFreq(len(freq), 2048, true, -rf.KHz)
 	assert.NoError(t, err)
 	assert.Equal(t, complex(float32(-1000), 0), freq[idx])
 }
