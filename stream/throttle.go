@@ -26,9 +26,16 @@ import (
 	"hz.tools/sdr"
 )
 
-// Throttle will read the sdr.Reader's SampleRate, and throttle the stream
-// to play the Reader back "real time".
+// Throttle will read the sdr.Reader's SampleRate, and throttle
+// the stream to play the Reader back "real time".
 func Throttle(r sdr.Reader) (sdr.Reader, error) {
+	return ThrottleSecondsPerSecond(r, time.Second)
+}
+
+// ThrottleSecondsPerSecond will read the sdr.Reader's SampleRate, and throttle
+// the stream to play the Reader back where the duration 'd' passes every
+// second.
+func ThrottleSecondsPerSecond(r sdr.Reader, d time.Duration) (sdr.Reader, error) {
 	// Let's search for an easy window to size to use.
 	var windowRate uint = 20
 	for ; r.SampleRate()%windowRate == 0; windowRate++ {
@@ -40,7 +47,7 @@ func Throttle(r sdr.Reader) (sdr.Reader, error) {
 	}
 	go func() {
 		defer pipeWriter.Close()
-		clock := time.NewTicker(time.Second / time.Duration(windowRate))
+		clock := time.NewTicker(d / time.Duration(windowRate))
 		defer clock.Stop()
 		for {
 			_, err := sdr.ReadFull(r, buf)
