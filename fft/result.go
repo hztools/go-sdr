@@ -121,10 +121,14 @@ func BinBandwidth(frequencyLen int, sampleRate uint) rf.Hz {
 	return rf.Hz(float32(sampleRate) / float32(frequencyLen))
 }
 
+// Nyquest will return the Nyquest frequency of the IQ stream with the
+// provided Sample Rate.
 func Nyquest(sampleRate uint) rf.Hz {
 	return rf.Hz(sampleRate) / 2
 }
 
+// BinsByRange will return the bins that contain frequencies bounded by the
+// range 'rng'.
 func BinsByRange(frequencyLen int, sampleRate uint, order Order, rng rf.Range) ([]int, error) {
 	nyquest := Nyquest(sampleRate)
 	if rng[1] > nyquest || rng[1] < -nyquest {
@@ -172,6 +176,8 @@ func BinsByRange(frequencyLen int, sampleRate uint, order Order, rng rf.Range) (
 	return ret, nil
 }
 
+// FreqByBin will return the center frequency of the provided fft bin, provided
+// with information on the fft size, sample rate and bin layout.
 func FreqByBin(frequencyLen int, sampleRate uint, order Order, bin int) (rf.Hz, error) {
 	if bin < 0 || bin > frequencyLen {
 		return rf.Hz(0), ErrFrequencyOutOfSamplingRange
