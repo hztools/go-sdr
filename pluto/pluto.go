@@ -26,7 +26,7 @@ import (
 	"hz.tools/rf"
 	"hz.tools/sdr"
 	"hz.tools/sdr/debug"
-	"hz.tools/sdr/pluto/iio"
+	"hz.tools/sdr/internal/iio"
 )
 
 func init() {

@@ -26,7 +26,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/pluto/iio"
+	"hz.tools/sdr/internal/iio"
 )
 
 // CyclicTx will transmit a specific buffer in a loop. If the buffer is to be

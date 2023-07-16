@@ -25,7 +25,7 @@ import (
 	"unsafe"
 
 	"hz.tools/sdr"
-	"hz.tools/sdr/pluto/iio"
+	"hz.tools/sdr/internal/iio"
 	"hz.tools/sdr/stream"
 )
 
